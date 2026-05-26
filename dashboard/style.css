@@ -1,0 +1,566 @@
+body{
+
+    background:
+
+    linear-gradient(
+
+    180deg,
+
+    #07111D 0%,
+
+    #0C1628 100%
+
+    );
+
+    color:#E8EEF5;
+
+    font-family:
+
+    "Segoe UI",
+
+    Arial,
+
+    sans-serif;
+
+    margin:0;
+
+    padding:35px;
+
+}
+
+
+header{
+
+    margin-bottom:30px;
+
+}
+
+
+h1{
+
+    color:#62D3FF;
+
+    font-size:34px;
+
+    margin-bottom:5px;
+
+    text-shadow:
+
+    0 0 18px
+
+    rgba(
+
+    98,
+
+    211,
+
+    255,
+
+    .25
+
+    );
+
+}
+
+
+header p{
+
+    color:#8EA2BE;
+
+    margin-top:0;
+
+}
+
+
+.cards{
+
+    display:flex;
+
+    flex-wrap:wrap;
+
+    gap:20px;
+
+}
+
+
+.card{
+
+    background:
+
+    linear-gradient(
+
+    145deg,
+
+    #172337,
+
+    #1F2D43
+
+    );
+
+    width:220px;
+
+    padding:22px;
+
+    border-radius:18px;
+
+    border:
+
+    1px solid
+
+    rgba(
+
+    94,
+
+    200,
+
+    248,
+
+    .12
+
+    );
+
+    box-shadow:
+
+    0 10px 28px
+
+    rgba(
+
+    0,
+
+    0,
+
+    0,
+
+    .25
+
+    );
+
+    transition:.25s;
+
+    position:relative;
+
+    overflow:hidden;
+
+}
+
+
+.card::before{
+
+    content:"";
+
+    position:absolute;
+
+    right:-30px;
+
+    top:-30px;
+
+    width:100px;
+
+    height:100px;
+
+    border-radius:50%;
+
+    background:
+
+    rgba(
+
+    94,
+
+    200,
+
+    248,
+
+    .05
+
+    );
+
+}
+
+
+.card:hover{
+
+    transform:
+
+    translateY(-4px);
+
+    box-shadow:
+
+    0 12px 34px
+
+    rgba(
+
+    94,
+
+    200,
+
+    248,
+
+    .18
+
+    );
+
+}
+
+
+.card h3{
+
+    margin-top:0;
+
+    color:#90A8C8;
+
+    font-size:14px;
+
+    text-transform:uppercase;
+
+    letter-spacing:1px;
+
+}
+
+
+.valor{
+
+    font-size:38px;
+
+    font-weight:700;
+
+    color:#62D3FF;
+
+    margin-top:12px;
+
+}
+
+
+.status{
+
+    font-size:24px;
+
+    font-weight:600;
+
+    margin-top:16px;
+
+}
+
+
+.subvalor{
+
+    margin-top:10px;
+
+    color:#8EA2BE;
+
+    font-size:14px;
+
+}
+
+
+.chart-card{
+
+    background:
+
+    linear-gradient(
+
+    145deg,
+
+    #172337,
+
+    #1F2D43
+
+    );
+
+    padding:25px;
+
+    margin-top:30px;
+
+    border-radius:18px;
+
+    border:
+
+    1px solid
+
+    rgba(
+
+    94,
+
+    200,
+
+    248,
+
+    .12
+
+    );
+
+    box-shadow:
+
+    0 10px 28px
+
+    rgba(
+
+    0,
+
+    0,
+
+    0,
+
+    .25
+
+    );
+
+}
+
+
+.chart-card h3{
+
+    color:#AFC2DA;
+
+    margin-top:0;
+
+}
+
+
+#analysis{
+
+    color:#D6E0EC;
+
+    line-height:1.7;
+
+    font-size:15px;
+
+}
+
+
+#climate-alerts{
+
+    margin-top:18px;
+
+}
+
+
+.alert-card{
+
+    background:
+
+    linear-gradient(
+
+    145deg,
+
+    #1B2940,
+
+    #21314B
+
+    );
+
+    border-left:
+
+    5px solid
+
+    #62D3FF;
+
+    border-radius:14px;
+
+    padding:18px;
+
+    margin-bottom:14px;
+
+    box-shadow:
+
+    0 8px 20px
+
+    rgba(
+
+    0,
+
+    0,
+
+    0,
+
+    .20
+
+    );
+
+    transition:.25s;
+
+}
+
+
+.alert-card:hover{
+
+    transform:
+
+    translateY(-2px);
+
+}
+
+
+.alert-card.info{
+
+    border-left-color:
+
+    #62D3FF;
+
+}
+
+
+.alert-card.warning{
+
+    border-left-color:
+
+    #FFB84D;
+
+}
+
+
+.alert-card.critical{
+
+    border-left-color:
+
+    #FF6161;
+
+}
+
+
+.alert-title{
+
+    font-size:16px;
+
+    font-weight:700;
+
+    color:#EAF2FA;
+
+    margin-bottom:8px;
+
+}
+
+
+.alert-message{
+
+    color:#C6D4E5;
+
+    line-height:1.6;
+
+    font-size:14px;
+
+}
+
+
+.alert-source{
+
+    margin-top:10px;
+
+    color:#7F93AD;
+
+    font-size:12px;
+
+}
+
+
+.info{
+
+    cursor:help;
+
+    opacity:.8;
+
+}
+
+
+.glossario{
+
+    margin-top:30px;
+
+}
+
+
+.glossario-grid{
+
+    display:grid;
+
+    grid-template-columns:
+
+    repeat(
+
+    auto-fit,
+
+    minmax(
+
+    220px,
+
+    1fr
+
+    )
+
+    );
+
+    gap:18px;
+
+}
+
+
+.glossario-grid div{
+
+    background:
+
+    rgba(
+
+    255,
+
+    255,
+
+    255,
+
+    .03
+
+    );
+
+    padding:18px;
+
+    border-radius:12px;
+
+}
+
+
+.erro{
+
+    color:#FF7474;
+
+    margin-bottom:15px;
+
+    font-weight:600;
+
+}
+
+
+canvas{
+
+    margin-top:15px;
+
+}
+
+
+footer{
+
+    margin-top:35px;
+
+    color:#6D809B;
+
+    font-size:12px;
+
+    text-align:center;
+
+    opacity:.8;
+
+}
+
+
+@media(max-width:900px){
+
+.cards{
+
+    flex-direction:column;
+
+}
+
+.card{
+
+    width:auto;
+
+}
+
+}
