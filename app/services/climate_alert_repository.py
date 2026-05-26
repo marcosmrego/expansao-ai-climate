@@ -1,16 +1,8 @@
-import os
-import sys
-
-sys.path.append(
-    os.path.abspath(
-        os.path.join(
-            os.path.dirname(__file__),
-            "../.."
-        )
-    )
-)
+import logging
 
 from database.db import conectar
+
+logger = logging.getLogger(__name__)
 
 
 def save_alert(alert):
@@ -18,6 +10,21 @@ def save_alert(alert):
 
     try:
         with conn.cursor() as cursor:
+            # Skip if an active alert of the same type was already created in the last 24h
+            cursor.execute(
+                """
+                SELECT id FROM climate.climate_alerts
+                WHERE alert_type = %s
+                  AND status = 'ACTIVE'
+                  AND created_at > NOW() - INTERVAL '24 hours'
+                LIMIT 1;
+                """,
+                (alert["alert_type"],),
+            )
+            existing = cursor.fetchone()
+            if existing:
+                return {"id": existing[0], "skipped": True}
+
             cursor.execute(
                 """
                 INSERT INTO climate.climate_alerts (
@@ -45,7 +52,8 @@ def save_alert(alert):
         conn.commit()
         return {"id": alert_id}
 
-    except Exception:
+    except Exception as e:
+        logger.error("Erro ao salvar alerta: %s", e)
         conn.rollback()
         raise
 
@@ -95,5 +103,8 @@ def get_active_alerts(limit=10):
             for row in rows
         ]
 
+    except Exception as e:
+        logger.error("Erro ao buscar alertas ativos: %s", e)
+        raise
     finally:
         conn.close()

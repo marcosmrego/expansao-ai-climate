@@ -1,10 +1,13 @@
+const API_BASE = "https://climate.expansao-ai.com.br"
+
+
 async function carregarStatus(){
 
     try{
 
         const response =
         await fetch(
-            "https://climate.expansao-ai.com.br/climate/status"
+            `${API_BASE}/climate/status`
         )
 
         const dados =
@@ -49,7 +52,7 @@ async function carregarHistorico(){
 
         const response =
         await fetch(
-            "http://127.0.0.1:8000/climate/history"
+            `${API_BASE}/climate/history`
         )
 
         const dados =
@@ -78,7 +81,7 @@ async function carregarInsight(){
 
         const response =
         await fetch(
-            "http://127.0.0.1:8000/climate/analysis"
+            `${API_BASE}/climate/analysis`
         )
 
         const dados =
@@ -110,7 +113,7 @@ async function carregarTendencia(){
 
         const response =
         await fetch(
-            "http://127.0.0.1:8000/climate/trend"
+            `${API_BASE}/climate/trend`
         )
 
         const dados =
@@ -169,7 +172,7 @@ async function carregarAtualizacao(){
 
         const response =
         await fetch(
-            "http://127.0.0.1:8000/climate/update"
+            `${API_BASE}/climate/update`
         )
 
         const dados =
@@ -210,7 +213,7 @@ async function carregarAlertas(){
 
         const response =
         await fetch(
-            "http://127.0.0.1:8000/api/climate/alerts"
+            `${API_BASE}/api/climate/alerts`
         )
 
         const dados =
@@ -267,20 +270,21 @@ function renderizarAlertas(alertas){
             "alert-card " +
             alerta.severity.toLowerCase()
 
-            card.innerHTML =
-            `
-            <div class="alert-title">
-                ${alerta.title}
-            </div>
+            const titleEl = document.createElement("div")
+            titleEl.className = "alert-title"
+            titleEl.textContent = alerta.title
 
-            <div class="alert-message">
-                ${alerta.message}
-            </div>
+            const messageEl = document.createElement("div")
+            messageEl.className = "alert-message"
+            messageEl.textContent = alerta.message
 
-            <div class="alert-source">
-                Fonte: ${alerta.source}
-            </div>
-            `
+            const sourceEl = document.createElement("div")
+            sourceEl.className = "alert-source"
+            sourceEl.textContent = "Fonte: " + alerta.source
+
+            card.appendChild(titleEl)
+            card.appendChild(messageEl)
+            card.appendChild(sourceEl)
 
             container.appendChild(
                 card

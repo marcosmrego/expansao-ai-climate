@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Dict, Any
 
 
@@ -73,7 +73,7 @@ def generate_alerts_from_oni(current_oni: float, previous_oni: float) -> Dict[st
     alerts = classify_oni_alert(current_oni, previous_oni)
 
     return {
-        "generated_at": datetime.utcnow().isoformat(),
+        "generated_at": datetime.now(timezone.utc).isoformat(),
         "current_oni": current_oni,
         "previous_oni": previous_oni,
         "alerts": alerts

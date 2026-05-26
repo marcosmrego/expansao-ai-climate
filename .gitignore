@@ -42,3 +42,6 @@ temp/
 node_modules/
 dist/
 build/
+
+# Pacote instalável (pyproject.toml)
+*.egg-info/

@@ -1,13 +1,11 @@
 import os
-import sys
 import hashlib
 import json
+import time
 from datetime import date
 
 import requests
 from dotenv import load_dotenv
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from database.db import conectar
 
@@ -18,10 +16,17 @@ ORIGEM = "NOAA_PSL_ONI"
 load_dotenv()
 
 
-def baixar_dados():
-    response = requests.get(URL, timeout=30)
-    response.raise_for_status()
-    return response.text
+def baixar_dados(tentativas=3, espera=5):
+    for tentativa in range(1, tentativas + 1):
+        try:
+            response = requests.get(URL, timeout=30)
+            response.raise_for_status()
+            return response.text
+        except requests.RequestException as e:
+            if tentativa == tentativas:
+                raise
+            print(f"Tentativa {tentativa} falhou: {e}. Aguardando {espera}s...")
+            time.sleep(espera)
 
 
 def gerar_hash(texto):
