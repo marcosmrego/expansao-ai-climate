@@ -4,7 +4,7 @@ async function carregarStatus(){
 
         const response =
         await fetch(
-            "http://127.0.0.1:8000/climate/status"
+            "https://climate.expansao-ai.com.br/climate/status"
         )
 
         const dados =
