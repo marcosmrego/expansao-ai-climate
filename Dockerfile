@@ -10,4 +10,4 @@ COPY . .
 
 EXPOSE 8000
 
-CMD ["uvicorn", "zhora_api:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "api.zhora_api:app", "--host", "0.0.0.0", "--port", "8000"]
