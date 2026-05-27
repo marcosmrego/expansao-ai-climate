@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import Optional
 
@@ -327,3 +328,7 @@ def climate_update():
         raise HTTPException(status_code=500, detail="Erro ao consultar última atualização")
     finally:
         conn.close()
+
+
+# Serve the dashboard — must be mounted last so API routes take precedence
+app.mount("/", StaticFiles(directory="dashboard", html=True), name="dashboard")

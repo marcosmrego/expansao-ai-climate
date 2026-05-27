@@ -1,4 +1,4 @@
-const API_BASE = "https://climate.expansao-ai.com.br"
+const API_BASE = ""
 
 
 async function carregarStatus(){
