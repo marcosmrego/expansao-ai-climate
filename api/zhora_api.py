@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 from database.db import conectar
 from app.routes.climate_alerts import router as climate_alert_router
 from app.routes.zhora import router as zhora_router
+from app.routes.collect import router as collect_router
 
 
 class _TTLCache:
@@ -92,13 +93,14 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
     allow_credentials=False,
-    allow_methods=["GET"],
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
 
 app.include_router(climate_alert_router)
 app.include_router(zhora_router)
+app.include_router(collect_router)
 
 
 @app.get("/health")
@@ -220,64 +222,44 @@ def climate_analysis():
     if cached:
         return cached
 
-    conn = conectar()
+    from app.services.zhora_service import get_latest_insight
 
+    conn = conectar()
     try:
         cursor = conn.cursor()
-
         cursor.execute("""
-            SELECT
-                o.oni,
-                o.classificacao,
-                s.nino_34_anom
-            FROM
-            (
-                SELECT
-                    oni,
-                    classificacao,
-                    data_referencia
-                FROM climate.noaa_oni
-                WHERE oni > -99
-                ORDER BY data_referencia DESC
-                LIMIT 1
+            SELECT o.oni, s.nino_34_anom
+            FROM (
+                SELECT oni FROM climate.noaa_oni
+                WHERE oni > -99 ORDER BY data_referencia DESC LIMIT 1
             ) o
-            CROSS JOIN
-            (
-                SELECT
-                    nino_34_anom
-                FROM climate.noaa_sst_indices
-                ORDER BY data_referencia DESC
-                LIMIT 1
+            CROSS JOIN (
+                SELECT nino_34_anom FROM climate.noaa_sst_indices
+                ORDER BY data_referencia DESC LIMIT 1
             ) s
         """)
-
         r = cursor.fetchone()
-
-        oni = float(r[0])
-        nino34 = float(r[2])
-
-        if oni >= 0.5:
-            texto = "Indicadores oceânicos compatíveis com El Niño."
-        elif oni <= -0.5:
-            texto = "Indicadores oceânicos compatíveis com La Niña."
-        else:
-            texto = "ENSO segue em neutralidade."
-
-        result = {
-            "oni": oni,
-            "nino34": nino34,
-            "analysis": texto
-        }
-        _cache.set("analysis", result)
-        return result
-
-    except HTTPException:
-        raise
+        oni = float(r[0]) if r else 0.0
+        nino34 = float(r[1]) if r else 0.0
     except Exception as e:
-        logger.error("Erro em /climate/analysis: %s", e)
-        raise HTTPException(status_code=500, detail="Erro ao gerar análise climática")
+        logger.error("Erro ao consultar dados para análise: %s", e)
+        raise HTTPException(status_code=500, detail="Erro ao consultar dados climáticos")
     finally:
         conn.close()
+
+    insight = get_latest_insight()
+    if insight is None:
+        # Fallback enquanto nenhum insight AI foi gerado ainda
+        if oni >= 0.5:
+            insight = "Indicadores oceânicos compatíveis com El Niño. Execute POST /api/collect/insight para ativar a análise com IA."
+        elif oni <= -0.5:
+            insight = "Indicadores oceânicos compatíveis com La Niña. Execute POST /api/collect/insight para ativar a análise com IA."
+        else:
+            insight = "ENSO segue em neutralidade. Execute POST /api/collect/insight para ativar a análise com IA."
+
+    result = {"oni": oni, "nino34": nino34, "analysis": insight}
+    _cache.set("analysis", result)
+    return result
 
 
 @app.get("/climate/trend", response_model=TrendResponse)

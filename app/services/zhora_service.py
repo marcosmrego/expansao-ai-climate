@@ -177,6 +177,71 @@ def get_latest_context() -> Optional[str]:
         conn.close()
 
 
+_INSIGHT_PROMPT = (
+    "Com base no contexto climático fornecido, escreva um parágrafo técnico de 2 a 4 frases "
+    "para uso como insight operacional em um dashboard de monitoramento ENSO. "
+    "Inclua os valores numéricos relevantes e interprete a convergência dos indicadores oceânicos "
+    "e atmosféricos. Seja direto e objetivo."
+)
+
+
+def generate_insight() -> str:
+    """Call Gemini with the current climate context and persist the result as CLIMATE_INSIGHT."""
+    ctx = build_climate_context()
+    context_text = context_to_text(ctx)
+    insight_text = ask_gemini(_INSIGHT_PROMPT, context_text)
+
+    conn = conectar()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO climate.operational_context
+                    (context_type, content, oni_snapshot, metadata)
+                VALUES ('CLIMATE_INSIGHT', %s, %s, %s::jsonb)
+                RETURNING id
+                """,
+                (
+                    insight_text,
+                    ctx.get("oni"),
+                    json.dumps({
+                        "classificacao": ctx["classificacao"],
+                        "nino34_anom": ctx.get("nino34_anom"),
+                        "soi": ctx.get("soi"),
+                        "alert_count": len(ctx.get("alerts", [])),
+                    }),
+                ),
+            )
+            cur.fetchone()
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+    return insight_text
+
+
+def get_latest_insight() -> Optional[str]:
+    """Retrieve the most recent AI-generated operational insight."""
+    conn = conectar()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT content FROM climate.operational_context
+                WHERE context_type = 'CLIMATE_INSIGHT'
+                ORDER BY created_at DESC
+                LIMIT 1
+                """
+            )
+            row = cur.fetchone()
+        return row[0] if row else None
+    finally:
+        conn.close()
+
+
 def ask_gemini(question: str, context_text: str) -> str:
     if not GEMINI_API_KEY:
         raise RuntimeError(
