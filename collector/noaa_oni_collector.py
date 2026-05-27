@@ -8,6 +8,7 @@ import requests
 from dotenv import load_dotenv
 
 from database.db import conectar
+from app.services.climate_alert_repository import check_and_save_persistence_alert
 
 
 URL = "https://psl.noaa.gov/data/correlation/oni.data"
@@ -154,6 +155,12 @@ def main():
 
         print(f"Payload salvo: {raw_payload_id}")
         print(f"Registros ONI processados: {total}")
+
+        result = check_and_save_persistence_alert(months=3)
+        if result and not result.get("skipped"):
+            print(f"Alerta de persistência ENSO gerado: id={result['id']}")
+        elif result and result.get("skipped"):
+            print("Persistência ENSO já registrada nas últimas 24h, ignorando.")
 
     except Exception as erro:
         conn.rollback()

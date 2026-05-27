@@ -1,6 +1,8 @@
 import logging
+from typing import Optional
 
 from database.db import conectar
+from app.services.climate_alert_engine import check_enso_persistence
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +59,40 @@ def save_alert(alert):
         conn.rollback()
         raise
 
+    finally:
+        conn.close()
+
+
+def check_and_save_persistence_alert(months: int = 3) -> Optional[dict]:
+    """Queries the last `months` ONI values and saves a persistence alert if detected."""
+    conn = conectar()
+
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT oni FROM climate.noaa_oni
+                WHERE oni > -99
+                ORDER BY data_referencia DESC
+                LIMIT %s;
+                """,
+                (months,),
+            )
+            rows = cursor.fetchall()
+
+        if len(rows) < months:
+            return None
+
+        oni_history = [float(r[0]) for r in reversed(rows)]
+        alert = check_enso_persistence(oni_history, months)
+
+        if alert:
+            return save_alert(alert)
+        return None
+
+    except Exception as e:
+        logger.error("Erro ao verificar persistência ENSO: %s", e)
+        raise
     finally:
         conn.close()
 

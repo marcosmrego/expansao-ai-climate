@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import List, Dict, Any
+from typing import Any, Dict, List, Optional
 
 # NOAA ONI thresholds
 _ONI_THRESHOLD = 0.5         # Limiar de detecção El Niño / La Niña
@@ -115,6 +115,53 @@ def classify_oni_alert(current_oni: float, previous_oni: float) -> List[Dict[str
         })
 
     return alerts
+
+
+def check_enso_persistence(
+    oni_history: List[float],
+    months: int = 3
+) -> Optional[Dict[str, Any]]:
+    """
+    Returns a persistence alert if the last `months` values are consistently
+    above _ONI_THRESHOLD (El Niño) or below -_ONI_THRESHOLD (La Niña).
+    oni_history must be ordered from oldest to newest.
+    """
+    if len(oni_history) < months:
+        return None
+
+    recent = oni_history[-months:]
+
+    if all(v >= _ONI_THRESHOLD for v in recent):
+        severity = "CRITICAL" if max(recent) >= _ONI_STRONG_THRESHOLD else "WARNING"
+        valores = ", ".join(str(v) for v in recent)
+        return {
+            "alert_type": "ENSO_PERSISTENCE",
+            "severity": severity,
+            "title": f"Persistência de El Niño — {months} meses consecutivos",
+            "message": (
+                f"O índice ONI permaneceu acima de {_ONI_THRESHOLD} por {months} meses consecutivos "
+                f"(valores: {valores}). "
+                "A persistência é o critério oficial da NOAA para caracterizar formalmente um evento El Niño."
+            ),
+            "source": "NOAA"
+        }
+
+    if all(v <= -_ONI_THRESHOLD for v in recent):
+        severity = "CRITICAL" if min(recent) <= -_ONI_STRONG_THRESHOLD else "WARNING"
+        valores = ", ".join(str(v) for v in recent)
+        return {
+            "alert_type": "ENSO_PERSISTENCE",
+            "severity": severity,
+            "title": f"Persistência de La Niña — {months} meses consecutivos",
+            "message": (
+                f"O índice ONI permaneceu abaixo de -{_ONI_THRESHOLD} por {months} meses consecutivos "
+                f"(valores: {valores}). "
+                "A persistência é o critério oficial da NOAA para caracterizar formalmente um evento La Niña."
+            ),
+            "source": "NOAA"
+        }
+
+    return None
 
 
 def generate_alerts_from_oni(current_oni: float, previous_oni: float) -> Dict[str, Any]:

@@ -1,4 +1,8 @@
-from app.services.climate_alert_engine import classify_oni_alert, generate_alerts_from_oni
+from app.services.climate_alert_engine import (
+    classify_oni_alert,
+    check_enso_persistence,
+    generate_alerts_from_oni,
+)
 
 
 # --- El Niño ---
@@ -84,6 +88,65 @@ def test_no_trend_when_stable():
     types = [a["alert_type"] for a in alerts]
     assert "ONI_TREND_UP" not in types
     assert "ONI_TREND_DOWN" not in types
+
+
+# --- Persistência ENSO ---
+
+def test_persistence_el_nino_warning():
+    """3 meses consecutivos com ONI entre 0.5 e 1.4 → WARNING"""
+    alert = check_enso_persistence([0.6, 0.7, 0.8])
+    assert alert is not None
+    assert alert["alert_type"] == "ENSO_PERSISTENCE"
+    assert alert["severity"] == "WARNING"
+    assert "El Niño" in alert["title"]
+
+
+def test_persistence_el_nino_critical():
+    """3 meses com pelo menos um ONI >= 1.5 → CRITICAL"""
+    alert = check_enso_persistence([0.8, 1.2, 1.6])
+    assert alert is not None
+    assert alert["severity"] == "CRITICAL"
+
+
+def test_persistence_la_nina_warning():
+    """3 meses consecutivos com ONI entre -0.5 e -1.4 → WARNING"""
+    alert = check_enso_persistence([-0.6, -0.7, -0.8])
+    assert alert is not None
+    assert alert["alert_type"] == "ENSO_PERSISTENCE"
+    assert alert["severity"] == "WARNING"
+    assert "La Niña" in alert["title"]
+
+
+def test_persistence_la_nina_critical():
+    """3 meses com pelo menos um ONI <= -1.5 → CRITICAL"""
+    alert = check_enso_persistence([-0.8, -1.2, -1.6])
+    assert alert is not None
+    assert alert["severity"] == "CRITICAL"
+
+
+def test_persistence_not_triggered_when_broken():
+    """Série interrompida por mês neutro não deve gerar alerta"""
+    alert = check_enso_persistence([0.7, 0.1, 0.8])
+    assert alert is None
+
+
+def test_persistence_not_triggered_below_threshold():
+    """Valores abaixo de 0.5 não disparam persistência"""
+    alert = check_enso_persistence([0.3, 0.4, 0.4])
+    assert alert is None
+
+
+def test_persistence_requires_minimum_months():
+    """Histórico menor que months não gera alerta"""
+    alert = check_enso_persistence([0.8, 0.9], months=3)
+    assert alert is None
+
+
+def test_persistence_custom_months():
+    """Persistência de 5 meses quando months=5"""
+    alert = check_enso_persistence([0.6, 0.7, 0.8, 0.9, 1.0], months=5)
+    assert alert is not None
+    assert "5 meses" in alert["title"]
 
 
 # --- Estrutura ---
