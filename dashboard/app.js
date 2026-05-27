@@ -1,444 +1,345 @@
 const API_BASE = ""
 
-
-async function carregarStatus(){
-
-    try{
-
-        const response =
-        await fetch(
-            `${API_BASE}/climate/status`
-        )
-
-        const dados =
-        await response.json()
-
-        document
-        .getElementById("oni")
-        .innerText =
-        dados.oni.toFixed(2)
-
-        document
-        .getElementById("status")
-        .innerText =
-        dados.classificacao
-
-        document
-        .getElementById("nino34")
-        .innerText =
-        dados.nino34.toFixed(2)
-
-        document
-        .getElementById("fase")
-        .innerText =
-        dados.fase
-
+// ── Phase config ────────────────────────────────────────────────────
+const PHASE_CONFIG = {
+    EL_NINO: {
+        bodyClass: "el-nino",
+        label: "El Niño",
+        desc: "Aquecimento anormal do Pacífico Equatorial — impactos climáticos em diversas regiões."
+    },
+    LA_NINA: {
+        bodyClass: "la-nina",
+        label: "La Niña",
+        desc: "Resfriamento anormal do Pacífico Equatorial — padrões climáticos opostos ao El Niño."
+    },
+    NEUTRO: {
+        bodyClass: "neutral",
+        label: "Neutro",
+        desc: "Condições dentro da variabilidade normal. Sem evento ENSO ativo."
     }
-
-    catch{
-
-        mostrarErro(
-            "Erro carregando status"
-        )
-
-    }
-
 }
 
+// ── Errors ──────────────────────────────────────────────────────────
+const errors = new Set()
 
-async function carregarHistorico(){
-
-    try{
-
-        const response =
-        await fetch(
-            `${API_BASE}/climate/history`
-        )
-
-        const dados =
-        await response.json()
-
-        montarGrafico(
-            dados
-        )
-
-    }
-
-    catch{
-
-        mostrarErro(
-            "Erro histórico NOAA"
-        )
-
-    }
-
+function registrarErro(componente) {
+    errors.add(componente)
+    const bar = document.getElementById("erro")
+    bar.textContent = `Erro ao carregar: ${[...errors].join(", ")}`
+    bar.classList.remove("hidden")
 }
 
-
-async function carregarInsight(){
-
-    try{
-
-        const response =
-        await fetch(
-            `${API_BASE}/climate/analysis`
-        )
-
-        const dados =
-        await response.json()
-
-        document
-        .getElementById(
-            "analysis"
-        )
-        .innerText =
-        dados.analysis
-
+// ── ONI bar ─────────────────────────────────────────────────────────
+function atualizarBarraONI(oni) {
+    const fill = document.getElementById("oni-bar-fill")
+    if (!fill) return
+    const pct = Math.min(Math.abs(oni) / 2.5, 1) * 50
+    if (oni >= 0) {
+        fill.style.left = "50%"
+        fill.style.marginLeft = "0"
+        fill.style.width = pct + "%"
+    } else {
+        fill.style.left = (50 - pct) + "%"
+        fill.style.marginLeft = "0"
+        fill.style.width = pct + "%"
     }
-
-    catch{
-
-        mostrarErro(
-            "Erro análise"
-        )
-
-    }
-
 }
 
+// ── Status ───────────────────────────────────────────────────────────
+async function carregarStatus() {
+    try {
+        const res = await fetch(`${API_BASE}/climate/status`)
+        if (!res.ok) throw new Error(res.status)
+        const d = await res.json()
 
-async function carregarTendencia(){
+        const cfg = PHASE_CONFIG[d.classificacao] || PHASE_CONFIG.NEUTRO
 
-    try{
+        // Dynamic theme
+        document.body.className = cfg.bodyClass
 
-        const response =
-        await fetch(
-            `${API_BASE}/climate/trend`
-        )
+        // Phase pill
+        document.getElementById("phase-label").textContent = cfg.label
 
-        const dados =
-        await response.json()
+        // Hero value
+        document.getElementById("oni").textContent = d.oni.toFixed(2)
+        atualizarBarraONI(d.oni)
 
-        let simbolo="➡"
+        // Phase card
+        document.getElementById("status").textContent = d.classificacao.replace("_", " ")
+        document.getElementById("fase").textContent = cfg.label
+        document.getElementById("phase-desc").textContent = cfg.desc
 
-        if(
-            dados.tendencia==="SUBINDO"
-        )
-        simbolo="⬆"
+        // Niño 3.4
+        document.getElementById("nino34").textContent = d.nino34.toFixed(2)
 
-        if(
-            dados.tendencia==="CAINDO"
-        )
-        simbolo="⬇"
-
-        document
-        .getElementById(
-            "tendencia"
-        )
-        .innerText=
-
-        simbolo+
-
-        " "+
-
-        dados.tendencia
-
-        document
-        .getElementById(
-            "variacao"
-        )
-        .innerText=
-
-        "Δ "+
-
-        dados.variacao.toFixed(2)
-
+    } catch {
+        registrarErro("status")
+        document.getElementById("oni").textContent = "—"
+        document.getElementById("status").textContent = "—"
+        document.getElementById("nino34").textContent = "—"
     }
-
-    catch{
-
-        mostrarErro(
-            "Erro tendência"
-        )
-
-    }
-
 }
 
-
-async function carregarAtualizacao(){
-
-    try{
-
-        const response =
-        await fetch(
-            `${API_BASE}/climate/update`
-        )
-
-        const dados =
-        await response.json()
-
-        document
-        .getElementById(
-            "ultimaAtualizacao"
-        )
-        .innerText=
-
-        dados.ultima_atualizacao
-
-        document
-        .getElementById(
-            "fonte"
-        )
-        .innerText=
-
-        dados.fonte
-
+// ── History ──────────────────────────────────────────────────────────
+async function carregarHistorico() {
+    try {
+        const res = await fetch(`${API_BASE}/climate/history`)
+        if (!res.ok) throw new Error(res.status)
+        const dados = await res.json()
+        montarGrafico(dados)
+    } catch {
+        registrarErro("histórico ONI")
     }
-
-    catch{
-
-        mostrarErro(
-            "Erro atualização NOAA"
-        )
-
-    }
-
 }
 
-
-async function carregarAlertas(){
-
-    try{
-
-        const response =
-        await fetch(
-            `${API_BASE}/api/climate/alerts`
-        )
-
-        const dados =
-        await response.json()
-
-        renderizarAlertas(
-            dados.items
-        )
-
+// ── Analysis ─────────────────────────────────────────────────────────
+async function carregarInsight() {
+    try {
+        const res = await fetch(`${API_BASE}/climate/analysis`)
+        if (!res.ok) throw new Error(res.status)
+        const d = await res.json()
+        document.getElementById("analysis").textContent = d.analysis
+    } catch {
+        registrarErro("análise")
+        document.getElementById("analysis").textContent = "Não foi possível carregar a análise."
     }
-
-    catch{
-
-        mostrarErro(
-            "Erro alertas operacionais"
-        )
-
-    }
-
 }
 
+// ── Trend ────────────────────────────────────────────────────────────
+async function carregarTendencia() {
+    try {
+        const res = await fetch(`${API_BASE}/climate/trend`)
+        if (!res.ok) throw new Error(res.status)
+        const d = await res.json()
 
-function renderizarAlertas(alertas){
+        const arrows = { SUBINDO: "↑", CAINDO: "↓", ESTAVEL: "→" }
+        const arrow = arrows[d.tendencia] || "→"
 
-    const container =
-    document.getElementById(
-        "climate-alerts"
-    )
+        document.getElementById("tendencia").textContent = `${arrow} ${d.tendencia}`
+        document.getElementById("variacao").textContent = `Δ ${d.variacao >= 0 ? "+" : ""}${d.variacao.toFixed(2)}`
 
-    if(!container){
-        return
+    } catch {
+        registrarErro("tendência")
+        document.getElementById("tendencia").textContent = "—"
+        document.getElementById("variacao").textContent = "—"
     }
+}
+
+// ── Update ───────────────────────────────────────────────────────────
+async function carregarAtualizacao() {
+    try {
+        const res = await fetch(`${API_BASE}/climate/update`)
+        if (!res.ok) throw new Error(res.status)
+        const d = await res.json()
+        document.getElementById("ultimaAtualizacao").textContent = d.ultima_atualizacao || "—"
+        document.getElementById("fonte").textContent = d.fonte
+    } catch {
+        registrarErro("atualização NOAA")
+        document.getElementById("ultimaAtualizacao").textContent = "—"
+    }
+}
+
+// ── Alerts ───────────────────────────────────────────────────────────
+async function carregarAlertas() {
+    try {
+        const res = await fetch(`${API_BASE}/api/climate/alerts`)
+        if (!res.ok) throw new Error(res.status)
+        const d = await res.json()
+        renderizarAlertas(d.items)
+
+        const badge = document.getElementById("alert-count")
+        if (badge && d.total > 0) {
+            badge.textContent = `${d.total} ativo${d.total > 1 ? "s" : ""}`
+        }
+    } catch {
+        registrarErro("alertas")
+        document.getElementById("climate-alerts").innerHTML =
+            '<p class="no-alerts">Erro ao carregar alertas.</p>'
+    }
+}
+
+function renderizarAlertas(alertas) {
+    const container = document.getElementById("climate-alerts")
+    if (!container) return
 
     container.innerHTML = ""
 
-    if(!alertas || alertas.length === 0){
-
-        container.innerHTML =
-        "<p>Nenhum alerta operacional ativo.</p>"
-
+    if (!alertas || alertas.length === 0) {
+        const p = document.createElement("p")
+        p.className = "no-alerts"
+        p.textContent = "Nenhum alerta operacional ativo."
+        container.appendChild(p)
         return
-
     }
 
-    alertas.forEach(
-        alerta => {
+    alertas.forEach(alerta => {
+        const card = document.createElement("div")
+        card.className = "alert-card " + alerta.severity.toLowerCase()
 
-            const card =
-            document.createElement(
-                "div"
-            )
+        const header = document.createElement("div")
+        header.className = "alert-header"
 
-            card.className =
-            "alert-card " +
-            alerta.severity.toLowerCase()
+        const dot = document.createElement("span")
+        dot.className = "alert-severity-dot"
 
-            const titleEl = document.createElement("div")
-            titleEl.className = "alert-title"
-            titleEl.textContent = alerta.title
+        const title = document.createElement("span")
+        title.className = "alert-title"
+        title.textContent = alerta.title
 
-            const messageEl = document.createElement("div")
-            messageEl.className = "alert-message"
-            messageEl.textContent = alerta.message
+        header.appendChild(dot)
+        header.appendChild(title)
 
-            const sourceEl = document.createElement("div")
-            sourceEl.className = "alert-source"
-            sourceEl.textContent = "Fonte: " + alerta.source
+        const msg = document.createElement("div")
+        msg.className = "alert-message"
+        msg.textContent = alerta.message
 
-            card.appendChild(titleEl)
-            card.appendChild(messageEl)
-            card.appendChild(sourceEl)
+        const src = document.createElement("div")
+        src.className = "alert-source"
+        src.textContent = `${alerta.severity} · ${alerta.source}`
 
-            container.appendChild(
-                card
-            )
+        card.appendChild(header)
+        card.appendChild(msg)
+        card.appendChild(src)
 
-        }
-    )
-
+        container.appendChild(card)
+    })
 }
 
+// ── Chart ────────────────────────────────────────────────────────────
+function montarGrafico(dados) {
+    const ctx = document.getElementById("oniChart")
+    if (!ctx) return
 
-function montarGrafico(dados){
+    const labels = dados.map(x => x.periodo)
+    const valores = dados.map(x => x.oni)
 
-    const labels=
-    dados.map(
-        x=>x.periodo
-    )
+    const gradient = ctx.getContext("2d").createLinearGradient(0, 0, 0, 280)
+    gradient.addColorStop(0,   "rgba(94,200,248,.25)")
+    gradient.addColorStop(0.6, "rgba(94,200,248,.05)")
+    gradient.addColorStop(1,   "rgba(94,200,248,0)")
 
-    const valores=
-    dados.map(
-        x=>x.oni
-    )
-
-    const ctx=
-
-    document
-
-    .getElementById(
-
-        "oniChart"
-
-    )
-
-    new Chart(
-
-        ctx,
-
-        {
-
-            type:"line",
-
-            data:{
-
-                labels,
-
-                datasets:[
-
+    new Chart(ctx, {
+        type: "line",
+        data: {
+            labels,
+            datasets: [
                 {
-
-                    label:"ONI",
-
-                    data:valores,
-
-                    borderColor:"#5EC8F8",
-
-                    borderWidth:3,
-
-                    tension:.35,
-
-                    pointRadius:5,
-
-                    pointBackgroundColor:
-
-                    valores.map(
-
-                    x=>{
-
-                    if(x>=0.5)
-
-                    return"#FF5C5C"
-
-                    if(x<=-0.5)
-
-                    return"#4DA6FF"
-
-                    return"#C9D2DD"
-
+                    label: "ONI",
+                    data: valores,
+                    borderColor: "#5EC8F8",
+                    borderWidth: 2.5,
+                    backgroundColor: gradient,
+                    fill: true,
+                    tension: .35,
+                    pointRadius: valores.map(v => (Math.abs(v) >= 0.5 ? 5 : 3)),
+                    pointHoverRadius: 7,
+                    pointBackgroundColor: valores.map(v =>
+                        v >= 1.5  ? "#FF5252" :
+                        v >= 0.5  ? "#FF7043" :
+                        v <= -1.5 ? "#1E88E5" :
+                        v <= -0.5 ? "#42A5F5" :
+                                    "#78909C"
+                    ),
+                    pointBorderColor: "transparent",
+                    pointBorderWidth: 0,
+                },
+                {
+                    label: "El Niño +0.5",
+                    data: labels.map(() => 0.5),
+                    borderDash: [4, 4],
+                    borderColor: "rgba(255,112,67,.5)",
+                    borderWidth: 1,
+                    pointRadius: 0,
+                    fill: false,
+                },
+                {
+                    label: "La Niña −0.5",
+                    data: labels.map(() => -0.5),
+                    borderDash: [4, 4],
+                    borderColor: "rgba(66,165,245,.5)",
+                    borderWidth: 1,
+                    pointRadius: 0,
+                    fill: false,
+                },
+                {
+                    label: "El Niño forte +1.5",
+                    data: labels.map(() => 1.5),
+                    borderDash: [2, 6],
+                    borderColor: "rgba(255,82,82,.35)",
+                    borderWidth: 1,
+                    pointRadius: 0,
+                    fill: false,
+                },
+                {
+                    label: "La Niña forte −1.5",
+                    data: labels.map(() => -1.5),
+                    borderDash: [2, 6],
+                    borderColor: "rgba(30,136,229,.35)",
+                    borderWidth: 1,
+                    pointRadius: 0,
+                    fill: false,
+                },
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { intersect: false, mode: "index" },
+            plugins: {
+                legend: {
+                    position: "bottom",
+                    labels: {
+                        color: "#546A84",
+                        boxWidth: 20,
+                        boxHeight: 2,
+                        font: { size: 11 },
+                        filter: item => item.text === "ONI",
                     }
-
-                    )
-
                 },
-
-                {
-
-                    label:
-
-                    "El Niño",
-
-                    data:
-
-                    labels.map(
-                    ()=>0.5
-                    ),
-
-                    borderDash:[5,5],
-
-                    borderColor:"#FF6464",
-
-                    pointRadius:0
-
-                },
-
-                {
-
-                    label:
-
-                    "La Niña",
-
-                    data:
-
-                    labels.map(
-                    ()=>-0.5
-                    ),
-
-                    borderDash:[5,5],
-
-                    borderColor:"#4DA6FF",
-
-                    pointRadius:0
-
+                tooltip: {
+                    backgroundColor: "#0E1E30",
+                    borderColor: "rgba(255,255,255,.1)",
+                    borderWidth: 1,
+                    titleColor: "#E8EEF5",
+                    bodyColor: "#8EA2BE",
+                    padding: 12,
+                    callbacks: {
+                        label: ctx => ctx.dataset.label === "ONI"
+                            ? ` ONI: ${ctx.parsed.y.toFixed(2)}`
+                            : null,
+                        afterLabel: ctx => {
+                            if (ctx.dataset.label !== "ONI") return null
+                            const v = ctx.parsed.y
+                            return v >= 1.5  ? " ⚠ El Niño forte"
+                                 : v >= 0.5  ? " El Niño"
+                                 : v <= -1.5 ? " ⚠ La Niña forte"
+                                 : v <= -0.5 ? " La Niña"
+                                 : " Neutro"
+                        }
+                    }
                 }
-
-                ]
-
+            },
+            scales: {
+                x: {
+                    grid:   { color: "rgba(255,255,255,.04)" },
+                    ticks:  { color: "#546A84", font: { size: 11 }, maxRotation: 0,
+                              callback: (_, i) => i % 3 === 0 ? labels[i] : "" }
+                },
+                y: {
+                    grid:   { color: "rgba(255,255,255,.05)" },
+                    ticks:  { color: "#546A84", font: { size: 11 },
+                              callback: v => v.toFixed(1) },
+                    border: { dash: [4, 4] }
+                }
             }
-
         }
-
-    )
-
+    })
 }
 
-
-function mostrarErro(msg){
-
-    document
-    .getElementById(
-        "erro"
-    )
-    .innerText=
-    msg
-
-}
-
-
+// ── Init ─────────────────────────────────────────────────────────────
 carregarStatus()
-
 carregarHistorico()
-
 carregarInsight()
-
 carregarTendencia()
-
 carregarAtualizacao()
-
 carregarAlertas()

@@ -112,8 +112,28 @@ def climate_status():
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT oni, classificacao, nino_34_anom AS nino34, fase
-            FROM climate.vw_enso_status
+            SELECT
+                o.oni,
+                o.classificacao,
+                s.nino_34_anom,
+                CASE
+                    WHEN o.classificacao = 'EL_NINO' THEN 'El Niño'
+                    WHEN o.classificacao = 'LA_NINA' THEN 'La Niña'
+                    ELSE 'Neutro'
+                END AS fase
+            FROM (
+                SELECT oni, classificacao
+                FROM climate.noaa_oni
+                WHERE oni > -99
+                ORDER BY data_referencia DESC
+                LIMIT 1
+            ) o
+            CROSS JOIN (
+                SELECT nino_34_anom
+                FROM climate.noaa_sst_indices
+                ORDER BY data_referencia DESC
+                LIMIT 1
+            ) s
         """)
 
         r = cursor.fetchone()

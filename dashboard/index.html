@@ -1,390 +1,174 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
-
     <meta charset="utf-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1"
-    >
-
-    <title>
-        Expansão AI Climate Dashboard
-    </title>
-
-    <link
-        rel="stylesheet"
-        href="style.css"
-    >
-
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Expansão AI Climate</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
 </head>
+<body class="neutral">
 
-<body>
+<div class="phase-bar" id="phase-bar"></div>
 
 <header>
-
-    <h1>
-        🌍 Expansão AI Climate
-    </h1>
-
-    <p>
-        Monitoramento climático global baseado em NOAA + ENSO + IA
-    </p>
-
+    <div class="header-inner">
+        <div class="header-brand">
+            <span class="brand-icon">🌍</span>
+            <div>
+                <h1>Expansão AI Climate</h1>
+                <p class="brand-sub">Monitoramento climático global · NOAA · ENSO · IA</p>
+            </div>
+        </div>
+        <div class="phase-pill" id="phase-pill">
+            <span class="phase-dot"></span>
+            <span id="phase-label">Carregando...</span>
+        </div>
+    </div>
 </header>
 
-<section
-    id="erro"
-    class="erro"
-></section>
+<main>
 
+    <div id="erro" class="error-bar hidden"></div>
 
-<section class="cards">
+    <!-- Hero metrics -->
+    <section class="hero-grid">
 
-    <div class="card">
-
-        <h3>
-
-            🌊 ONI
-
-            <span
-                class="info"
-                title="ONI significa Oceanic Niño Index. É um índice usado para acompanhar a anomalia de temperatura no Pacífico Equatorial e ajudar na classificação de El Niño, La Niña ou neutralidade."
-            >
-                ℹ️
-            </span>
-
-        </h3>
-
-        <div
-            class="valor"
-            id="oni"
-        >
-            --
+        <div class="card card-hero">
+            <div class="card-label">Índice ONI
+                <span class="tooltip-icon" title="Oceanic Niño Index — mede a anomalia de temperatura no Pacífico Equatorial Central (região Niño 3.4). Base para classificação ENSO.">ℹ</span>
+            </div>
+            <div class="hero-value" id="oni">
+                <span class="skeleton">----</span>
+            </div>
+            <div class="hero-unit">anomalia de temperatura (°C)</div>
+            <div class="oni-bar-wrap">
+                <div class="oni-bar">
+                    <div class="oni-bar-fill" id="oni-bar-fill"></div>
+                    <div class="oni-bar-zero"></div>
+                </div>
+                <div class="oni-bar-labels">
+                    <span>La Niña −2</span>
+                    <span>0</span>
+                    <span>El Niño +2</span>
+                </div>
+            </div>
         </div>
+
+        <div class="card card-phase">
+            <div class="card-label">Fase ENSO</div>
+            <div class="phase-display" id="status"><span class="skeleton">------</span></div>
+            <div class="phase-name" id="fase"><span class="skeleton">-------</span></div>
+            <div class="phase-desc" id="phase-desc"></div>
+        </div>
+
+        <div class="card">
+            <div class="card-label">Niño 3.4
+                <span class="tooltip-icon" title="Anomalia de temperatura da superfície do mar na região Niño 3.4 (5°N–5°S, 120°–170°W). Referência principal do monitoramento ENSO.">ℹ</span>
+            </div>
+            <div class="metric-value" id="nino34"><span class="skeleton">----</span></div>
+            <div class="metric-unit">anomalia SST (°C)</div>
+        </div>
+
+        <div class="card">
+            <div class="card-label">Tendência ONI
+                <span class="tooltip-icon" title="Variação do ONI em relação ao mês anterior.">ℹ</span>
+            </div>
+            <div class="trend-value" id="tendencia"><span class="skeleton">------</span></div>
+            <div class="metric-unit delta" id="variacao"><span class="skeleton">-----</span></div>
+        </div>
+
+        <div class="card">
+            <div class="card-label">Dados NOAA</div>
+            <div class="metric-value sm" id="ultimaAtualizacao"><span class="skeleton">-------</span></div>
+            <div class="metric-unit" id="fonte"><span class="skeleton">----</span></div>
+        </div>
+
+    </section>
+
+    <!-- Chart -->
+    <section class="panel">
+        <div class="panel-header">
+            <h2 class="panel-title">Histórico ONI</h2>
+            <span class="panel-sub">últimos 24 meses</span>
+        </div>
+        <div class="chart-wrap">
+            <canvas id="oniChart"></canvas>
+        </div>
+    </section>
+
+    <!-- Insight + Alerts -->
+    <div class="two-col">
+
+        <section class="panel">
+            <div class="panel-header">
+                <h2 class="panel-title">🧠 Insight Operacional</h2>
+            </div>
+            <p id="analysis" class="insight-text">
+                <span class="skeleton skeleton-line"></span>
+                <span class="skeleton skeleton-line short"></span>
+            </p>
+        </section>
+
+        <section class="panel">
+            <div class="panel-header">
+                <h2 class="panel-title">Alertas Operacionais</h2>
+                <span class="alert-count" id="alert-count"></span>
+            </div>
+            <div id="climate-alerts">
+                <div class="loading-alerts">
+                    <span class="skeleton skeleton-alert"></span>
+                    <span class="skeleton skeleton-alert"></span>
+                </div>
+            </div>
+        </section>
 
     </div>
 
-
-    <div class="card">
-
-        <h3>
-
-            🌎 ENSO
-
-            <span
-                class="info"
-                title="ENSO significa El Niño Southern Oscillation. É o fenômeno climático associado ao aquecimento ou resfriamento anormal das águas do Pacífico Equatorial."
-            >
-                ℹ️
-            </span>
-
-        </h3>
-
-        <div
-            class="status"
-            id="status"
-        >
-            --
+    <!-- Glossary -->
+    <details class="panel glossary">
+        <summary class="panel-header glossary-summary">
+            <h2 class="panel-title">📘 Glossário rápido</h2>
+        </summary>
+        <div class="glossary-grid">
+            <div class="glossary-item">
+                <strong>ONI</strong>
+                <p>Oceanic Niño Index. Mede a anomalia de temperatura na região Niño 3.4 do Pacífico Equatorial.</p>
+            </div>
+            <div class="glossary-item">
+                <strong>ENSO</strong>
+                <p>El Niño Southern Oscillation. Fenômeno climático ligado ao aquecimento ou resfriamento do Pacífico.</p>
+            </div>
+            <div class="glossary-item">
+                <strong>SST</strong>
+                <p>Sea Surface Temperature. Temperatura da superfície do mar, medida em regiões-chave do Pacífico.</p>
+            </div>
+            <div class="glossary-item">
+                <strong>Niño 3.4</strong>
+                <p>Região entre 5°N–5°S e 120°–170°W, usada como referência operacional principal para o monitoramento ENSO.</p>
+            </div>
+            <div class="glossary-item">
+                <strong>El Niño</strong>
+                <p>Aquecimento anormal do Pacífico Equatorial. ONI ≥ 0.5 por 5+ meses consecutivos.</p>
+            </div>
+            <div class="glossary-item">
+                <strong>La Niña</strong>
+                <p>Resfriamento anormal do Pacífico Equatorial. ONI ≤ −0.5 por 5+ meses consecutivos.</p>
+            </div>
         </div>
+    </details>
 
-    </div>
-
-
-    <div class="card">
-
-        <h3>
-
-            🌡️ Niño 3.4
-
-            <span
-                class="info"
-                title="Niño 3.4 é uma região específica do Pacífico Equatorial usada como referência principal para acompanhar El Niño e La Niña."
-            >
-                ℹ️
-            </span>
-
-        </h3>
-
-        <div
-            class="valor"
-            id="nino34"
-        >
-            --
-        </div>
-
-    </div>
-
-
-    <div class="card">
-
-        <h3>
-
-            📡 Fase SST
-
-            <span
-                class="info"
-                title="SST significa Sea Surface Temperature, ou temperatura da superfície do mar."
-            >
-                ℹ️
-            </span>
-
-        </h3>
-
-        <div
-            class="status"
-            id="fase"
-        >
-            --
-        </div>
-
-    </div>
-
-
-    <div class="card">
-
-        <h3>
-
-            📈 Tendência ONI
-
-            <span
-                class="info"
-                title="Mostra se o ONI está subindo, caindo ou estável em relação ao mês anterior."
-            >
-                ℹ️
-            </span>
-
-        </h3>
-
-        <div
-            class="status"
-            id="tendencia"
-        >
-            --
-        </div>
-
-        <div
-            class="subvalor"
-            id="variacao"
-        >
-            --
-        </div>
-
-    </div>
-
-
-    <div class="card">
-
-        <h3>
-
-            🕒 NOAA Atualizado
-
-            <span
-                class="info"
-                title="Mostra o período mais recente disponível na base NOAA carregada."
-            >
-                ℹ️
-            </span>
-
-        </h3>
-
-        <div
-            class="status"
-            id="ultimaAtualizacao"
-        >
-            --
-        </div>
-
-        <div
-            class="subvalor"
-            id="fonte"
-        >
-            --
-        </div>
-
-    </div>
-
-</section>
-
-
-<section class="chart-card">
-
-    <h3>
-
-        📈 Histórico ONI
-
-        <span
-            class="info"
-            title="Últimos 24 meses do índice ONI."
-        >
-            ℹ️
-        </span>
-
-    </h3>
-
-    <canvas
-        id="oniChart"
-    ></canvas>
-
-</section>
-
-
-<section class="chart-card">
-
-    <h3>
-
-        🧠 Expansão AI Insight
-
-        <span
-            class="info"
-            title="Resumo interpretativo gerado pelo sistema."
-        >
-            ℹ️
-        </span>
-
-    </h3>
-
-    <p id="analysis">
-
-        Carregando análise...
-
-    </p>
-
-</section>
-
-
-<section class="chart-card">
-
-    <h3>
-
-        🚨 Alertas Operacionais
-
-        <span
-            class="info"
-            title="Alertas automáticos derivados dos dados NOAA e regras operacionais."
-        >
-            ℹ️
-        </span>
-
-    </h3>
-
-    <div
-        id="climate-alerts"
-    >
-
-        Carregando alertas...
-
-    </div>
-
-</section>
-
-
-<section class="glossario">
-
-<h3>
-
-📘 Glossário rápido
-
-</h3>
-
-
-<div class="glossario-grid">
-
-<div>
-
-<strong>ONI</strong>
-
-<p>
-
-Índice usado para acompanhar El Niño, La Niña e neutralidade.
-
-</p>
-
-</div>
-
-
-<div>
-
-<strong>ENSO</strong>
-
-<p>
-
-Fenômeno climático ligado ao Pacífico Equatorial.
-
-</p>
-
-</div>
-
-
-<div>
-
-<strong>SST</strong>
-
-<p>
-
-Temperatura da superfície do mar.
-
-</p>
-
-</div>
-
-
-<div>
-
-<strong>Niño 3.4</strong>
-
-<p>
-
-Região usada para monitoramento operacional.
-
-</p>
-
-</div>
-
-
-<div>
-
-<strong>El Niño</strong>
-
-<p>
-
-Aquecimento anormal do Pacífico Equatorial.
-
-</p>
-
-</div>
-
-
-<div>
-
-<strong>La Niña</strong>
-
-<p>
-
-Resfriamento anormal do Pacífico Equatorial.
-
-</p>
-
-</div>
-
-</div>
-
-</section>
-
+</main>
 
 <footer>
-
-NOAA • ENSO • Expansão AI Climate • Informação de apoio
-
+    <span>NOAA · ENSO · Expansão AI Climate</span>
+    <span class="footer-sep">·</span>
+    <span>Informação de apoio — não substitui fontes oficiais</span>
 </footer>
 
-
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <script src="app.js"></script>
-
 </body>
-
 </html>
