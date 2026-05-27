@@ -1,6 +1,7 @@
 from app.services.climate_alert_engine import (
     classify_oni_alert,
     check_enso_persistence,
+    check_sst_oni_combined,
     generate_alerts_from_oni,
 )
 
@@ -147,6 +148,49 @@ def test_persistence_custom_months():
     alert = check_enso_persistence([0.6, 0.7, 0.8, 0.9, 1.0], months=5)
     assert alert is not None
     assert "5 meses" in alert["title"]
+
+
+# --- SST + ONI combinados ---
+
+def test_sst_oni_combined_triggers_warning():
+    """ONI subindo + Niño 3.4 acima do limiar → WARNING"""
+    alert = check_sst_oni_combined(current_oni=0.8, previous_oni=0.5, nino34_anom=0.7)
+    assert alert is not None
+    assert alert["alert_type"] == "SST_ONI_COMBINED_WARNING"
+    assert alert["severity"] == "WARNING"
+
+
+def test_sst_oni_no_alert_when_nino34_below_threshold():
+    """ONI subindo mas Niño 3.4 frio → sem alerta"""
+    alert = check_sst_oni_combined(current_oni=0.8, previous_oni=0.5, nino34_anom=0.3)
+    assert alert is None
+
+
+def test_sst_oni_no_alert_when_oni_stable():
+    """Niño 3.4 aquecido mas ONI estável → sem alerta"""
+    alert = check_sst_oni_combined(current_oni=0.6, previous_oni=0.55, nino34_anom=0.8)
+    assert alert is None
+
+
+def test_sst_oni_no_alert_when_oni_falling():
+    """ONI caindo mesmo com Niño 3.4 aquecido → sem alerta"""
+    alert = check_sst_oni_combined(current_oni=0.3, previous_oni=0.6, nino34_anom=0.9)
+    assert alert is None
+
+
+def test_sst_oni_custom_nino34_threshold():
+    """Threshold customizado de 1.0 não dispara com Niño 3.4 = 0.7"""
+    alert = check_sst_oni_combined(
+        current_oni=0.8, previous_oni=0.5, nino34_anom=0.7, nino34_threshold=1.0
+    )
+    assert alert is None
+
+
+def test_sst_oni_message_contains_values():
+    """Mensagem deve incluir os valores observados"""
+    alert = check_sst_oni_combined(current_oni=0.9, previous_oni=0.6, nino34_anom=0.8)
+    assert "0.8" in alert["message"]
+    assert "0.3" in alert["message"]  # variação
 
 
 # --- Estrutura ---

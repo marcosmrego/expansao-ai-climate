@@ -2,7 +2,7 @@ import logging
 from typing import Optional
 
 from database.db import conectar
-from app.services.climate_alert_engine import check_enso_persistence
+from app.services.climate_alert_engine import check_enso_persistence, check_sst_oni_combined
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +92,54 @@ def check_and_save_persistence_alert(months: int = 3) -> Optional[dict]:
 
     except Exception as e:
         logger.error("Erro ao verificar persistência ENSO: %s", e)
+        raise
+    finally:
+        conn.close()
+
+
+def check_and_save_sst_oni_alert() -> Optional[dict]:
+    """Queries latest ONI trend and Niño 3.4 anomaly; saves alert if combined signal detected."""
+    conn = conectar()
+
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT oni FROM climate.noaa_oni
+                WHERE oni > -99
+                ORDER BY data_referencia DESC
+                LIMIT 2;
+                """
+            )
+            oni_rows = cursor.fetchall()
+
+            if len(oni_rows) < 2:
+                return None
+
+            cursor.execute(
+                """
+                SELECT nino_34_anom FROM climate.noaa_sst_indices
+                ORDER BY data_referencia DESC
+                LIMIT 1;
+                """
+            )
+            sst_row = cursor.fetchone()
+
+        if not sst_row:
+            return None
+
+        current_oni = float(oni_rows[0][0])
+        previous_oni = float(oni_rows[1][0])
+        nino34_anom = float(sst_row[0])
+
+        alert = check_sst_oni_combined(current_oni, previous_oni, nino34_anom)
+
+        if alert:
+            return save_alert(alert)
+        return None
+
+    except Exception as e:
+        logger.error("Erro ao verificar sinal combinado SST+ONI: %s", e)
         raise
     finally:
         conn.close()

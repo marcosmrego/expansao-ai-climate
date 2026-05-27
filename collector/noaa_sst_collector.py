@@ -8,6 +8,7 @@ import requests
 from dotenv import load_dotenv
 
 from database.db import conectar
+from app.services.climate_alert_repository import check_and_save_sst_oni_alert
 
 
 URL = "https://www.cpc.ncep.noaa.gov/data/indices/ersst5.nino.mth.91-20.ascii"
@@ -175,6 +176,12 @@ def main():
 
         print(f"Payload salvo: {raw_payload_id}")
         print(f"Registros processados: {total}")
+
+        result = check_and_save_sst_oni_alert()
+        if result and not result.get("skipped"):
+            print(f"Alerta combinado SST+ONI gerado: id={result['id']}")
+        elif result and result.get("skipped"):
+            print("Sinal combinado SST+ONI já registrado nas últimas 24h, ignorando.")
 
     except Exception as erro:
         conn.rollback()

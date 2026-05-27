@@ -164,6 +164,35 @@ def check_enso_persistence(
     return None
 
 
+def check_sst_oni_combined(
+    current_oni: float,
+    previous_oni: float,
+    nino34_anom: float,
+    nino34_threshold: float = 0.5,
+) -> Optional[Dict[str, Any]]:
+    """
+    Returns a WARNING if ONI is trending up (variation >= _TREND_INFO)
+    AND Niño 3.4 anomaly is above nino34_threshold.
+    """
+    variation = round(current_oni - previous_oni, 2)
+
+    if variation >= _TREND_INFO and nino34_anom > nino34_threshold:
+        return {
+            "alert_type": "SST_ONI_COMBINED_WARNING",
+            "severity": "WARNING",
+            "title": "Sinal combinado: ONI em alta + Niño 3.4 aquecido",
+            "message": (
+                f"O índice ONI está em tendência de alta (variação de +{variation}) "
+                f"e a anomalia do Niño 3.4 está em {nino34_anom}°C, "
+                f"acima do limiar de {nino34_threshold}°C. "
+                "Esse sinal combinado pode indicar desenvolvimento ou intensificação de El Niño."
+            ),
+            "source": "NOAA"
+        }
+
+    return None
+
+
 def generate_alerts_from_oni(current_oni: float, previous_oni: float) -> Dict[str, Any]:
     alerts = classify_oni_alert(current_oni, previous_oni)
 
