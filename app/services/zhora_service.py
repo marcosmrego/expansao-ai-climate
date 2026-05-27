@@ -3,7 +3,7 @@ import logging
 import os
 from typing import Optional
 
-import google.generativeai as genai
+import httpx
 
 from database.db import conectar
 
@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 GEMINI_API_KEY = os.getenv("GOOGLE_API_KEY", "")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+_GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
 
 _SYSTEM_PROMPT = (
     "Você é Zhora, assistente especialista em análise climática do projeto Expansão AI Climate.\n"
@@ -182,19 +183,28 @@ def ask_gemini(question: str, context_text: str) -> str:
             "GOOGLE_API_KEY não configurado. Defina a variável de ambiente."
         )
 
-    genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel(
-        model_name=GEMINI_MODEL,
-        system_instruction=_SYSTEM_PROMPT,
-    )
-
-    prompt = (
-        f"CONTEXTO CLIMÁTICO ATUAL:\n{context_text}\n\n"
-        f"PERGUNTA: {question}"
-    )
+    url = f"{_GEMINI_BASE}/{GEMINI_MODEL}:generateContent?key={GEMINI_API_KEY}"
+    payload = {
+        "system_instruction": {"parts": [{"text": _SYSTEM_PROMPT}]},
+        "contents": [
+            {
+                "parts": [
+                    {
+                        "text": (
+                            f"CONTEXTO CLIMÁTICO ATUAL:\n{context_text}\n\n"
+                            f"PERGUNTA: {question}"
+                        )
+                    }
+                ]
+            }
+        ],
+    }
 
     try:
-        response = model.generate_content(prompt)
-        return response.text
+        response = httpx.post(url, json=payload, timeout=30.0)
+        response.raise_for_status()
+        return response.json()["candidates"][0]["content"]["parts"][0]["text"]
+    except httpx.HTTPStatusError as e:
+        raise RuntimeError(f"Gemini retornou erro HTTP {e.response.status_code}: {e.response.text}")
     except Exception as e:
         raise RuntimeError(f"Erro ao chamar Gemini ({GEMINI_MODEL}): {e}")
