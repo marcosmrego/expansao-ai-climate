@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 from database.db import conectar
 from app.routes.climate_alerts import router as climate_alert_router
+from app.routes.zhora import router as zhora_router
 
 
 class _TTLCache:
@@ -84,9 +85,8 @@ app.add_middleware(
 )
 
 
-app.include_router(
-    climate_alert_router
-)
+app.include_router(climate_alert_router)
+app.include_router(zhora_router)
 
 
 @app.get("/health")

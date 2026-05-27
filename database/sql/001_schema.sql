@@ -54,6 +54,18 @@ CREATE TABLE IF NOT EXISTS climate.climate_alerts (
     resolved_at TIMESTAMPTZ
 );
 
+CREATE TABLE IF NOT EXISTS climate.operational_context (
+    id           SERIAL PRIMARY KEY,
+    context_type TEXT NOT NULL DEFAULT 'CLIMATE_SUMMARY',
+    content      TEXT NOT NULL,
+    oni_snapshot NUMERIC(5,2),
+    metadata     JSONB,
+    created_at   TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_operational_context_type_created
+    ON climate.operational_context (context_type, created_at DESC);
+
 -- Columns used by the API (SELECT *):
 -- r[0] data_referencia, r[1] periodo, r[2] oni, r[3] classificacao,
 -- r[4] data_sst, r[5] nino_34_temp, r[6] nino_34_anom, r[7] classificacao_enso, r[8] fase

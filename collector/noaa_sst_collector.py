@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 
 from database.db import conectar
 from app.services.climate_alert_repository import check_and_save_sst_oni_alert
+from app.services.zhora_service import build_climate_context, save_context_snapshot
 
 
 URL = "https://www.cpc.ncep.noaa.gov/data/indices/ersst5.nino.mth.91-20.ascii"
@@ -182,6 +183,10 @@ def main():
             print(f"Alerta combinado SST+ONI gerado: id={result['id']}")
         elif result and result.get("skipped"):
             print("Sinal combinado SST+ONI já registrado nas últimas 24h, ignorando.")
+
+        ctx = build_climate_context()
+        snapshot_id = save_context_snapshot(ctx)
+        print(f"Contexto operacional atualizado: snapshot_id={snapshot_id}")
 
     except Exception as erro:
         conn.rollback()
