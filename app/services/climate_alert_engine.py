@@ -1,31 +1,57 @@
 from datetime import datetime, timezone
 from typing import List, Dict, Any
 
+# NOAA ONI thresholds
+_ONI_THRESHOLD = 0.5         # Limiar de detecção El Niño / La Niña
+_ONI_STRONG_THRESHOLD = 1.5  # Evento forte → CRITICAL
+
+# Trend thresholds
+_TREND_WARNING = 0.3  # Variação brusca → WARNING
+_TREND_INFO = 0.2     # Variação normal → INFO
+
+
+def _enso_severity(oni: float) -> str:
+    return "CRITICAL" if abs(oni) >= _ONI_STRONG_THRESHOLD else "WARNING"
+
 
 def classify_oni_alert(current_oni: float, previous_oni: float) -> List[Dict[str, Any]]:
     alerts = []
 
     variation = round(current_oni - previous_oni, 2)
 
-    if current_oni >= 0.5:
+    if current_oni >= _ONI_THRESHOLD:
+        severity = _enso_severity(current_oni)
+        prefix = "Evento forte de" if severity == "CRITICAL" else "Possível condição de"
+        detail = (
+            f", acima do limiar de El Niño forte ({_ONI_STRONG_THRESHOLD})."
+            if severity == "CRITICAL"
+            else f", acima do limite de {_ONI_THRESHOLD}."
+        )
         alerts.append({
             "alert_type": "EL_NINO_CONDITION",
-            "severity": "WARNING",
-            "title": "Possível condição de El Niño",
+            "severity": severity,
+            "title": f"{prefix} El Niño",
             "message": (
-                f"O índice ONI está em {current_oni}, acima do limite de 0.5. "
+                f"O índice ONI está em {current_oni}{detail} "
                 "Isso pode indicar condição favorável ao El Niño, dependendo da persistência nos próximos períodos."
             ),
             "source": "NOAA"
         })
 
-    elif current_oni <= -0.5:
+    elif current_oni <= -_ONI_THRESHOLD:
+        severity = _enso_severity(current_oni)
+        prefix = "Evento forte de" if severity == "CRITICAL" else "Possível condição de"
+        detail = (
+            f", abaixo do limiar de La Niña forte (-{_ONI_STRONG_THRESHOLD})."
+            if severity == "CRITICAL"
+            else f", abaixo do limite de -{_ONI_THRESHOLD}."
+        )
         alerts.append({
             "alert_type": "LA_NINA_CONDITION",
-            "severity": "WARNING",
-            "title": "Possível condição de La Niña",
+            "severity": severity,
+            "title": f"{prefix} La Niña",
             "message": (
-                f"O índice ONI está em {current_oni}, abaixo do limite de -0.5. "
+                f"O índice ONI está em {current_oni}{detail} "
                 "Isso pode indicar condição favorável à La Niña, dependendo da persistência nos próximos períodos."
             ),
             "source": "NOAA"
@@ -37,24 +63,46 @@ def classify_oni_alert(current_oni: float, previous_oni: float) -> List[Dict[str
             "severity": "INFO",
             "title": "Condição climática neutra",
             "message": (
-                f"O índice ONI está em {current_oni}, dentro da faixa neutra entre -0.5 e 0.5."
+                f"O índice ONI está em {current_oni}, "
+                f"dentro da faixa neutra entre -{_ONI_THRESHOLD} e {_ONI_THRESHOLD}."
             ),
             "source": "NOAA"
         })
 
-    if variation >= 0.2:
+    if variation >= _TREND_WARNING:
+        alerts.append({
+            "alert_type": "ONI_TREND_UP",
+            "severity": "WARNING",
+            "title": "Aquecimento acelerado detectado",
+            "message": (
+                f"O ONI subiu de {previous_oni} para {current_oni}, variação rápida de +{variation}. "
+                "Aquecimento acelerado pode indicar intensificação do evento climático."
+            ),
+            "source": "NOAA"
+        })
+    elif variation >= _TREND_INFO:
         alerts.append({
             "alert_type": "ONI_TREND_UP",
             "severity": "INFO",
             "title": "Tendência de aquecimento",
             "message": (
-                f"O ONI subiu de {previous_oni} para {current_oni}, uma variação de {variation}. "
+                f"O ONI subiu de {previous_oni} para {current_oni}, uma variação de +{variation}. "
                 "Isso indica aquecimento recente na região monitorada do Pacífico."
             ),
             "source": "NOAA"
         })
-
-    elif variation <= -0.2:
+    elif variation <= -_TREND_WARNING:
+        alerts.append({
+            "alert_type": "ONI_TREND_DOWN",
+            "severity": "WARNING",
+            "title": "Resfriamento acelerado detectado",
+            "message": (
+                f"O ONI caiu de {previous_oni} para {current_oni}, variação rápida de {variation}. "
+                "Resfriamento acelerado pode indicar intensificação do evento climático."
+            ),
+            "source": "NOAA"
+        })
+    elif variation <= -_TREND_INFO:
         alerts.append({
             "alert_type": "ONI_TREND_DOWN",
             "severity": "INFO",
