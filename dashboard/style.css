@@ -186,7 +186,7 @@ main {
 /* ── Hero grid ──────────────────────────────────────────────────────── */
 .hero-grid {
     display: grid;
-    grid-template-columns: 1.8fr 1.4fr 1fr 1fr 1fr;
+    grid-template-columns: 1.8fr 1.4fr 1fr 1fr 1fr 1fr;
     gap: 16px;
 }
 

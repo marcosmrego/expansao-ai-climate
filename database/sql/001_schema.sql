@@ -54,6 +54,19 @@ CREATE TABLE IF NOT EXISTS climate.climate_alerts (
     resolved_at TIMESTAMPTZ
 );
 
+CREATE TABLE IF NOT EXISTS climate.noaa_soi (
+    id              SERIAL PRIMARY KEY,
+    data_referencia DATE NOT NULL,
+    ano             INTEGER NOT NULL,
+    mes             INTEGER NOT NULL,
+    soi             NUMERIC(6,2) NOT NULL,
+    classificacao   TEXT NOT NULL,
+    fonte           TEXT,
+    payload_bruto   JSONB,
+    criado_em       TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE (ano, mes)
+);
+
 CREATE TABLE IF NOT EXISTS climate.operational_context (
     id           SERIAL PRIMARY KEY,
     context_type TEXT NOT NULL DEFAULT 'CLIMATE_SUMMARY',

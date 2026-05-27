@@ -3,6 +3,8 @@ from app.services.climate_alert_engine import (
     check_enso_persistence,
     check_sst_oni_combined,
     generate_alerts_from_oni,
+    classify_soi_alert,
+    check_soi_oni_agreement,
 )
 
 
@@ -213,3 +215,117 @@ def test_each_alert_has_required_fields():
         assert "title" in alert
         assert "message" in alert
         assert "source" in alert
+
+
+# ────────────────────────────────────────────────────────────────────
+# SOI — condições
+# ────────────────────────────────────────────────────────────────────
+
+def test_soi_el_nino_warning():
+    """SOI entre -1.0 e -1.79 → WARNING (sinal El Niño)"""
+    alerts = classify_soi_alert(current_soi=-1.2, previous_soi=-0.8)
+    match = next(a for a in alerts if a["alert_type"] == "SOI_EL_NINO_SIGNAL")
+    assert match["severity"] == "WARNING"
+
+
+def test_soi_el_nino_critical():
+    """SOI <= -1.8 → CRITICAL"""
+    alerts = classify_soi_alert(current_soi=-2.0, previous_soi=-1.5)
+    match = next(a for a in alerts if a["alert_type"] == "SOI_EL_NINO_SIGNAL")
+    assert match["severity"] == "CRITICAL"
+
+
+def test_soi_la_nina_warning():
+    """SOI entre +1.0 e +1.79 → WARNING (sinal La Niña)"""
+    alerts = classify_soi_alert(current_soi=1.3, previous_soi=0.8)
+    match = next(a for a in alerts if a["alert_type"] == "SOI_LA_NINA_SIGNAL")
+    assert match["severity"] == "WARNING"
+
+
+def test_soi_la_nina_critical():
+    """SOI >= +1.8 → CRITICAL"""
+    alerts = classify_soi_alert(current_soi=2.0, previous_soi=1.5)
+    match = next(a for a in alerts if a["alert_type"] == "SOI_LA_NINA_SIGNAL")
+    assert match["severity"] == "CRITICAL"
+
+
+def test_soi_neutral():
+    """SOI entre -1.0 e +1.0 → INFO neutro"""
+    alerts = classify_soi_alert(current_soi=0.5, previous_soi=0.3)
+    match = next(a for a in alerts if a["alert_type"] == "SOI_NEUTRAL")
+    assert match["severity"] == "INFO"
+
+
+# ── SOI tendências ───────────────────────────────────────────────────
+
+def test_soi_trend_down_warning():
+    """Queda >= 0.5 → WARNING (sinal El Niño se desenvolvendo)"""
+    alerts = classify_soi_alert(current_soi=-1.0, previous_soi=-0.4)
+    match = next(a for a in alerts if a["alert_type"] == "SOI_TREND_DOWN")
+    assert match["severity"] == "WARNING"
+
+
+def test_soi_trend_down_info():
+    """Queda 0.3 a 0.49 → INFO"""
+    alerts = classify_soi_alert(current_soi=-0.5, previous_soi=-0.15)
+    match = next(a for a in alerts if a["alert_type"] == "SOI_TREND_DOWN")
+    assert match["severity"] == "INFO"
+
+
+def test_soi_trend_up_warning():
+    """Alta >= 0.5 → WARNING (sinal La Niña se desenvolvendo)"""
+    alerts = classify_soi_alert(current_soi=1.0, previous_soi=0.4)
+    match = next(a for a in alerts if a["alert_type"] == "SOI_TREND_UP")
+    assert match["severity"] == "WARNING"
+
+
+def test_soi_trend_up_info():
+    """Alta 0.3 a 0.49 → INFO"""
+    alerts = classify_soi_alert(current_soi=0.5, previous_soi=0.15)
+    match = next(a for a in alerts if a["alert_type"] == "SOI_TREND_UP")
+    assert match["severity"] == "INFO"
+
+
+def test_soi_no_trend_when_stable():
+    """Variação < 0.3 não gera alerta de tendência"""
+    alerts = classify_soi_alert(current_soi=0.5, previous_soi=0.3)
+    types = [a["alert_type"] for a in alerts]
+    assert "SOI_TREND_UP" not in types
+    assert "SOI_TREND_DOWN" not in types
+
+
+# ── ONI + SOI agreement ──────────────────────────────────────────────
+
+def test_soi_oni_agreement_el_nino_warning():
+    """ONI e SOI ambos apontando para El Niño (moderado) → WARNING"""
+    alert = check_soi_oni_agreement(soi=-1.2, oni=0.7)
+    assert alert is not None
+    assert alert["alert_type"] == "ONI_SOI_EL_NINO_AGREEMENT"
+    assert alert["severity"] == "WARNING"
+
+
+def test_soi_oni_agreement_el_nino_critical():
+    """Convergência El Niño com valores fortes → CRITICAL"""
+    alert = check_soi_oni_agreement(soi=-2.0, oni=1.7)
+    assert alert is not None
+    assert alert["severity"] == "CRITICAL"
+
+
+def test_soi_oni_agreement_la_nina_warning():
+    """ONI e SOI ambos apontando para La Niña → WARNING"""
+    alert = check_soi_oni_agreement(soi=1.2, oni=-0.7)
+    assert alert is not None
+    assert alert["alert_type"] == "ONI_SOI_LA_NINA_AGREEMENT"
+    assert alert["severity"] == "WARNING"
+
+
+def test_soi_oni_no_agreement_when_diverging():
+    """ONI El Niño + SOI La Niña → sem convergência"""
+    alert = check_soi_oni_agreement(soi=1.5, oni=0.8)
+    assert alert is None
+
+
+def test_soi_oni_no_agreement_when_neutral():
+    """Ambos neutros → sem convergência"""
+    alert = check_soi_oni_agreement(soi=0.3, oni=0.2)
+    assert alert is None

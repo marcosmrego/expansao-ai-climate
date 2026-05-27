@@ -2,7 +2,12 @@ import logging
 from typing import Optional
 
 from database.db import conectar
-from app.services.climate_alert_engine import check_enso_persistence, check_sst_oni_combined
+from app.services.climate_alert_engine import (
+    check_enso_persistence,
+    check_sst_oni_combined,
+    classify_soi_alert,
+    check_soi_oni_agreement,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -143,6 +148,60 @@ def check_and_save_sst_oni_alert() -> Optional[dict]:
         raise
     finally:
         conn.close()
+
+
+def check_and_save_soi_alerts() -> dict:
+    """Query last 2 SOI values + latest ONI, run SOI alert classification and ONI+SOI agreement check."""
+    conn = conectar()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT soi FROM climate.noaa_soi
+                WHERE soi > -99
+                ORDER BY data_referencia DESC
+                LIMIT 2;
+                """
+            )
+            soi_rows = cursor.fetchall()
+
+            if len(soi_rows) < 2:
+                return {"saved": 0, "skipped": True, "reason": "insufficient SOI data"}
+
+            cursor.execute(
+                """
+                SELECT oni FROM climate.noaa_oni
+                WHERE oni > -99
+                ORDER BY data_referencia DESC
+                LIMIT 1;
+                """
+            )
+            oni_row = cursor.fetchone()
+
+    except Exception as e:
+        logger.error("Erro ao consultar dados SOI: %s", e)
+        raise
+    finally:
+        conn.close()
+
+    current_soi = float(soi_rows[0][0])
+    previous_soi = float(soi_rows[1][0])
+
+    saved_ids = []
+
+    for alert in classify_soi_alert(current_soi, previous_soi):
+        result = save_alert(alert)
+        if not result.get("skipped"):
+            saved_ids.append(result["id"])
+
+    if oni_row:
+        agreement = check_soi_oni_agreement(current_soi, float(oni_row[0]))
+        if agreement:
+            result = save_alert(agreement)
+            if not result.get("skipped"):
+                saved_ids.append(result["id"])
+
+    return {"saved": len(saved_ids), "ids": saved_ids}
 
 
 def get_active_alerts(limit=10):

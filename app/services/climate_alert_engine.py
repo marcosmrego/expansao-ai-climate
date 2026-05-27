@@ -193,6 +193,171 @@ def check_sst_oni_combined(
     return None
 
 
+# SOI thresholds (note: SOI is INVERTED vs ONI — negative SOI = El Niño signal)
+_SOI_THRESHOLD = 1.0
+_SOI_STRONG_THRESHOLD = 1.8
+_SOI_TREND_INFO = 0.3
+_SOI_TREND_WARNING = 0.5
+
+
+def _soi_severity(soi: float) -> str:
+    return "CRITICAL" if abs(soi) >= _SOI_STRONG_THRESHOLD else "WARNING"
+
+
+def classify_soi_alert(current_soi: float, previous_soi: float) -> List[Dict[str, Any]]:
+    """
+    Classifies SOI-based alerts.
+    SOI is inverted vs ONI: negative SOI = El Niño signal, positive = La Niña signal.
+    """
+    alerts = []
+    variation = round(current_soi - previous_soi, 2)
+
+    if current_soi <= -_SOI_THRESHOLD:
+        severity = _soi_severity(current_soi)
+        prefix = "Sinal forte de" if severity == "CRITICAL" else "Sinal atmosférico de"
+        detail = (
+            f", abaixo do limiar forte de -{_SOI_STRONG_THRESHOLD}."
+            if severity == "CRITICAL"
+            else f", abaixo do limite de -{_SOI_THRESHOLD}."
+        )
+        alerts.append({
+            "alert_type": "SOI_EL_NINO_SIGNAL",
+            "severity": severity,
+            "title": f"{prefix} El Niño (SOI)",
+            "message": (
+                f"O Índice de Oscilação Sul (SOI) está em {current_soi}{detail} "
+                "SOI negativo indica pressão atmosférica mais baixa em Darwin, favorecendo o aquecimento do Pacífico."
+            ),
+            "source": "NOAA"
+        })
+
+    elif current_soi >= _SOI_THRESHOLD:
+        severity = _soi_severity(current_soi)
+        prefix = "Sinal forte de" if severity == "CRITICAL" else "Sinal atmosférico de"
+        detail = (
+            f", acima do limiar forte de {_SOI_STRONG_THRESHOLD}."
+            if severity == "CRITICAL"
+            else f", acima do limite de {_SOI_THRESHOLD}."
+        )
+        alerts.append({
+            "alert_type": "SOI_LA_NINA_SIGNAL",
+            "severity": severity,
+            "title": f"{prefix} La Niña (SOI)",
+            "message": (
+                f"O Índice de Oscilação Sul (SOI) está em {current_soi}{detail} "
+                "SOI positivo indica pressão atmosférica mais alta em Darwin, favorecendo o resfriamento do Pacífico."
+            ),
+            "source": "NOAA"
+        })
+
+    else:
+        alerts.append({
+            "alert_type": "SOI_NEUTRAL",
+            "severity": "INFO",
+            "title": "SOI em neutralidade",
+            "message": (
+                f"O Índice de Oscilação Sul (SOI) está em {current_soi}, "
+                f"dentro da faixa neutra entre -{_SOI_THRESHOLD} e {_SOI_THRESHOLD}."
+            ),
+            "source": "NOAA"
+        })
+
+    if variation <= -_SOI_TREND_WARNING:
+        alerts.append({
+            "alert_type": "SOI_TREND_DOWN",
+            "severity": "WARNING",
+            "title": "SOI em queda acelerada (sinal El Niño)",
+            "message": (
+                f"O SOI caiu de {previous_soi} para {current_soi}, variação de {variation}. "
+                "Queda acelerada no SOI pode indicar desenvolvimento ou intensificação de El Niño."
+            ),
+            "source": "NOAA"
+        })
+    elif variation <= -_SOI_TREND_INFO:
+        alerts.append({
+            "alert_type": "SOI_TREND_DOWN",
+            "severity": "INFO",
+            "title": "Tendência de queda no SOI",
+            "message": (
+                f"O SOI caiu de {previous_soi} para {current_soi}, variação de {variation}. "
+                "Indica pressão atmosférica favorecendo condições de El Niño."
+            ),
+            "source": "NOAA"
+        })
+    elif variation >= _SOI_TREND_WARNING:
+        alerts.append({
+            "alert_type": "SOI_TREND_UP",
+            "severity": "WARNING",
+            "title": "SOI em alta acelerada (sinal La Niña)",
+            "message": (
+                f"O SOI subiu de {previous_soi} para {current_soi}, variação de +{variation}. "
+                "Alta acelerada no SOI pode indicar desenvolvimento ou intensificação de La Niña."
+            ),
+            "source": "NOAA"
+        })
+    elif variation >= _SOI_TREND_INFO:
+        alerts.append({
+            "alert_type": "SOI_TREND_UP",
+            "severity": "INFO",
+            "title": "Tendência de alta no SOI",
+            "message": (
+                f"O SOI subiu de {previous_soi} para {current_soi}, variação de +{variation}. "
+                "Indica pressão atmosférica favorecendo condições de La Niña."
+            ),
+            "source": "NOAA"
+        })
+
+    return alerts
+
+
+def check_soi_oni_agreement(soi: float, oni: float) -> Optional[Dict[str, Any]]:
+    """
+    Returns an alert when SOI and ONI both signal the same ENSO phase.
+    Convergence of oceanic (ONI) and atmospheric (SOI) signals is the
+    most robust criterion for confirming an active ENSO event.
+    """
+    oni_el_nino = oni >= _ONI_THRESHOLD
+    oni_la_nina = oni <= -_ONI_THRESHOLD
+    soi_el_nino = soi <= -_SOI_THRESHOLD
+    soi_la_nina = soi >= _SOI_THRESHOLD
+
+    if oni_el_nino and soi_el_nino:
+        severity = (
+            "CRITICAL"
+            if oni >= _ONI_STRONG_THRESHOLD or abs(soi) >= _SOI_STRONG_THRESHOLD
+            else "WARNING"
+        )
+        return {
+            "alert_type": "ONI_SOI_EL_NINO_AGREEMENT",
+            "severity": severity,
+            "title": "Convergência ONI + SOI: El Niño confirmado",
+            "message": (
+                f"ONI ({oni}) e SOI ({soi}) apontam simultaneamente para El Niño. "
+                "A convergência oceânica e atmosférica é o critério mais robusto de confirmação do evento."
+            ),
+            "source": "NOAA"
+        }
+
+    if oni_la_nina and soi_la_nina:
+        severity = (
+            "CRITICAL"
+            if abs(oni) >= _ONI_STRONG_THRESHOLD or soi >= _SOI_STRONG_THRESHOLD
+            else "WARNING"
+        )
+        return {
+            "alert_type": "ONI_SOI_LA_NINA_AGREEMENT",
+            "severity": severity,
+            "title": "Convergência ONI + SOI: La Niña confirmada",
+            "message": (
+                f"ONI ({oni}) e SOI ({soi}) apontam simultaneamente para La Niña. "
+                "A convergência oceânica e atmosférica confirma o evento La Niña."
+            ),
+            "source": "NOAA"
+        }
+
+    return None
+
+
 def generate_alerts_from_oni(current_oni: float, previous_oni: float) -> Dict[str, Any]:
     alerts = classify_oni_alert(current_oni, previous_oni)
 

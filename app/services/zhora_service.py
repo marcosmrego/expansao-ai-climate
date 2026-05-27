@@ -49,6 +49,18 @@ def build_climate_context() -> dict:
                 LIMIT 5
             """)
             alert_rows = cur.fetchall()
+
+            try:
+                cur.execute("""
+                    SELECT soi, classificacao
+                    FROM climate.noaa_soi
+                    WHERE soi > -99
+                    ORDER BY data_referencia DESC
+                    LIMIT 1
+                """)
+                soi_row = cur.fetchone()
+            except Exception:
+                soi_row = None
     finally:
         conn.close()
 
@@ -56,6 +68,8 @@ def build_climate_context() -> dict:
     previous_oni = float(oni_rows[1][0]) if len(oni_rows) > 1 else None
     classificacao = oni_rows[0][1] if oni_rows else "NEUTRO"
     nino34_anom = float(sst_row[0]) if sst_row else None
+    soi = float(soi_row[0]) if soi_row else None
+    soi_classificacao = soi_row[1] if soi_row else None
 
     trend = None
     if current_oni is not None and previous_oni is not None:
@@ -72,6 +86,8 @@ def build_climate_context() -> dict:
         "classificacao": classificacao,
         "nino34_anom": nino34_anom,
         "trend": trend,
+        "soi": soi,
+        "soi_classificacao": soi_classificacao,
         "alerts": [
             {"severity": r[0], "title": r[1], "message": r[2]}
             for r in alert_rows
@@ -91,6 +107,10 @@ def context_to_text(ctx: dict) -> str:
         lines.append(f"- Anomalia Niño 3.4: {ctx['nino34_anom']:.2f} °C")
     if ctx["trend"]:
         lines.append(f"- Tendência ONI: {ctx['trend']}")
+    if ctx.get("soi") is not None:
+        soi_fase_map = {"EL_NINO": "sinal El Niño", "LA_NINA": "sinal La Niña", "NEUTRO": "neutro"}
+        soi_fase = soi_fase_map.get(ctx.get("soi_classificacao", "NEUTRO"), "neutro")
+        lines.append(f"- SOI: {ctx['soi']:.2f} ({soi_fase})")
 
     if ctx["alerts"]:
         lines.append("\nAlertas ativos:")
@@ -121,6 +141,8 @@ def save_context_snapshot(ctx: dict) -> int:
                         "classificacao": ctx["classificacao"],
                         "nino34_anom": ctx.get("nino34_anom"),
                         "trend": ctx.get("trend"),
+                        "soi": ctx.get("soi"),
+                        "soi_classificacao": ctx.get("soi_classificacao"),
                         "alert_count": len(ctx.get("alerts", [])),
                     }),
                 ),

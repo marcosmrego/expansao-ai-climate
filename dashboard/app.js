@@ -80,13 +80,33 @@ async function carregarStatus() {
     }
 }
 
+// ── SOI ──────────────────────────────────────────────────────────────
+async function carregarSOI() {
+    try {
+        const res = await fetch(`${API_BASE}/climate/soi`)
+        if (!res.ok) throw new Error(res.status)
+        const d = await res.json()
+        const faseTexts = { EL_NINO: "Sinal El Niño", LA_NINA: "Sinal La Niña", NEUTRO: "Neutro" }
+        document.getElementById("soi-value").textContent = d.soi.toFixed(2)
+        document.getElementById("soi-fase").textContent = faseTexts[d.classificacao] || d.classificacao
+    } catch {
+        registrarErro("SOI")
+        document.getElementById("soi-value").textContent = "—"
+        document.getElementById("soi-fase").textContent = "—"
+    }
+}
+
 // ── History ──────────────────────────────────────────────────────────
 async function carregarHistorico() {
     try {
-        const res = await fetch(`${API_BASE}/climate/history`)
-        if (!res.ok) throw new Error(res.status)
-        const dados = await res.json()
-        montarGrafico(dados)
+        const [resONI, resSOI] = await Promise.all([
+            fetch(`${API_BASE}/climate/history`),
+            fetch(`${API_BASE}/climate/soi/history`).catch(() => null)
+        ])
+        if (!resONI.ok) throw new Error(resONI.status)
+        const dadosONI = await resONI.json()
+        const dadosSOI = resSOI?.ok ? await resSOI.json() : []
+        montarGrafico(dadosONI, dadosSOI)
     } catch {
         registrarErro("histórico ONI")
     }
@@ -206,12 +226,15 @@ function renderizarAlertas(alertas) {
 }
 
 // ── Chart ────────────────────────────────────────────────────────────
-function montarGrafico(dados) {
+function montarGrafico(dados, dadosSOI = []) {
     const ctx = document.getElementById("oniChart")
     if (!ctx) return
 
     const labels = dados.map(x => x.periodo)
     const valores = dados.map(x => x.oni)
+
+    const soiMap = Object.fromEntries(dadosSOI.map(x => [x.periodo, x.soi]))
+    const soiValores = labels.map(l => soiMap[l] ?? null)
 
     const gradient = ctx.getContext("2d").createLinearGradient(0, 0, 0, 280)
     gradient.addColorStop(0,   "rgba(94,200,248,.25)")
@@ -279,6 +302,37 @@ function montarGrafico(dados) {
                     pointRadius: 0,
                     fill: false,
                 },
+                {
+                    label: "SOI",
+                    data: soiValores,
+                    borderColor: "#AB47BC",
+                    borderWidth: 2,
+                    borderDash: [6, 3],
+                    backgroundColor: "transparent",
+                    fill: false,
+                    tension: .35,
+                    pointRadius: 0,
+                    pointHoverRadius: 5,
+                    spanGaps: false,
+                },
+                {
+                    label: "SOI +1.0",
+                    data: labels.map(() => 1.0),
+                    borderDash: [3, 5],
+                    borderColor: "rgba(171,71,188,.3)",
+                    borderWidth: 1,
+                    pointRadius: 0,
+                    fill: false,
+                },
+                {
+                    label: "SOI −1.0",
+                    data: labels.map(() => -1.0),
+                    borderDash: [3, 5],
+                    borderColor: "rgba(171,71,188,.3)",
+                    borderWidth: 1,
+                    pointRadius: 0,
+                    fill: false,
+                },
             ]
         },
         options: {
@@ -293,7 +347,7 @@ function montarGrafico(dados) {
                         boxWidth: 20,
                         boxHeight: 2,
                         font: { size: 11 },
-                        filter: item => item.text === "ONI",
+                        filter: item => item.text === "ONI" || item.text === "SOI",
                     }
                 },
                 tooltip: {
@@ -304,9 +358,11 @@ function montarGrafico(dados) {
                     bodyColor: "#8EA2BE",
                     padding: 12,
                     callbacks: {
-                        label: ctx => ctx.dataset.label === "ONI"
-                            ? ` ONI: ${ctx.parsed.y.toFixed(2)}`
-                            : null,
+                        label: ctx => {
+                            if (ctx.dataset.label === "ONI") return ` ONI: ${ctx.parsed.y.toFixed(2)}`
+                            if (ctx.dataset.label === "SOI" && ctx.parsed.y !== null) return ` SOI: ${ctx.parsed.y.toFixed(2)}`
+                            return null
+                        },
                         afterLabel: ctx => {
                             if (ctx.dataset.label !== "ONI") return null
                             const v = ctx.parsed.y
@@ -339,6 +395,7 @@ function montarGrafico(dados) {
 // ── Init ─────────────────────────────────────────────────────────────
 carregarStatus()
 carregarHistorico()
+carregarSOI()
 carregarInsight()
 carregarTendencia()
 carregarAtualizacao()

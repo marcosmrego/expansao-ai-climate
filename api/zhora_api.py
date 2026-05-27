@@ -66,6 +66,18 @@ class UpdateResponse(BaseModel):
     fonte: str
 
 
+class SoiStatusResponse(BaseModel):
+    soi: float
+    classificacao: str
+    fase: str
+
+
+class SoiHistoryItem(BaseModel):
+    periodo: str
+    soi: float
+    classificacao: str
+
+
 app = FastAPI(
     title="Expansao AI Climate API"
 )
@@ -346,6 +358,77 @@ def climate_update():
     except Exception as e:
         logger.error("Erro em /climate/update: %s", e)
         raise HTTPException(status_code=500, detail="Erro ao consultar última atualização")
+    finally:
+        conn.close()
+
+
+@app.get("/climate/soi", response_model=SoiStatusResponse)
+def climate_soi():
+    cached = _cache.get("soi")
+    if cached:
+        return cached
+
+    conn = conectar()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT
+                soi,
+                classificacao,
+                CASE
+                    WHEN classificacao = 'EL_NINO' THEN 'El Niño'
+                    WHEN classificacao = 'LA_NINA' THEN 'La Niña'
+                    ELSE 'Neutro'
+                END AS fase
+            FROM climate.noaa_soi
+            WHERE soi > -99
+            ORDER BY data_referencia DESC
+            LIMIT 1
+        """)
+        r = cursor.fetchone()
+        if r is None:
+            raise HTTPException(status_code=404, detail="Sem dados SOI disponíveis")
+        result = {"soi": float(r[0]), "classificacao": r[1], "fase": r[2]}
+        _cache.set("soi", result)
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Erro em /climate/soi: %s", e)
+        raise HTTPException(status_code=500, detail="Erro ao consultar SOI")
+    finally:
+        conn.close()
+
+
+@app.get("/climate/soi/history", response_model=list[SoiHistoryItem])
+def climate_soi_history():
+    cached = _cache.get("soi_history")
+    if cached:
+        return cached
+
+    conn = conectar()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT
+                to_char(data_referencia, 'YYYY-MM'),
+                soi,
+                classificacao
+            FROM climate.noaa_soi
+            WHERE soi > -99
+            ORDER BY data_referencia DESC
+            LIMIT 24
+        """)
+        rows = cursor.fetchall()
+        dados = [
+            {"periodo": r[0], "soi": float(r[1]), "classificacao": r[2]}
+            for r in reversed(rows)
+        ]
+        _cache.set("soi_history", dados)
+        return dados
+    except Exception as e:
+        logger.error("Erro em /climate/soi/history: %s", e)
+        raise HTTPException(status_code=500, detail="Erro ao consultar histórico SOI")
     finally:
         conn.close()
 
