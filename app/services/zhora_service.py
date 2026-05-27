@@ -3,15 +3,14 @@ import logging
 import os
 from typing import Optional
 
-import httpx
+import anthropic
 
 from database.db import conectar
 
 logger = logging.getLogger(__name__)
 
-GEMINI_API_KEY = os.getenv("GOOGLE_API_KEY", "")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
-_GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001")
 
 _SYSTEM_PROMPT = (
     "Você é Zhora, assistente especialista em análise climática do projeto Expansão AI Climate.\n"
@@ -189,7 +188,7 @@ def generate_insight() -> str:
     """Call Gemini with the current climate context and persist the result as CLIMATE_INSIGHT."""
     ctx = build_climate_context()
     context_text = context_to_text(ctx)
-    insight_text = ask_gemini(_INSIGHT_PROMPT, context_text)
+    insight_text = ask_claude(_INSIGHT_PROMPT, context_text)
 
     conn = conectar()
     try:
@@ -242,34 +241,31 @@ def get_latest_insight() -> Optional[str]:
         conn.close()
 
 
-def ask_gemini(question: str, context_text: str) -> str:
-    if not GEMINI_API_KEY:
+def ask_claude(question: str, context_text: str) -> str:
+    if not ANTHROPIC_API_KEY:
         raise RuntimeError(
-            "GOOGLE_API_KEY não configurado. Defina a variável de ambiente."
+            "ANTHROPIC_API_KEY não configurado. Defina a variável de ambiente."
         )
 
-    url = f"{_GEMINI_BASE}/{GEMINI_MODEL}:generateContent?key={GEMINI_API_KEY}"
-    payload = {
-        "system_instruction": {"parts": [{"text": _SYSTEM_PROMPT}]},
-        "contents": [
-            {
-                "parts": [
-                    {
-                        "text": (
-                            f"CONTEXTO CLIMÁTICO ATUAL:\n{context_text}\n\n"
-                            f"PERGUNTA: {question}"
-                        )
-                    }
-                ]
-            }
-        ],
-    }
+    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
     try:
-        response = httpx.post(url, json=payload, timeout=30.0)
-        response.raise_for_status()
-        return response.json()["candidates"][0]["content"]["parts"][0]["text"]
-    except httpx.HTTPStatusError as e:
-        raise RuntimeError(f"Gemini retornou erro HTTP {e.response.status_code}: {e.response.text}")
+        message = client.messages.create(
+            model=ANTHROPIC_MODEL,
+            max_tokens=1024,
+            system=_SYSTEM_PROMPT,
+            messages=[
+                {
+                    "role": "user",
+                    "content": (
+                        f"CONTEXTO CLIMÁTICO ATUAL:\n{context_text}\n\n"
+                        f"PERGUNTA: {question}"
+                    ),
+                }
+            ],
+        )
+        return message.content[0].text
+    except anthropic.APIStatusError as e:
+        raise RuntimeError(f"Anthropic retornou erro {e.status_code}: {e.message}")
     except Exception as e:
-        raise RuntimeError(f"Erro ao chamar Gemini ({GEMINI_MODEL}): {e}")
+        raise RuntimeError(f"Erro ao chamar Claude ({ANTHROPIC_MODEL}): {e}")
