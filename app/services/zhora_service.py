@@ -3,14 +3,14 @@ import logging
 import os
 from typing import Optional
 
-import httpx
+import google.generativeai as genai
 
 from database.db import conectar
 
 logger = logging.getLogger(__name__)
 
-OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2")
+GEMINI_API_KEY = os.getenv("GOOGLE_API_KEY", "")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
 
 _SYSTEM_PROMPT = (
     "Você é Zhora, assistente especialista em análise climática do projeto Expansão AI Climate.\n"
@@ -176,24 +176,25 @@ def get_latest_context() -> Optional[str]:
         conn.close()
 
 
-def ask_ollama(question: str, context_text: str) -> str:
+def ask_gemini(question: str, context_text: str) -> str:
+    if not GEMINI_API_KEY:
+        raise RuntimeError(
+            "GOOGLE_API_KEY não configurado. Defina a variável de ambiente."
+        )
+
+    genai.configure(api_key=GEMINI_API_KEY)
+    model = genai.GenerativeModel(
+        model_name=GEMINI_MODEL,
+        system_instruction=_SYSTEM_PROMPT,
+    )
+
     prompt = (
-        f"{_SYSTEM_PROMPT}\n\n"
         f"CONTEXTO CLIMÁTICO ATUAL:\n{context_text}\n\n"
         f"PERGUNTA: {question}"
     )
+
     try:
-        response = httpx.post(
-            f"{OLLAMA_URL}/api/generate",
-            json={"model": OLLAMA_MODEL, "prompt": prompt, "stream": False},
-            timeout=60.0,
-        )
-        response.raise_for_status()
-        return response.json()["response"]
-    except httpx.ConnectError:
-        raise RuntimeError(
-            f"Ollama não está acessível em {OLLAMA_URL}. "
-            "Verifique se o serviço está rodando."
-        )
-    except httpx.HTTPStatusError as e:
-        raise RuntimeError(f"Ollama retornou erro HTTP {e.response.status_code}.")
+        response = model.generate_content(prompt)
+        return response.text
+    except Exception as e:
+        raise RuntimeError(f"Erro ao chamar Gemini ({GEMINI_MODEL}): {e}")

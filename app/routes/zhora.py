@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from app.services.zhora_service import (
-    ask_ollama,
+    ask_gemini,
     build_climate_context,
     context_to_text,
     get_latest_context,
@@ -39,7 +39,7 @@ def ask_zhora(payload: AskRequest):
             logger.warning("Falha ao buscar contexto do DB, usando snapshot: %s", e)
             context_text = get_latest_context() or "Contexto climático não disponível."
 
-        answer = ask_ollama(payload.question, context_text)
+        answer = ask_gemini(payload.question, context_text)
         return {"question": payload.question, "answer": answer, "context_used": context_text}
 
     except RuntimeError as e:
