@@ -107,33 +107,26 @@
         </div>
     </section>
 
-    <!-- Insight + Alerts -->
-    <div class="two-col">
-
-        <section class="panel">
-            <div class="panel-header">
-                <h2 class="panel-title">🧠 Insight Operacional</h2>
+    <!-- Alert ticker -->
+    <div class="alert-ticker-wrap" id="alert-ticker-wrap">
+        <div class="ticker-label">ALERTAS</div>
+        <div class="ticker-viewport">
+            <div class="ticker-track" id="ticker-track">
+                <span class="ticker-skeleton">carregando alertas...</span>
             </div>
-            <p id="analysis" class="insight-text">
-                <span class="skeleton skeleton-line"></span>
-                <span class="skeleton skeleton-line short"></span>
-            </p>
-        </section>
-
-        <section class="panel">
-            <div class="panel-header">
-                <h2 class="panel-title">Alertas Operacionais</h2>
-                <span class="alert-count" id="alert-count"></span>
-            </div>
-            <div id="climate-alerts">
-                <div class="loading-alerts">
-                    <span class="skeleton skeleton-alert"></span>
-                    <span class="skeleton skeleton-alert"></span>
-                </div>
-            </div>
-        </section>
-
+        </div>
     </div>
+
+    <!-- Insight -->
+    <section class="panel">
+        <div class="panel-header">
+            <h2 class="panel-title">🧠 Insight Operacional</h2>
+        </div>
+        <p id="analysis" class="insight-text">
+            <span class="skeleton skeleton-line"></span>
+            <span class="skeleton skeleton-line short"></span>
+        </p>
+    </section>
 
     <!-- Glossary -->
     <details class="panel glossary">
@@ -144,6 +137,10 @@
             <div class="glossary-item">
                 <strong>ONI</strong>
                 <p>Oceanic Niño Index. Mede a anomalia de temperatura na região Niño 3.4 do Pacífico Equatorial.</p>
+            </div>
+            <div class="glossary-item">
+                <strong>SOI</strong>
+                <p>Southern Oscillation Index. Diferença padronizada de pressão atmosférica entre Taiti e Darwin. SOI negativo indica El Niño; positivo, La Niña.</p>
             </div>
             <div class="glossary-item">
                 <strong>ENSO</strong>

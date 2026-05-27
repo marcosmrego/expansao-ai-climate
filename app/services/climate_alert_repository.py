@@ -11,6 +11,23 @@ from app.services.climate_alert_engine import (
 
 logger = logging.getLogger(__name__)
 
+# When a new alert of type X is created, resolve any active alerts of the listed types.
+_RESOLVES_ON_CREATE = {
+    "EL_NINO_CONDITION":         ["LA_NINA_CONDITION", "NEUTRAL_CONDITION"],
+    "LA_NINA_CONDITION":         ["EL_NINO_CONDITION", "NEUTRAL_CONDITION"],
+    "NEUTRAL_CONDITION":         ["EL_NINO_CONDITION", "LA_NINA_CONDITION",
+                                  "ENSO_PERSISTENCE", "SST_ONI_COMBINED_WARNING"],
+    "SOI_EL_NINO_SIGNAL":        ["SOI_LA_NINA_SIGNAL", "SOI_NEUTRAL"],
+    "SOI_LA_NINA_SIGNAL":        ["SOI_EL_NINO_SIGNAL", "SOI_NEUTRAL"],
+    "SOI_NEUTRAL":               ["SOI_EL_NINO_SIGNAL", "SOI_LA_NINA_SIGNAL"],
+    "ONI_TREND_UP":              ["ONI_TREND_DOWN"],
+    "ONI_TREND_DOWN":            ["ONI_TREND_UP"],
+    "SOI_TREND_UP":              ["SOI_TREND_DOWN"],
+    "SOI_TREND_DOWN":            ["SOI_TREND_UP"],
+    "ONI_SOI_EL_NINO_AGREEMENT": ["ONI_SOI_LA_NINA_AGREEMENT"],
+    "ONI_SOI_LA_NINA_AGREEMENT": ["ONI_SOI_EL_NINO_AGREEMENT"],
+}
+
 
 def save_alert(alert):
     conn = conectar()
@@ -31,6 +48,19 @@ def save_alert(alert):
             existing = cursor.fetchone()
             if existing:
                 return {"id": existing[0], "skipped": True}
+
+            # Auto-resolve conflicting alert types in the same transaction
+            conflicting = _RESOLVES_ON_CREATE.get(alert["alert_type"], [])
+            if conflicting:
+                cursor.execute(
+                    """
+                    UPDATE climate.climate_alerts
+                    SET status = 'RESOLVED', resolved_at = NOW()
+                    WHERE alert_type = ANY(%s)
+                      AND status = 'ACTIVE';
+                    """,
+                    (conflicting,),
+                )
 
             cursor.execute(
                 """

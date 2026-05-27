@@ -159,70 +159,40 @@ async function carregarAtualizacao() {
     }
 }
 
-// ── Alerts ───────────────────────────────────────────────────────────
+// ── Alert Ticker ─────────────────────────────────────────────────────
 async function carregarAlertas() {
     try {
         const res = await fetch(`${API_BASE}/api/climate/alerts`)
         if (!res.ok) throw new Error(res.status)
         const d = await res.json()
-        renderizarAlertas(d.items)
-
-        const badge = document.getElementById("alert-count")
-        if (badge && d.total > 0) {
-            badge.textContent = `${d.total} ativo${d.total > 1 ? "s" : ""}`
-        }
+        renderizarTicker(d.items)
     } catch {
         registrarErro("alertas")
-        document.getElementById("climate-alerts").innerHTML =
-            '<p class="no-alerts">Erro ao carregar alertas.</p>'
+        const track = document.getElementById("ticker-track")
+        if (track) track.innerHTML = '<span class="ticker-skeleton">Erro ao carregar alertas.</span>'
     }
 }
 
-function renderizarAlertas(alertas) {
-    const container = document.getElementById("climate-alerts")
-    if (!container) return
-
-    container.innerHTML = ""
+function renderizarTicker(alertas) {
+    const track = document.getElementById("ticker-track")
+    if (!track) return
 
     if (!alertas || alertas.length === 0) {
-        const p = document.createElement("p")
-        p.className = "no-alerts"
-        p.textContent = "Nenhum alerta operacional ativo."
-        container.appendChild(p)
+        track.innerHTML = '<span class="ticker-skeleton">Nenhum alerta operacional ativo.</span>'
+        track.style.animation = "none"
         return
     }
 
-    alertas.forEach(alerta => {
-        const card = document.createElement("div")
-        card.className = "alert-card " + alerta.severity.toLowerCase()
+    // Build one set of items, then duplicate for seamless loop
+    function buildItems() {
+        return alertas.map(a => {
+            const cls = a.severity.toLowerCase()
+            return `<span class="ticker-item ${cls}"><span class="ticker-severity">${a.severity}</span>${a.title} — ${a.message}</span><span class="ticker-sep">|</span>`
+        }).join("")
+    }
 
-        const header = document.createElement("div")
-        header.className = "alert-header"
-
-        const dot = document.createElement("span")
-        dot.className = "alert-severity-dot"
-
-        const title = document.createElement("span")
-        title.className = "alert-title"
-        title.textContent = alerta.title
-
-        header.appendChild(dot)
-        header.appendChild(title)
-
-        const msg = document.createElement("div")
-        msg.className = "alert-message"
-        msg.textContent = alerta.message
-
-        const src = document.createElement("div")
-        src.className = "alert-source"
-        src.textContent = `${alerta.severity} · ${alerta.source}`
-
-        card.appendChild(header)
-        card.appendChild(msg)
-        card.appendChild(src)
-
-        container.appendChild(card)
-    })
+    const set = buildItems()
+    track.innerHTML = set + set  // duplicate for seamless wrap
 }
 
 // ── Chart ────────────────────────────────────────────────────────────

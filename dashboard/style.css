@@ -445,6 +445,104 @@ main {
     padding: 20px 0;
 }
 
+/* ── Alert Ticker ───────────────────────────────────────────────────── */
+.alert-ticker-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    height: 40px;
+}
+
+.ticker-label {
+    flex-shrink: 0;
+    padding: 0 14px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.4px;
+    color: var(--accent);
+    background: var(--accent-dim);
+    border-right: 1px solid var(--border-accent);
+    height: 100%;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+}
+
+.ticker-viewport {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    height: 100%;
+}
+
+.ticker-track {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    white-space: nowrap;
+    animation: ticker-scroll 28s linear infinite;
+}
+
+.ticker-track:hover { animation-play-state: paused; }
+
+@keyframes ticker-scroll {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+
+.ticker-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 28px 0 0;
+    font-size: 12px;
+    color: var(--text-2);
+    flex-shrink: 0;
+}
+
+.ticker-item::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.ticker-item.info::before    { background: var(--info); }
+.ticker-item.warning::before { background: var(--warning); }
+.ticker-item.critical::before { background: var(--critical); }
+
+.ticker-item .ticker-severity {
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 10px;
+    letter-spacing: .6px;
+    margin-right: 2px;
+}
+
+.ticker-item.info     .ticker-severity { color: var(--info); }
+.ticker-item.warning  .ticker-severity { color: var(--warning); }
+.ticker-item.critical .ticker-severity { color: var(--critical); }
+
+.ticker-sep {
+    display: inline-block;
+    padding: 0 20px 0 0;
+    color: var(--border-accent);
+    flex-shrink: 0;
+    font-size: 14px;
+}
+
+.ticker-skeleton {
+    font-size: 12px;
+    color: var(--text-3);
+    padding: 0 20px;
+}
+
 /* ── Glossary ───────────────────────────────────────────────────────── */
 .glossary { padding: 0; }
 
