@@ -6,7 +6,7 @@ from collector.noaa_psl_base import (
 )
 from app.services.climate_alert_repository import check_and_save_amo_alerts
 
-URL = "https://psl.noaa.gov/data/correlation/amo.data"
+URL = "https://psl.noaa.gov/data/correlation/amon.us.long.data"
 ORIGEM = "NOAA_PSL_AMO"
 
 load_dotenv()
