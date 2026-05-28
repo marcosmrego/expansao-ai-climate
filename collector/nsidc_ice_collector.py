@@ -5,8 +5,8 @@ from datetime import date
 
 import requests
 
-URL_ARCTIC = "https://noaadata.apps.nsidc.org/NOAA/G02135/north/daily/data/N_seaice_extent_daily_v3.0.csv"
-URL_ANTARCTIC = "https://noaadata.apps.nsidc.org/NOAA/G02135/south/daily/data/S_seaice_extent_daily_v3.0.csv"
+URL_ARCTIC = "https://noaadata.apps.nsidc.org/NOAA/G02135/north/daily/data/N_seaice_extent_daily_v4.0.csv"
+URL_ANTARCTIC = "https://noaadata.apps.nsidc.org/NOAA/G02135/south/daily/data/S_seaice_extent_daily_v4.0.csv"
 
 ORIGEM_ARCTIC = "NSIDC_ARCTIC_ICE"
 ORIGEM_ANTARCTIC = "NSIDC_ANTARCTIC_ICE"
@@ -47,9 +47,10 @@ def salvar_payload_bruto(conn, texto: str, origem: str, url: str) -> int:
 def parse_ice(texto: str) -> list:
     """Parse NSIDC daily sea ice CSV into (date, extent_mkm2, area_mkm2) tuples.
 
-    Format (CSV with header):
-      Year,Month,Day,Extent,Area,Source Data
-    Extent and Area in million km². Missing: -9999
+    v4.0 format (CSV with 2-line header):
+      Year, Month, Day, Extent, Missing, Source Data
+    Extent in million km². Column 4 is 'Missing' (amount of gap), not Area.
+    area_mkm2 is always None for v4.0 data.
     """
     registros = []
     for linha in texto.splitlines():
@@ -68,19 +69,11 @@ def parse_ice(texto: str) -> list:
             continue
         if extent <= _MISSING:
             continue
-        area = None
-        if len(partes) >= 5:
-            try:
-                a = float(partes[4].strip())
-                if a > _MISSING:
-                    area = a
-            except (ValueError, IndexError):
-                pass
         try:
             d = date(ano, mes, dia)
         except ValueError:
             continue
-        registros.append((d, extent, area))
+        registros.append((d, extent, None))
     return registros
 
 
