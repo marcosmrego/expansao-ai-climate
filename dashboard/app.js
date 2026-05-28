@@ -272,7 +272,8 @@ function montarGrafico(dados, dadosSOI = []) {
     gradient.addColorStop(0.6, "rgba(94,200,248,.05)")
     gradient.addColorStop(1,   "rgba(94,200,248,0)")
 
-    new Chart(ctx, {
+    if (window._oniChart) window._oniChart.destroy()
+    window._oniChart = new Chart(ctx, {
         type: "line",
         data: {
             labels,
@@ -850,6 +851,129 @@ async function montarGeloChart() {
         /* silently skip if no data yet */
     }
 }
+
+// ── Modulation index charts (PDO / NAO / AMO / QBO) ─────────────────
+async function montarModulacaoChart(canvasId, endpoint, cor, label, unidade) {
+    const canvas = document.getElementById(canvasId)
+    if (!canvas) return
+    try {
+        const res = await fetch(`${API_BASE}${endpoint}`)
+        if (!res.ok) throw new Error(res.status)
+        const dados = await res.json()
+        if (!dados.length) return
+
+        const labels = dados.map(d => d.data_referencia)
+        const values = dados.map(d => d.value)
+        const bgColors = values.map(v => v >= 0
+            ? cor.pos
+            : cor.neg
+        )
+        const ctx2 = canvas.getContext("2d")
+        const grad = ctx2.createLinearGradient(0, 0, 0, 280)
+        grad.addColorStop(0, cor.gradTop)
+        grad.addColorStop(1, cor.gradBot)
+
+        const key = `_${canvasId}`
+        if (window[key]) window[key].destroy()
+        window[key] = new Chart(canvas, {
+            type: "bar",
+            data: {
+                labels,
+                datasets: [{
+                    label,
+                    data: values,
+                    backgroundColor: bgColors,
+                    borderWidth: 0,
+                    borderRadius: 2,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 500 },
+                scales: {
+                    x: {
+                        grid: { color: "rgba(255,255,255,.04)" },
+                        ticks: {
+                            color: "#546A84",
+                            font: { size: 10 },
+                            maxRotation: 0,
+                            callback: (_, i) => {
+                                const lbl = labels[i]
+                                return (lbl && (lbl.endsWith("-01") || lbl.endsWith("-07"))) ? lbl.slice(0, 7) : null
+                            }
+                        }
+                    },
+                    y: {
+                        grid: { color: "rgba(255,255,255,.05)" },
+                        ticks: { color: "#546A84", font: { size: 10 } },
+                        title: unidade ? { display: true, text: unidade, color: "#546A84", font: { size: 10 } } : undefined
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: { label: ctx => `${ctx.parsed.y.toFixed(2)}${unidade ? " " + unidade : ""}` },
+                        backgroundColor: "rgba(12,22,40,.92)",
+                        borderColor: "rgba(255,255,255,.12)",
+                        borderWidth: 1,
+                        titleColor: "#E8EEF5",
+                        bodyColor: "#8EA2BE",
+                        padding: 10,
+                    }
+                }
+            }
+        })
+    } catch {
+        /* silently skip if no data */
+    }
+}
+
+const _MOD_COLORS = {
+    pdo: { pos: "rgba(66,165,245,.75)",  neg: "rgba(239,83,80,.65)",  gradTop: "rgba(66,165,245,.2)",  gradBot: "transparent" },
+    nao: { pos: "rgba(171,71,188,.75)",  neg: "rgba(38,198,218,.65)", gradTop: "rgba(171,71,188,.2)",  gradBot: "transparent" },
+    amo: { pos: "rgba(255,112,67,.75)",  neg: "rgba(66,165,245,.65)", gradTop: "rgba(255,112,67,.2)",  gradBot: "transparent" },
+    qbo: { pos: "rgba(38,198,218,.75)",  neg: "rgba(212,225,87,.65)", gradTop: "rgba(38,198,218,.2)",  gradBot: "transparent" },
+}
+
+async function montarGraficosPDO()  { await montarModulacaoChart("pdoChart",  "/climate/pdo/history", _MOD_COLORS.pdo, "PDO", null) }
+async function montarGraficosNAO()  { await montarModulacaoChart("naoChart",  "/climate/nao/history", _MOD_COLORS.nao, "NAO", null) }
+async function montarGraficosAMO()  { await montarModulacaoChart("amoChart",  "/climate/amo/history", _MOD_COLORS.amo, "AMO", "°C") }
+async function montarGraficosQBO()  { await montarModulacaoChart("qboChart",  "/climate/qbo/history", _MOD_COLORS.qbo, "QBO", "m/s") }
+
+// ── Tab switching ─────────────────────────────────────────────────────
+const _CHART_KEYS = {
+    enso:      ["_oniChart"],
+    modulacao: ["_pdoChart", "_naoChart", "_amoChart", "_qboChart"],
+    diarios:   ["_whChart", "_co2Chart", "_iceChart"],
+    analise:   [],
+}
+
+let _modulacaoLoaded = false
+
+document.querySelectorAll(".tab-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"))
+        document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"))
+        btn.classList.add("active")
+        const tab = btn.dataset.tab
+        document.getElementById("tab-" + tab).classList.add("active")
+
+        // Lazy-load modulation charts on first visit
+        if (tab === "modulacao" && !_modulacaoLoaded) {
+            _modulacaoLoaded = true
+            montarGraficosPDO()
+            montarGraficosNAO()
+            montarGraficosAMO()
+            montarGraficosQBO()
+        }
+
+        // Resize charts so they fill the now-visible canvas
+        setTimeout(() => {
+            ;(_CHART_KEYS[tab] || []).forEach(k => { if (window[k]) window[k].resize() })
+        }, 50)
+    })
+})
 
 // ── Init ─────────────────────────────────────────────────────────────
 carregarStatus()

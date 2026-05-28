@@ -663,6 +663,52 @@ footer {
     100% { background-position: -200% 0; }
 }
 
+/* ── Tab navigation ─────────────────────────────────────────────────── */
+.tabs-nav {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.tabs-nav::-webkit-scrollbar { display: none; }
+
+.tab-btn {
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-3);
+    padding: 10px 22px;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    cursor: pointer;
+    white-space: nowrap;
+    margin-bottom: -1px;
+    transition: color var(--transition), border-color var(--transition);
+}
+.tab-btn:hover { color: var(--text-2); }
+.tab-btn.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+}
+
+.tab-panel { display: none; }
+.tab-panel.active {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* ── Modulation charts 2×2 ──────────────────────────────────────────── */
+.modulation-charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
 /* ── Wheeler-Hendon MJO diagram ─────────────────────────────────────── */
 .wh-layout {
     display: grid;
@@ -756,6 +802,7 @@ footer {
     .wh-layout { grid-template-columns: 1fr; }
     .wh-canvas-wrap { max-width: 380px; }
     .chart-pair-grid { grid-template-columns: 1fr; }
+    .modulation-charts-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 768px) {

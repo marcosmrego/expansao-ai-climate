@@ -561,6 +561,61 @@ def climate_qbo():
         conn.close()
 
 
+class ModulationHistoryItem(BaseModel):
+    data_referencia: str
+    value: float
+    classificacao: str
+
+
+def _modulation_history(cache_key: str, table: str, col: str, missing_filter: str):
+    cached = _cache.get(cache_key)
+    if cached:
+        return cached
+    conn = conectar()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(f"""
+            SELECT to_char(data_referencia, 'YYYY-MM'), {col}, classificacao
+            FROM (
+                SELECT data_referencia, {col}, classificacao
+                FROM climate.{table}
+                WHERE {missing_filter}
+                ORDER BY data_referencia DESC
+                LIMIT 60
+            ) t ORDER BY data_referencia ASC
+        """)
+        rows = cursor.fetchall()
+        dados = [{"data_referencia": r[0], "value": float(r[1]), "classificacao": r[2]}
+                 for r in rows]
+        _cache.set(cache_key, dados)
+        return dados
+    except Exception as e:
+        logger.error("Erro em history %s: %s", cache_key, e)
+        raise HTTPException(status_code=500, detail=f"Erro ao consultar histórico {cache_key}")
+    finally:
+        conn.close()
+
+
+@app.get("/climate/pdo/history", response_model=list[ModulationHistoryItem])
+def climate_pdo_history():
+    return _modulation_history("pdo_history", "noaa_pdo", "pdo", "pdo > -99")
+
+
+@app.get("/climate/nao/history", response_model=list[ModulationHistoryItem])
+def climate_nao_history():
+    return _modulation_history("nao_history", "noaa_nao", "nao", "nao > -99")
+
+
+@app.get("/climate/amo/history", response_model=list[ModulationHistoryItem])
+def climate_amo_history():
+    return _modulation_history("amo_history", "noaa_amo", "amo", "amo > -99")
+
+
+@app.get("/climate/qbo/history", response_model=list[ModulationHistoryItem])
+def climate_qbo_history():
+    return _modulation_history("qbo_history", "noaa_qbo", "qbo", "qbo > -999")
+
+
 class MjoHistoryItem(BaseModel):
     data_referencia: str
     rmm1: float

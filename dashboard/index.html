@@ -33,336 +33,406 @@
 
     <div id="erro" class="error-bar hidden"></div>
 
-    <!-- Hero metrics -->
-    <section class="hero-grid">
+    <!-- Tab navigation -->
+    <nav class="tabs-nav" role="tablist">
+        <button class="tab-btn active" data-tab="enso" role="tab">ENSO</button>
+        <button class="tab-btn" data-tab="modulacao" role="tab">Modulação</button>
+        <button class="tab-btn" data-tab="diarios" role="tab">Diários</button>
+        <button class="tab-btn" data-tab="analise" role="tab">Análise</button>
+    </nav>
 
-        <div class="card card-hero">
-            <div class="card-label">Índice ONI
-                <span class="tooltip-icon" title="Oceanic Niño Index — mede a anomalia de temperatura no Pacífico Equatorial Central (região Niño 3.4). Base para classificação ENSO.">ℹ</span>
-            </div>
-            <div class="hero-value" id="oni">
-                <span class="skeleton">----</span>
-            </div>
-            <div class="hero-unit">anomalia de temperatura (°C)</div>
-            <div class="oni-bar-wrap">
-                <div class="oni-bar">
-                    <div class="oni-bar-fill" id="oni-bar-fill"></div>
-                    <div class="oni-bar-zero"></div>
+    <!-- ── Tab: ENSO ──────────────────────────────────────────────────── -->
+    <div class="tab-panel active" id="tab-enso" role="tabpanel">
+
+        <section class="hero-grid">
+
+            <div class="card card-hero">
+                <div class="card-label">Índice ONI
+                    <span class="tooltip-icon" title="Oceanic Niño Index — mede a anomalia de temperatura no Pacífico Equatorial Central (região Niño 3.4). Base para classificação ENSO.">ℹ</span>
                 </div>
-                <div class="oni-bar-labels">
-                    <span>La Niña −2</span>
-                    <span>0</span>
-                    <span>El Niño +2</span>
+                <div class="hero-value" id="oni">
+                    <span class="skeleton">----</span>
+                </div>
+                <div class="hero-unit">anomalia de temperatura (°C)</div>
+                <div class="oni-bar-wrap">
+                    <div class="oni-bar">
+                        <div class="oni-bar-fill" id="oni-bar-fill"></div>
+                        <div class="oni-bar-zero"></div>
+                    </div>
+                    <div class="oni-bar-labels">
+                        <span>La Niña −2</span>
+                        <span>0</span>
+                        <span>El Niño +2</span>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="card card-phase">
-            <div class="card-label">Fase ENSO</div>
-            <div class="phase-display" id="status"><span class="skeleton">------</span></div>
-            <div class="phase-name" id="fase"><span class="skeleton">-------</span></div>
-            <div class="phase-desc" id="phase-desc"></div>
-        </div>
-
-        <div class="card">
-            <div class="card-label">Niño 3.4
-                <span class="tooltip-icon" title="Anomalia de temperatura da superfície do mar na região Niño 3.4 (5°N–5°S, 120°–170°W). Referência principal do monitoramento ENSO.">ℹ</span>
-            </div>
-            <div class="metric-value" id="nino34"><span class="skeleton">----</span></div>
-            <div class="metric-unit">anomalia SST (°C)</div>
-        </div>
-
-        <div class="card">
-            <div class="card-label">Tendência ONI
-                <span class="tooltip-icon" title="Variação do ONI em relação ao mês anterior.">ℹ</span>
-            </div>
-            <div class="trend-value" id="tendencia"><span class="skeleton">------</span></div>
-            <div class="metric-unit delta" id="variacao"><span class="skeleton">-----</span></div>
-        </div>
-
-        <div class="card">
-            <div class="card-label">Dados NOAA</div>
-            <div class="metric-value sm" id="ultimaAtualizacao"><span class="skeleton">-------</span></div>
-            <div class="metric-unit" id="fonte"><span class="skeleton">----</span></div>
-        </div>
-
-        <div class="card">
-            <div class="card-label">SOI
-                <span class="tooltip-icon" title="Southern Oscillation Index — diferença padronizada de pressão atmosférica entre Taiti e Darwin. Negativo = sinal El Niño; Positivo = sinal La Niña.">ℹ</span>
-            </div>
-            <div class="metric-value" id="soi-value"><span class="skeleton">----</span></div>
-            <div class="metric-unit" id="soi-fase"><span class="skeleton">---------</span></div>
-        </div>
-
-    </section>
-
-    <!-- Modulation indices -->
-    <section class="panel">
-        <div class="panel-header">
-            <h2 class="panel-title">Índices de Modulação Climática</h2>
-            <span class="panel-sub">PDO · NAO · AMO · QBO</span>
-        </div>
-        <div class="modulation-grid">
-
-            <div class="card">
-                <div class="card-label">PDO
-                    <span class="tooltip-icon" title="Pacific Decadal Oscillation — Oscilação Decadal do Pacífico. Fase quente amplifica El Niño; fase fria amplifica La Niña.">ℹ</span>
-                </div>
-                <div class="metric-value" id="pdo-value"><span class="skeleton">----</span></div>
-                <div class="metric-unit" id="pdo-fase"><span class="skeleton">---------</span></div>
+            <div class="card card-phase">
+                <div class="card-label">Fase ENSO</div>
+                <div class="phase-display" id="status"><span class="skeleton">------</span></div>
+                <div class="phase-name" id="fase"><span class="skeleton">-------</span></div>
+                <div class="phase-desc" id="phase-desc"></div>
             </div>
 
             <div class="card">
-                <div class="card-label">NAO
-                    <span class="tooltip-icon" title="North Atlantic Oscillation — Oscilação do Atlântico Norte. Fase positiva = invernos suaves na Europa; fase negativa = bloqueios e frio intenso.">ℹ</span>
+                <div class="card-label">Niño 3.4
+                    <span class="tooltip-icon" title="Anomalia de temperatura da superfície do mar na região Niño 3.4 (5°N–5°S, 120°–170°W). Referência principal do monitoramento ENSO.">ℹ</span>
                 </div>
-                <div class="metric-value" id="nao-value"><span class="skeleton">----</span></div>
-                <div class="metric-unit" id="nao-fase"><span class="skeleton">---------</span></div>
+                <div class="metric-value" id="nino34"><span class="skeleton">----</span></div>
+                <div class="metric-unit">anomalia SST (°C)</div>
             </div>
 
             <div class="card">
-                <div class="card-label">AMO
-                    <span class="tooltip-icon" title="Atlantic Multidecadal Oscillation — Oscilação Multidecadal do Atlântico. Fase quente = mais furacões e seca no Sahel.">ℹ</span>
+                <div class="card-label">Tendência ONI
+                    <span class="tooltip-icon" title="Variação do ONI em relação ao mês anterior.">ℹ</span>
                 </div>
-                <div class="metric-value sm" id="amo-value"><span class="skeleton">------</span></div>
-                <div class="metric-unit" id="amo-fase"><span class="skeleton">---------</span></div>
+                <div class="trend-value" id="tendencia"><span class="skeleton">------</span></div>
+                <div class="metric-unit delta" id="variacao"><span class="skeleton">-----</span></div>
             </div>
 
             <div class="card">
-                <div class="card-label">QBO
-                    <span class="tooltip-icon" title="Quasi-Biennial Oscillation — Oscilação Quasi-Bienal. Ventos estratosféricos em m/s; influência indireta em ciclones tropicais.">ℹ</span>
-                </div>
-                <div class="metric-value sm" id="qbo-value"><span class="skeleton">------</span></div>
-                <div class="metric-unit" id="qbo-fase"><span class="skeleton">---------</span></div>
-            </div>
-
-        </div>
-    </section>
-
-    <!-- Daily indicators -->
-    <section class="panel">
-        <div class="panel-header">
-            <h2 class="panel-title">Indicadores Diários</h2>
-            <span class="panel-sub">MJO · CO₂ · Gelo Polar</span>
-        </div>
-        <div class="modulation-grid">
-
-            <div class="card">
-                <div class="card-label">MJO
-                    <span class="tooltip-icon" title="Madden-Julian Oscillation — pulso tropical intra-sazonal (30–60 dias). Fase 1-8; amplitude ≥ 1.0 = ativo. Fases 5-7 favorecem El Niño; fases 1-3 favorecem La Niña.">ℹ</span>
-                </div>
-                <div class="metric-value" id="mjo-phase"><span class="skeleton">---</span></div>
-                <div class="metric-unit" id="mjo-amplitude"><span class="skeleton">---------</span></div>
-                <div class="metric-unit" style="margin-top:4px" id="mjo-fase"><span class="skeleton">---------</span></div>
-                <div class="metric-unit" style="margin-top:4px;font-size:11px;color:var(--text-3)" id="mjo-date"></div>
+                <div class="card-label">Dados NOAA</div>
+                <div class="metric-value sm" id="ultimaAtualizacao"><span class="skeleton">-------</span></div>
+                <div class="metric-unit" id="fonte"><span class="skeleton">----</span></div>
             </div>
 
             <div class="card">
-                <div class="card-label">CO₂ Atmosférico
-                    <span class="tooltip-icon" title="Concentração de CO₂ medida diariamente no Observatório de Mauna Loa (NOAA GML). Indicador do forçamento radiativo global.">ℹ</span>
+                <div class="card-label">SOI
+                    <span class="tooltip-icon" title="Southern Oscillation Index — diferença padronizada de pressão atmosférica entre Taiti e Darwin. Negativo = sinal El Niño; Positivo = sinal La Niña.">ℹ</span>
                 </div>
-                <div class="metric-value sm" id="co2-value"><span class="skeleton">------</span></div>
-                <div class="metric-unit" id="co2-date"><span class="skeleton">----------</span></div>
+                <div class="metric-value" id="soi-value"><span class="skeleton">----</span></div>
+                <div class="metric-unit" id="soi-fase"><span class="skeleton">---------</span></div>
             </div>
 
-            <div class="card">
-                <div class="card-label">Gelo Ártico
-                    <span class="tooltip-icon" title="Extensão do gelo marinho no Ártico (NSIDC). Medido em milhões de km². Afeta albedo, circulação oceânica e padrões de teleconexão.">ℹ</span>
-                </div>
-                <div class="metric-value sm" id="arctic-value"><span class="skeleton">------</span></div>
-                <div class="metric-unit" id="arctic-date"><span class="skeleton">----------</span></div>
-            </div>
+        </section>
 
-            <div class="card">
-                <div class="card-label">Gelo Antártico
-                    <span class="tooltip-icon" title="Extensão do gelo marinho na Antártida (NSIDC). Medido em milhões de km². Indicador da saúde do sistema climático polar sul.">ℹ</span>
-                </div>
-                <div class="metric-value sm" id="antarctic-value"><span class="skeleton">------</span></div>
-                <div class="metric-unit" id="antarctic-date"><span class="skeleton">----------</span></div>
-            </div>
-
-        </div>
-    </section>
-
-    <!-- Wheeler-Hendon MJO Phase Diagram -->
-    <section class="panel">
-        <div class="panel-header">
-            <h2 class="panel-title">Diagrama de Fase MJO</h2>
-            <span class="panel-sub">VPM MJO · últimos 60 dias · trajetória PC1/PC2 · NOAA PSL</span>
-        </div>
-        <div class="wh-layout">
-            <div class="wh-canvas-wrap">
-                <canvas id="whChart"></canvas>
-            </div>
-            <div class="wh-legend">
-                <div class="wh-legend-title">Interpretação</div>
-                <div class="wh-legend-item">
-                    <span class="wh-dot" style="background:#42A5F5"></span>
-                    Fases 1–3: La Niña favorável
-                </div>
-                <div class="wh-legend-item">
-                    <span class="wh-dot" style="background:#78909C"></span>
-                    Fases 4, 8: Neutro / transição
-                </div>
-                <div class="wh-legend-item">
-                    <span class="wh-dot" style="background:#FF7043"></span>
-                    Fases 5–7: El Niño favorável
-                </div>
-                <div class="wh-legend-sep"></div>
-                <div class="wh-legend-item wh-legend-note">
-                    Círculo tracejado = amplitude 1.0<br>
-                    (abaixo = MJO inativo)
-                </div>
-                <div class="wh-legend-item">
-                    <span class="wh-dot wh-dot-current"></span>
-                    Posição atual
-                </div>
-                <div class="wh-legend-sep"></div>
-                <div class="wh-legend-title">Fases geográficas</div>
-                <div class="wh-phase-list">
-                    <span>1 — África / Índico O.</span>
-                    <span>2 — Oceano Índico O.</span>
-                    <span>3 — Oceano Índico L.</span>
-                    <span>4 — Cont. Marítimo</span>
-                    <span>5 — Pacífico Oeste</span>
-                    <span>6 — Pacífico Central</span>
-                    <span>7 — Pacífico Leste</span>
-                    <span>8 — Hemis. Ocidental</span>
+        <!-- Alert ticker -->
+        <div class="alert-ticker-wrap" id="alert-ticker-wrap">
+            <div class="ticker-label">ALERTAS</div>
+            <div class="ticker-viewport">
+                <div class="ticker-track" id="ticker-track">
+                    <span class="ticker-skeleton">carregando alertas...</span>
                 </div>
             </div>
         </div>
-    </section>
 
-    <!-- Chart -->
-    <section class="panel">
-        <div class="panel-header">
-            <h2 class="panel-title">Histórico ONI</h2>
-            <span class="panel-sub">últimos 24 meses</span>
-        </div>
-        <div class="chart-wrap">
-            <canvas id="oniChart"></canvas>
-        </div>
-    </section>
-
-    <!-- CO₂ + Polar Ice -->
-    <div class="chart-pair-grid">
+        <!-- ONI chart -->
         <section class="panel">
             <div class="panel-header">
-                <h2 class="panel-title">CO₂ Atmosférico</h2>
-                <span class="panel-sub">Mauna Loa · últimos 5 anos · NOAA GML</span>
+                <h2 class="panel-title">Histórico ONI</h2>
+                <span class="panel-sub">últimos 24 meses</span>
             </div>
             <div class="chart-wrap">
-                <canvas id="co2Chart"></canvas>
+                <canvas id="oniChart"></canvas>
             </div>
         </section>
+
+        <!-- Insight -->
         <section class="panel">
             <div class="panel-header">
-                <h2 class="panel-title">Extensão do Gelo Polar</h2>
-                <span class="panel-sub">Ártico · Antártico · Mkm² · NSIDC · últimos 3 anos</span>
+                <h2 class="panel-title">🧠 Insight Operacional</h2>
             </div>
-            <div class="chart-wrap">
-                <canvas id="iceChart"></canvas>
+            <p id="analysis" class="insight-text">
+                <span class="skeleton skeleton-line"></span>
+                <span class="skeleton skeleton-line short"></span>
+            </p>
+        </section>
+
+    </div><!-- /tab-enso -->
+
+    <!-- ── Tab: Modulação ─────────────────────────────────────────────── -->
+    <div class="tab-panel" id="tab-modulacao" role="tabpanel">
+
+        <section class="panel">
+            <div class="panel-header">
+                <h2 class="panel-title">Índices de Modulação Climática</h2>
+                <span class="panel-sub">PDO · NAO · AMO · QBO · últimos dados disponíveis</span>
+            </div>
+            <div class="modulation-grid">
+
+                <div class="card">
+                    <div class="card-label">PDO
+                        <span class="tooltip-icon" title="Pacific Decadal Oscillation — Oscilação Decadal do Pacífico. Fase quente amplifica El Niño; fase fria amplifica La Niña.">ℹ</span>
+                    </div>
+                    <div class="metric-value" id="pdo-value"><span class="skeleton">----</span></div>
+                    <div class="metric-unit" id="pdo-fase"><span class="skeleton">---------</span></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-label">NAO
+                        <span class="tooltip-icon" title="North Atlantic Oscillation — Oscilação do Atlântico Norte. Fase positiva = invernos suaves na Europa; fase negativa = bloqueios e frio intenso.">ℹ</span>
+                    </div>
+                    <div class="metric-value" id="nao-value"><span class="skeleton">----</span></div>
+                    <div class="metric-unit" id="nao-fase"><span class="skeleton">---------</span></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-label">AMO
+                        <span class="tooltip-icon" title="Atlantic Multidecadal Oscillation — Oscilação Multidecadal do Atlântico. Fase quente = mais furacões e seca no Sahel.">ℹ</span>
+                    </div>
+                    <div class="metric-value sm" id="amo-value"><span class="skeleton">------</span></div>
+                    <div class="metric-unit" id="amo-fase"><span class="skeleton">---------</span></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-label">QBO
+                        <span class="tooltip-icon" title="Quasi-Biennial Oscillation — Oscilação Quasi-Bienal. Ventos estratosféricos em m/s; influência indireta em ciclones tropicais.">ℹ</span>
+                    </div>
+                    <div class="metric-value sm" id="qbo-value"><span class="skeleton">------</span></div>
+                    <div class="metric-unit" id="qbo-fase"><span class="skeleton">---------</span></div>
+                </div>
+
             </div>
         </section>
-    </div>
 
-    <!-- Alert ticker -->
-    <div class="alert-ticker-wrap" id="alert-ticker-wrap">
-        <div class="ticker-label">ALERTAS</div>
-        <div class="ticker-viewport">
-            <div class="ticker-track" id="ticker-track">
-                <span class="ticker-skeleton">carregando alertas...</span>
-            </div>
-        </div>
-    </div>
+        <!-- Modulation charts 2×2 -->
+        <div class="modulation-charts-grid">
 
-    <!-- Insight -->
-    <section class="panel">
-        <div class="panel-header">
-            <h2 class="panel-title">🧠 Insight Operacional</h2>
-        </div>
-        <p id="analysis" class="insight-text">
-            <span class="skeleton skeleton-line"></span>
-            <span class="skeleton skeleton-line short"></span>
-        </p>
-    </section>
+            <section class="panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">PDO</h2>
+                    <span class="panel-sub">Pacific Decadal Oscillation · 5 anos</span>
+                </div>
+                <div class="chart-wrap">
+                    <canvas id="pdoChart"></canvas>
+                </div>
+            </section>
 
-    <!-- Predictive Analysis -->
-    <section class="panel panel-prediction">
-        <div class="panel-header">
-            <h2 class="panel-title">🔭 Análise Preditiva</h2>
-            <span class="panel-sub">próximos 1–3 meses</span>
-        </div>
-        <p id="prediction" class="insight-text">
-            <span class="skeleton skeleton-line"></span>
-            <span class="skeleton skeleton-line short"></span>
-        </p>
-    </section>
+            <section class="panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">NAO</h2>
+                    <span class="panel-sub">North Atlantic Oscillation · 5 anos</span>
+                </div>
+                <div class="chart-wrap">
+                    <canvas id="naoChart"></canvas>
+                </div>
+            </section>
 
-    <!-- Glossary -->
-    <details class="panel glossary">
-        <summary class="panel-header glossary-summary">
-            <h2 class="panel-title">📘 Glossário rápido</h2>
-        </summary>
-        <div class="glossary-grid">
-            <div class="glossary-item">
-                <strong>ONI</strong>
-                <p>Oceanic Niño Index. Mede a anomalia de temperatura na região Niño 3.4 do Pacífico Equatorial.</p>
-            </div>
-            <div class="glossary-item">
-                <strong>SOI</strong>
-                <p>Southern Oscillation Index. Diferença padronizada de pressão atmosférica entre Taiti e Darwin. SOI negativo indica El Niño; positivo, La Niña.</p>
-            </div>
-            <div class="glossary-item">
-                <strong>ENSO</strong>
-                <p>El Niño Southern Oscillation. Fenômeno climático ligado ao aquecimento ou resfriamento do Pacífico.</p>
-            </div>
-            <div class="glossary-item">
-                <strong>SST</strong>
-                <p>Sea Surface Temperature. Temperatura da superfície do mar, medida em regiões-chave do Pacífico.</p>
-            </div>
-            <div class="glossary-item">
-                <strong>Niño 3.4</strong>
-                <p>Região entre 5°N–5°S e 120°–170°W, usada como referência operacional principal para o monitoramento ENSO.</p>
-            </div>
-            <div class="glossary-item">
-                <strong>El Niño</strong>
-                <p>Aquecimento anormal do Pacífico Equatorial. ONI ≥ 0.5 por 5+ meses consecutivos.</p>
-            </div>
-            <div class="glossary-item">
-                <strong>La Niña</strong>
-                <p>Resfriamento anormal do Pacífico Equatorial. ONI ≤ −0.5 por 5+ meses consecutivos.</p>
-            </div>
-            <div class="glossary-item">
-                <strong>PDO</strong>
-                <p>Pacific Decadal Oscillation. Variabilidade climática decadal do Pacífico Norte. Fase quente amplifica El Niño; fase fria amplifica La Niña — modulando eventos ENSO por décadas.</p>
-            </div>
-            <div class="glossary-item">
-                <strong>NAO</strong>
-                <p>North Atlantic Oscillation. Diferença de pressão entre o Anticiclone dos Açores e a Depressão da Islândia. Fase positiva favorece invernos suaves na Europa; fase negativa traz frio e bloqueios.</p>
-            </div>
-            <div class="glossary-item">
-                <strong>AMO</strong>
-                <p>Atlantic Multidecadal Oscillation. Variação lenta da temperatura superficial do Atlântico Norte. Fase quente está associada a mais furacões no Atlântico e secas no Sahel.</p>
-            </div>
-            <div class="glossary-item">
-                <strong>QBO</strong>
-                <p>Quasi-Biennial Oscillation. Oscilação dos ventos estratosféricos equatoriais (∼30mb) entre fase oesteira e lesteira, com período de ∼28 meses. Influencia indiretamente a intensidade de ciclones tropicais.</p>
-            </div>
-            <div class="glossary-item">
-                <strong>MJO</strong>
-                <p>Madden-Julian Oscillation. Pulso convectivo tropical com período de 30 a 60 dias e 8 fases geográficas. Amplitude ≥ 1.0 indica MJO ativo. Fases 5–7 (Pacífico Oeste/Central) favorecem aquecimento ENSO; fases 1–3 (Oceano Índico) tendem a suprimir El Niño.</p>
-            </div>
-            <div class="glossary-item">
-                <strong>CO₂ Mauna Loa</strong>
-                <p>Concentração atmosférica de dióxido de carbono medida diariamente no Observatório de Mauna Loa, Havaí (NOAA GML). Referência global do forçamento radiativo antropogênico.</p>
-            </div>
-            <div class="glossary-item">
-                <strong>Gelo Polar (NSIDC)</strong>
-                <p>Extensão do gelo marinho no Ártico e na Antártida, medida em milhões de km² pelo National Snow and Ice Data Center. O gelo Ártico influencia o albedo e a circulação atmosférica do hemisfério norte; o gelo Antártico é indicador da saúde do sistema climático austral.</p>
-            </div>
+            <section class="panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">AMO</h2>
+                    <span class="panel-sub">Atlantic Multidecadal Oscillation · 5 anos</span>
+                </div>
+                <div class="chart-wrap">
+                    <canvas id="amoChart"></canvas>
+                </div>
+            </section>
+
+            <section class="panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">QBO</h2>
+                    <span class="panel-sub">Quasi-Biennial Oscillation · 5 anos · m/s</span>
+                </div>
+                <div class="chart-wrap">
+                    <canvas id="qboChart"></canvas>
+                </div>
+            </section>
+
         </div>
-    </details>
+
+    </div><!-- /tab-modulacao -->
+
+    <!-- ── Tab: Diários ───────────────────────────────────────────────── -->
+    <div class="tab-panel" id="tab-diarios" role="tabpanel">
+
+        <section class="panel">
+            <div class="panel-header">
+                <h2 class="panel-title">Indicadores Diários</h2>
+                <span class="panel-sub">MJO · CO₂ · Gelo Polar · dados mais recentes</span>
+            </div>
+            <div class="modulation-grid">
+
+                <div class="card">
+                    <div class="card-label">MJO
+                        <span class="tooltip-icon" title="Madden-Julian Oscillation — pulso tropical intra-sazonal (30–60 dias). Fase 1-8; amplitude ≥ 1.0 = ativo. Fases 5-7 favorecem El Niño; fases 1-3 favorecem La Niña.">ℹ</span>
+                    </div>
+                    <div class="metric-value" id="mjo-phase"><span class="skeleton">---</span></div>
+                    <div class="metric-unit" id="mjo-amplitude"><span class="skeleton">---------</span></div>
+                    <div class="metric-unit" style="margin-top:4px" id="mjo-fase"><span class="skeleton">---------</span></div>
+                    <div class="metric-unit" style="margin-top:4px;font-size:11px;color:var(--text-3)" id="mjo-date"></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-label">CO₂ Atmosférico
+                        <span class="tooltip-icon" title="Concentração de CO₂ medida diariamente no Observatório de Mauna Loa (NOAA GML). Indicador do forçamento radiativo global.">ℹ</span>
+                    </div>
+                    <div class="metric-value sm" id="co2-value"><span class="skeleton">------</span></div>
+                    <div class="metric-unit" id="co2-date"><span class="skeleton">----------</span></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-label">Gelo Ártico
+                        <span class="tooltip-icon" title="Extensão do gelo marinho no Ártico (NSIDC). Medido em milhões de km². Afeta albedo, circulação oceânica e padrões de teleconexão.">ℹ</span>
+                    </div>
+                    <div class="metric-value sm" id="arctic-value"><span class="skeleton">------</span></div>
+                    <div class="metric-unit" id="arctic-date"><span class="skeleton">----------</span></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-label">Gelo Antártico
+                        <span class="tooltip-icon" title="Extensão do gelo marinho na Antártida (NSIDC). Medido em milhões de km². Indicador da saúde do sistema climático polar sul.">ℹ</span>
+                    </div>
+                    <div class="metric-value sm" id="antarctic-value"><span class="skeleton">------</span></div>
+                    <div class="metric-unit" id="antarctic-date"><span class="skeleton">----------</span></div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Wheeler-Hendon MJO Phase Diagram -->
+        <section class="panel">
+            <div class="panel-header">
+                <h2 class="panel-title">Diagrama de Fase MJO</h2>
+                <span class="panel-sub">VPM MJO · últimos 60 dias · trajetória PC1/PC2 · NOAA PSL</span>
+            </div>
+            <div class="wh-layout">
+                <div class="wh-canvas-wrap">
+                    <canvas id="whChart"></canvas>
+                </div>
+                <div class="wh-legend">
+                    <div class="wh-legend-title">Interpretação</div>
+                    <div class="wh-legend-item">
+                        <span class="wh-dot" style="background:#42A5F5"></span>
+                        Fases 1–3: La Niña favorável
+                    </div>
+                    <div class="wh-legend-item">
+                        <span class="wh-dot" style="background:#78909C"></span>
+                        Fases 4, 8: Neutro / transição
+                    </div>
+                    <div class="wh-legend-item">
+                        <span class="wh-dot" style="background:#FF7043"></span>
+                        Fases 5–7: El Niño favorável
+                    </div>
+                    <div class="wh-legend-sep"></div>
+                    <div class="wh-legend-item wh-legend-note">
+                        Círculo tracejado = amplitude 1.0<br>
+                        (abaixo = MJO inativo)
+                    </div>
+                    <div class="wh-legend-item">
+                        <span class="wh-dot wh-dot-current"></span>
+                        Posição atual
+                    </div>
+                    <div class="wh-legend-sep"></div>
+                    <div class="wh-legend-title">Fases geográficas</div>
+                    <div class="wh-phase-list">
+                        <span>1 — África / Índico O.</span>
+                        <span>2 — Oceano Índico O.</span>
+                        <span>3 — Oceano Índico L.</span>
+                        <span>4 — Cont. Marítimo</span>
+                        <span>5 — Pacífico Oeste</span>
+                        <span>6 — Pacífico Central</span>
+                        <span>7 — Pacífico Leste</span>
+                        <span>8 — Hemis. Ocidental</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CO₂ + Polar Ice -->
+        <div class="chart-pair-grid">
+            <section class="panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">CO₂ Atmosférico</h2>
+                    <span class="panel-sub">Mauna Loa · últimos 5 anos · NOAA GML</span>
+                </div>
+                <div class="chart-wrap">
+                    <canvas id="co2Chart"></canvas>
+                </div>
+            </section>
+            <section class="panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">Extensão do Gelo Polar</h2>
+                    <span class="panel-sub">Ártico · Antártico · Mkm² · NSIDC · últimos 3 anos</span>
+                </div>
+                <div class="chart-wrap">
+                    <canvas id="iceChart"></canvas>
+                </div>
+            </section>
+        </div>
+
+    </div><!-- /tab-diarios -->
+
+    <!-- ── Tab: Análise ───────────────────────────────────────────────── -->
+    <div class="tab-panel" id="tab-analise" role="tabpanel">
+
+        <!-- Predictive Analysis -->
+        <section class="panel panel-prediction">
+            <div class="panel-header">
+                <h2 class="panel-title">🔭 Análise Preditiva</h2>
+                <span class="panel-sub">próximos 1–3 meses</span>
+            </div>
+            <p id="prediction" class="insight-text">
+                <span class="skeleton skeleton-line"></span>
+                <span class="skeleton skeleton-line short"></span>
+            </p>
+        </section>
+
+        <!-- Glossary -->
+        <details class="panel glossary">
+            <summary class="panel-header glossary-summary">
+                <h2 class="panel-title">📘 Glossário rápido</h2>
+            </summary>
+            <div class="glossary-grid">
+                <div class="glossary-item">
+                    <strong>ONI</strong>
+                    <p>Oceanic Niño Index. Mede a anomalia de temperatura na região Niño 3.4 do Pacífico Equatorial.</p>
+                </div>
+                <div class="glossary-item">
+                    <strong>SOI</strong>
+                    <p>Southern Oscillation Index. Diferença padronizada de pressão atmosférica entre Taiti e Darwin. SOI negativo indica El Niño; positivo, La Niña.</p>
+                </div>
+                <div class="glossary-item">
+                    <strong>ENSO</strong>
+                    <p>El Niño Southern Oscillation. Fenômeno climático ligado ao aquecimento ou resfriamento do Pacífico.</p>
+                </div>
+                <div class="glossary-item">
+                    <strong>SST</strong>
+                    <p>Sea Surface Temperature. Temperatura da superfície do mar, medida em regiões-chave do Pacífico.</p>
+                </div>
+                <div class="glossary-item">
+                    <strong>Niño 3.4</strong>
+                    <p>Região entre 5°N–5°S e 120°–170°W, usada como referência operacional principal para o monitoramento ENSO.</p>
+                </div>
+                <div class="glossary-item">
+                    <strong>El Niño</strong>
+                    <p>Aquecimento anormal do Pacífico Equatorial. ONI ≥ 0.5 por 5+ meses consecutivos.</p>
+                </div>
+                <div class="glossary-item">
+                    <strong>La Niña</strong>
+                    <p>Resfriamento anormal do Pacífico Equatorial. ONI ≤ −0.5 por 5+ meses consecutivos.</p>
+                </div>
+                <div class="glossary-item">
+                    <strong>PDO</strong>
+                    <p>Pacific Decadal Oscillation. Variabilidade climática decadal do Pacífico Norte. Fase quente amplifica El Niño; fase fria amplifica La Niña — modulando eventos ENSO por décadas.</p>
+                </div>
+                <div class="glossary-item">
+                    <strong>NAO</strong>
+                    <p>North Atlantic Oscillation. Diferença de pressão entre o Anticiclone dos Açores e a Depressão da Islândia. Fase positiva favorece invernos suaves na Europa; fase negativa traz frio e bloqueios.</p>
+                </div>
+                <div class="glossary-item">
+                    <strong>AMO</strong>
+                    <p>Atlantic Multidecadal Oscillation. Variação lenta da temperatura superficial do Atlântico Norte. Fase quente está associada a mais furacões no Atlântico e secas no Sahel.</p>
+                </div>
+                <div class="glossary-item">
+                    <strong>QBO</strong>
+                    <p>Quasi-Biennial Oscillation. Oscilação dos ventos estratosféricos equatoriais (∼30mb) entre fase oesteira e lesteira, com período de ∼28 meses. Influencia indiretamente a intensidade de ciclones tropicais.</p>
+                </div>
+                <div class="glossary-item">
+                    <strong>MJO</strong>
+                    <p>Madden-Julian Oscillation. Pulso convectivo tropical com período de 30 a 60 dias e 8 fases geográficas. Amplitude ≥ 1.0 indica MJO ativo. Fases 5–7 (Pacífico Oeste/Central) favorecem aquecimento ENSO; fases 1–3 (Oceano Índico) tendem a suprimir El Niño.</p>
+                </div>
+                <div class="glossary-item">
+                    <strong>CO₂ Mauna Loa</strong>
+                    <p>Concentração atmosférica de dióxido de carbono medida diariamente no Observatório de Mauna Loa, Havaí (NOAA GML). Referência global do forçamento radiativo antropogênico.</p>
+                </div>
+                <div class="glossary-item">
+                    <strong>Gelo Polar (NSIDC)</strong>
+                    <p>Extensão do gelo marinho no Ártico e na Antártida, medida em milhões de km² pelo National Snow and Ice Data Center. O gelo Ártico influencia o albedo e a circulação atmosférica do hemisfério norte; o gelo Antártico é indicador da saúde do sistema climático austral.</p>
+                </div>
+            </div>
+        </details>
+
+    </div><!-- /tab-analise -->
 
 </main>
 
