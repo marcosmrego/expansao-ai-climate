@@ -1,14 +1,30 @@
-"""MJO daily collector — NOAA CPC RMM index (phase 1-8 + amplitude)."""
+"""MJO daily collector — NOAA PSL VPM index (phase 1-8 + amplitude).
+
+Source: NOAA Physical Sciences Laboratory — Velocity Potential MJO Index (VPM)
+URL:    https://psl.noaa.gov/mjo/mjoindex/vpm.1x.CORe.txt
+Format: year month day 0 pc1 pc2 amplitude  (no header, space-separated)
+Phase computed from atan2(pc2, pc1) using the Wheeler-Hendon convention.
+"""
 import json
+import math
 import time
 from datetime import date
 
 import requests
 
-URL = "http://www.bom.gov.au/climate/mjo/graphics/rmm.74toRealtime.txt"
-ORIGEM = "BOM_MJO_RMM"
+URL = "https://psl.noaa.gov/mjo/mjoindex/vpm.1x.CORe.txt"
+ORIGEM = "NOAA_PSL_VPM"
 _MISSING = 999.0
-_MISSING_LARGE = 1e30
+
+
+def _angle_to_phase(pc1: float, pc2: float) -> int:
+    """Convert (PC1, PC2) vector to Wheeler-Hendon phase (1-8).
+
+    Phase N has its centre at math angle 90 - (N-1)*45 degrees.
+    Phases increase clockwise (consistent with WH2004 convention).
+    """
+    angle = math.degrees(math.atan2(pc2, pc1))
+    return int((90 - angle + 360) % 360 / 45) % 8 + 1
 
 
 def classificar_mjo(phase: int, amplitude: float) -> str:
@@ -21,17 +37,10 @@ def classificar_mjo(phase: int, amplitude: float) -> str:
     return "ATIVO"
 
 
-_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Referer": "https://www.bom.gov.au/climate/mjo/",
-    "Accept": "text/plain, */*",
-}
-
-
 def baixar_dados() -> str:
     for tentativa in range(1, 4):
         try:
-            r = requests.get(URL, headers=_HEADERS, timeout=30)
+            r = requests.get(URL, timeout=60)
             r.raise_for_status()
             return r.text
         except requests.RequestException as e:
@@ -56,11 +65,11 @@ def salvar_payload_bruto(conn, texto: str) -> int:
 
 
 def parse_rmm(texto: str) -> list:
-    """Parse NOAA CPC RMM file into (date, rmm1, rmm2, phase, amplitude) tuples.
+    """Parse NOAA PSL VPM file into (date, pc1, pc2, phase, amplitude) tuples.
 
-    Expected format (space-separated):
-      year  month  day  RMM1  RMM2  phase  amplitude  [source]
-    Missing values represented as 999 or 1E36.
+    Format (space-separated, no header):
+      year  month  day  0  PC1  PC2  amplitude
+    Phase is computed from atan2(PC2, PC1).
     """
     registros = []
     for linha in texto.splitlines():
@@ -74,23 +83,19 @@ def parse_rmm(texto: str) -> list:
             ano = int(partes[0])
             mes = int(partes[1])
             dia = int(partes[2])
-            rmm1 = float(partes[3])
-            rmm2 = float(partes[4])
-            phase = int(float(partes[5]))
+            pc1 = float(partes[4])
+            pc2 = float(partes[5])
             amplitude = float(partes[6])
         except (ValueError, IndexError):
             continue
-        if abs(rmm1) >= _MISSING_LARGE or abs(rmm2) >= _MISSING_LARGE or amplitude >= _MISSING_LARGE:
-            continue
-        if abs(rmm1) >= _MISSING or abs(rmm2) >= _MISSING or amplitude >= _MISSING:
-            continue
-        if not (1 <= phase <= 8):
+        if abs(pc1) >= _MISSING or abs(pc2) >= _MISSING or abs(amplitude) >= _MISSING:
             continue
         try:
             d = date(ano, mes, dia)
         except ValueError:
             continue
-        registros.append((d, rmm1, rmm2, phase, amplitude))
+        phase = _angle_to_phase(pc1, pc2)
+        registros.append((d, pc1, pc2, phase, amplitude))
     return registros
 
 
