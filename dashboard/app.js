@@ -444,10 +444,12 @@ async function carregarMJO() {
         document.getElementById("mjo-phase").textContent = `Fase ${d.phase}`
         document.getElementById("mjo-amplitude").textContent = `Amp. ${d.amplitude.toFixed(2)}`
         document.getElementById("mjo-fase").textContent = phaseDesc
+        document.getElementById("mjo-date").textContent = d.data_referencia || ""
     } catch {
         document.getElementById("mjo-phase").textContent = "—"
         document.getElementById("mjo-amplitude").textContent = "sem dados"
         document.getElementById("mjo-fase").textContent = ""
+        document.getElementById("mjo-date").textContent = ""
     }
 }
 

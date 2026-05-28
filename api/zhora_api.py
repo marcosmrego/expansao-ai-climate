@@ -90,6 +90,7 @@ class MjoResponse(BaseModel):
     amplitude: float
     classificacao: str
     fase: str
+    data_referencia: str
 
 
 class Co2Response(BaseModel):
@@ -593,9 +594,9 @@ def climate_mjo():
     try:
         cursor = conn.cursor()
         cursor.execute("""
-            SELECT phase, amplitude, classificacao, data_referencia
+            SELECT phase, amplitude, classificacao,
+                   to_char(data_referencia, 'YYYY-MM-DD')
             FROM climate.mjo_daily
-            WHERE data_referencia > NOW() - INTERVAL '30 days'
             ORDER BY data_referencia DESC
             LIMIT 1
         """)
@@ -607,6 +608,7 @@ def climate_mjo():
             "amplitude": float(r[1]),
             "classificacao": r[2],
             "fase": _MJO_FASE.get(r[2], r[2]),
+            "data_referencia": r[3],
         }
         _cache.set("mjo", result)
         return result
@@ -727,9 +729,13 @@ def climate_mjo_history():
         cursor = conn.cursor()
         cursor.execute("""
             SELECT to_char(data_referencia, 'YYYY-MM-DD'), rmm1, rmm2, phase, amplitude, classificacao
-            FROM climate.mjo_daily
-            WHERE data_referencia > NOW() - INTERVAL '60 days'
-              AND amplitude < 900
+            FROM (
+                SELECT data_referencia, rmm1, rmm2, phase, amplitude, classificacao
+                FROM climate.mjo_daily
+                WHERE amplitude < 900
+                ORDER BY data_referencia DESC
+                LIMIT 60
+            ) t
             ORDER BY data_referencia ASC
         """)
         rows = cursor.fetchall()
