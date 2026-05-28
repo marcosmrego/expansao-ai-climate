@@ -85,6 +85,28 @@ class IndexStatusResponse(BaseModel):
     fase: str
 
 
+class MjoResponse(BaseModel):
+    phase: int
+    amplitude: float
+    classificacao: str
+    fase: str
+
+
+class Co2Response(BaseModel):
+    co2_ppm: float
+    data_referencia: str
+
+
+class IceResponse(BaseModel):
+    extent_mkm2: float
+    area_mkm2: Optional[float]
+    data_referencia: str
+
+
+class PredictionResponse(BaseModel):
+    prediction: str
+
+
 app = FastAPI(
     title="Expansao AI Climate API"
 )
@@ -533,6 +555,164 @@ def climate_qbo():
         raise HTTPException(status_code=500, detail="Erro ao consultar QBO")
     finally:
         conn.close()
+
+
+_MJO_FASE = {
+    "FRACO":             "Inativo (amplitude < 1.0)",
+    "ATIVO":             "Ativo",
+    "FAVORAVEL_ELNINO":  "Favorável El Niño (fases 5–7)",
+    "FAVORAVEL_LANINA":  "Favorável La Niña (fases 1–3)",
+}
+
+
+@app.get("/climate/mjo", response_model=MjoResponse)
+def climate_mjo():
+    cached = _cache.get("mjo")
+    if cached:
+        return cached
+    conn = conectar()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT phase, amplitude, classificacao, data_referencia
+            FROM climate.mjo_daily
+            WHERE data_referencia > NOW() - INTERVAL '30 days'
+            ORDER BY data_referencia DESC
+            LIMIT 1
+        """)
+        r = cursor.fetchone()
+        if r is None:
+            raise HTTPException(status_code=404, detail="Sem dados MJO disponíveis")
+        result = {
+            "phase": int(r[0]),
+            "amplitude": float(r[1]),
+            "classificacao": r[2],
+            "fase": _MJO_FASE.get(r[2], r[2]),
+        }
+        _cache.set("mjo", result)
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Erro em /climate/mjo: %s", e)
+        raise HTTPException(status_code=500, detail="Erro ao consultar MJO")
+    finally:
+        conn.close()
+
+
+@app.get("/climate/co2", response_model=Co2Response)
+def climate_co2():
+    cached = _cache.get("co2")
+    if cached:
+        return cached
+    conn = conectar()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT co2_ppm, to_char(data_referencia, 'YYYY-MM-DD')
+            FROM climate.noaa_co2_daily
+            WHERE data_referencia > NOW() - INTERVAL '30 days'
+            ORDER BY data_referencia DESC
+            LIMIT 1
+        """)
+        r = cursor.fetchone()
+        if r is None:
+            raise HTTPException(status_code=404, detail="Sem dados CO₂ disponíveis")
+        result = {"co2_ppm": float(r[0]), "data_referencia": r[1]}
+        _cache.set("co2", result)
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Erro em /climate/co2: %s", e)
+        raise HTTPException(status_code=500, detail="Erro ao consultar CO₂")
+    finally:
+        conn.close()
+
+
+@app.get("/climate/arctic_ice", response_model=IceResponse)
+def climate_arctic_ice():
+    cached = _cache.get("arctic_ice")
+    if cached:
+        return cached
+    conn = conectar()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT extent_mkm2, area_mkm2, to_char(data_referencia, 'YYYY-MM-DD')
+            FROM climate.nsidc_arctic_ice_daily
+            WHERE data_referencia > NOW() - INTERVAL '30 days'
+            ORDER BY data_referencia DESC
+            LIMIT 1
+        """)
+        r = cursor.fetchone()
+        if r is None:
+            raise HTTPException(status_code=404, detail="Sem dados de gelo Ártico disponíveis")
+        result = {
+            "extent_mkm2": float(r[0]),
+            "area_mkm2": float(r[1]) if r[1] is not None else None,
+            "data_referencia": r[2],
+        }
+        _cache.set("arctic_ice", result)
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Erro em /climate/arctic_ice: %s", e)
+        raise HTTPException(status_code=500, detail="Erro ao consultar gelo Ártico")
+    finally:
+        conn.close()
+
+
+@app.get("/climate/antarctic_ice", response_model=IceResponse)
+def climate_antarctic_ice():
+    cached = _cache.get("antarctic_ice")
+    if cached:
+        return cached
+    conn = conectar()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT extent_mkm2, area_mkm2, to_char(data_referencia, 'YYYY-MM-DD')
+            FROM climate.nsidc_antarctic_ice_daily
+            WHERE data_referencia > NOW() - INTERVAL '30 days'
+            ORDER BY data_referencia DESC
+            LIMIT 1
+        """)
+        r = cursor.fetchone()
+        if r is None:
+            raise HTTPException(status_code=404, detail="Sem dados de gelo Antártico disponíveis")
+        result = {
+            "extent_mkm2": float(r[0]),
+            "area_mkm2": float(r[1]) if r[1] is not None else None,
+            "data_referencia": r[2],
+        }
+        _cache.set("antarctic_ice", result)
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Erro em /climate/antarctic_ice: %s", e)
+        raise HTTPException(status_code=500, detail="Erro ao consultar gelo Antártico")
+    finally:
+        conn.close()
+
+
+@app.get("/climate/prediction", response_model=PredictionResponse)
+def climate_prediction():
+    cached = _cache.get("prediction")
+    if cached:
+        return cached
+
+    from app.services.zhora_service import get_latest_prediction
+
+    prediction = get_latest_prediction()
+    if prediction is None:
+        prediction = "Nenhuma análise preditiva disponível. Execute POST /api/collect/prediction para gerar a primeira."
+
+    result = {"prediction": prediction}
+    _cache.set("prediction", result)
+    return result
 
 
 # Serve the dashboard — must be mounted last so API routes take precedence

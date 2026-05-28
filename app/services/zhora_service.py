@@ -20,7 +20,7 @@ _SYSTEM_PROMPT = (
 
 
 def build_climate_context() -> dict:
-    """Query DB for current ONI, trend, Niño 3.4 and active alerts."""
+    """Query DB for current climate indicators (monthly + daily) and active alerts."""
     conn = conectar()
     try:
         with conn.cursor() as cur:
@@ -72,10 +72,27 @@ def build_climate_context() -> dict:
                 except Exception:
                     return None
 
+            def _fetch_latest_daily(table, cols):
+                try:
+                    cols_str = ", ".join(cols)
+                    cur.execute(
+                        f"SELECT {cols_str} FROM climate.{table} "
+                        f"WHERE data_referencia > NOW() - INTERVAL '30 days' "
+                        f"ORDER BY data_referencia DESC LIMIT 1"
+                    )
+                    return cur.fetchone()
+                except Exception:
+                    return None
+
             pdo_row = _fetch_latest("noaa_pdo", "pdo")
             nao_row = _fetch_latest("noaa_nao", "nao")
             amo_row = _fetch_latest("noaa_amo", "amo")
             qbo_row = _fetch_latest("noaa_qbo", "qbo", missing=-999.0)
+
+            mjo_row      = _fetch_latest_daily("mjo_daily",               ["phase", "amplitude", "classificacao"])
+            co2_row      = _fetch_latest_daily("noaa_co2_daily",          ["co2_ppm", "data_referencia"])
+            arctic_row   = _fetch_latest_daily("nsidc_arctic_ice_daily",  ["extent_mkm2", "data_referencia"])
+            antarctic_row = _fetch_latest_daily("nsidc_antarctic_ice_daily", ["extent_mkm2", "data_referencia"])
 
     finally:
         conn.close()
@@ -112,6 +129,15 @@ def build_climate_context() -> dict:
         "amo_classificacao": amo_row[1] if amo_row else None,
         "qbo": float(qbo_row[0]) if qbo_row else None,
         "qbo_classificacao": qbo_row[1] if qbo_row else None,
+        "mjo_phase": int(mjo_row[0]) if mjo_row else None,
+        "mjo_amplitude": float(mjo_row[1]) if mjo_row else None,
+        "mjo_classificacao": mjo_row[2] if mjo_row else None,
+        "co2_ppm": float(co2_row[0]) if co2_row else None,
+        "co2_date": str(co2_row[1]) if co2_row else None,
+        "arctic_ice_mkm2": float(arctic_row[0]) if arctic_row else None,
+        "arctic_ice_date": str(arctic_row[1]) if arctic_row else None,
+        "antarctic_ice_mkm2": float(antarctic_row[0]) if antarctic_row else None,
+        "antarctic_ice_date": str(antarctic_row[1]) if antarctic_row else None,
         "alerts": [
             {"severity": r[0], "title": r[1], "message": r[2]}
             for r in alert_rows
@@ -156,6 +182,25 @@ def context_to_text(ctx: dict) -> str:
             ctx.get("qbo_classificacao", "NEUTRO"), "transição"
         )
         lines.append(f"- QBO: {ctx['qbo']:.1f} m/s ({qbo_fase})")
+
+    if ctx.get("mjo_phase") is not None:
+        mjo_cls_map = {
+            "FRACO": "inativo (amp < 1.0)",
+            "FAVORAVEL_ELNINO": "favorável El Niño (fases 5-7)",
+            "FAVORAVEL_LANINA": "favorável La Niña (fases 1-3)",
+            "ATIVO": "ativo",
+        }
+        mjo_desc = mjo_cls_map.get(ctx.get("mjo_classificacao", ""), ctx.get("mjo_classificacao", ""))
+        lines.append(f"- MJO: fase {ctx['mjo_phase']}, amplitude {ctx['mjo_amplitude']:.2f} ({mjo_desc})")
+
+    if ctx.get("co2_ppm") is not None:
+        lines.append(f"- CO₂ atmosférico: {ctx['co2_ppm']:.2f} ppm (Mauna Loa)")
+
+    if ctx.get("arctic_ice_mkm2") is not None:
+        lines.append(f"- Gelo Ártico: {ctx['arctic_ice_mkm2']:.3f} milhões km²")
+
+    if ctx.get("antarctic_ice_mkm2") is not None:
+        lines.append(f"- Gelo Antártico: {ctx['antarctic_ice_mkm2']:.3f} milhões km²")
 
     if ctx["alerts"]:
         lines.append("\nAlertas ativos:")
@@ -290,6 +335,84 @@ def get_latest_insight() -> Optional[str]:
                 """
                 SELECT content FROM climate.operational_context
                 WHERE context_type = 'CLIMATE_INSIGHT'
+                ORDER BY created_at DESC
+                LIMIT 1
+                """
+            )
+            row = cur.fetchone()
+        return row[0] if row else None
+    finally:
+        conn.close()
+
+
+_PREDICTION_PROMPT = (
+    "Com base no contexto climático atual fornecido, elabore uma análise preditiva técnica "
+    "para os próximos 1 a 3 meses. "
+    "Considere a convergência entre: fase ENSO atual (ONI, SOI), moduladores de baixa frequência "
+    "(PDO, AMO, NAO, QBO), oscilação intra-sazonal (MJO), CO₂ atmosférico e extensão do gelo polar. "
+    "Identifique quais sinais reforçam ou contradizem a tendência ENSO atual. "
+    "Escreva 4 a 6 frases técnicas em português. "
+    "IMPORTANTE: texto corrido, sem formatação markdown, sem asteriscos, "
+    "sem títulos com #, sem bullet points. Apenas texto puro."
+)
+
+
+def generate_prediction() -> str:
+    """Generate and persist a predictive climate analysis for the next 1-3 months."""
+    ctx = build_climate_context()
+    context_text = context_to_text(ctx)
+    prediction_text = ask_claude(_PREDICTION_PROMPT, context_text)
+
+    conn = conectar()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO climate.operational_context
+                    (context_type, content, oni_snapshot, metadata)
+                VALUES ('CLIMATE_PREDICTION', %s, %s, %s::jsonb)
+                RETURNING id
+                """,
+                (
+                    prediction_text,
+                    ctx.get("oni"),
+                    json.dumps({
+                        "classificacao": ctx["classificacao"],
+                        "nino34_anom": ctx.get("nino34_anom"),
+                        "soi": ctx.get("soi"),
+                        "pdo": ctx.get("pdo"),
+                        "nao": ctx.get("nao"),
+                        "amo": ctx.get("amo"),
+                        "qbo": ctx.get("qbo"),
+                        "mjo_phase": ctx.get("mjo_phase"),
+                        "mjo_amplitude": ctx.get("mjo_amplitude"),
+                        "co2_ppm": ctx.get("co2_ppm"),
+                        "arctic_ice_mkm2": ctx.get("arctic_ice_mkm2"),
+                        "antarctic_ice_mkm2": ctx.get("antarctic_ice_mkm2"),
+                        "alert_count": len(ctx.get("alerts", [])),
+                    }),
+                ),
+            )
+            cur.fetchone()
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+    return prediction_text
+
+
+def get_latest_prediction() -> Optional[str]:
+    """Retrieve the most recent AI-generated predictive analysis."""
+    conn = conectar()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT content FROM climate.operational_context
+                WHERE context_type = 'CLIMATE_PREDICTION'
                 ORDER BY created_at DESC
                 LIMIT 1
                 """

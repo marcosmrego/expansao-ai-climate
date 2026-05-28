@@ -597,6 +597,11 @@ details[open] .glossary-summary {
     line-height: 1.5;
 }
 
+/* ── Prediction panel ───────────────────────────────────────────────── */
+.panel-prediction {
+    border-top: 3px solid rgba(171, 71, 188, .6);
+}
+
 /* ── Footer ─────────────────────────────────────────────────────────── */
 footer {
     text-align: center;

@@ -1,0 +1,111 @@
+{
+  "name": "Expansao AI Climate — Coleta Diária",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 7 * * *"
+            }
+          ]
+        }
+      },
+      "id": "node-schedule-daily",
+      "name": "Todo dia às 07h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://climate.expansao-ai.com.br/api/collect/mjo",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "X-Api-Key", "value": "={{ $env.COLLECTOR_SECRET }}" }]
+        },
+        "options": { "timeout": 60000 }
+      },
+      "id": "node-mjo",
+      "name": "Coletar MJO",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://climate.expansao-ai.com.br/api/collect/co2",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "X-Api-Key", "value": "={{ $env.COLLECTOR_SECRET }}" }]
+        },
+        "options": { "timeout": 60000 }
+      },
+      "id": "node-co2",
+      "name": "Coletar CO₂",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://climate.expansao-ai.com.br/api/collect/arctic_ice",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "X-Api-Key", "value": "={{ $env.COLLECTOR_SECRET }}" }]
+        },
+        "options": { "timeout": 120000 }
+      },
+      "id": "node-arctic",
+      "name": "Coletar Gelo Ártico",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://climate.expansao-ai.com.br/api/collect/antarctic_ice",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "X-Api-Key", "value": "={{ $env.COLLECTOR_SECRET }}" }]
+        },
+        "options": { "timeout": 120000 }
+      },
+      "id": "node-antarctic",
+      "name": "Coletar Gelo Antártico",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 300]
+    }
+  ],
+  "connections": {
+    "Todo dia às 07h": {
+      "main": [[{ "node": "Coletar MJO", "type": "main", "index": 0 }]]
+    },
+    "Coletar MJO": {
+      "main": [[{ "node": "Coletar CO₂", "type": "main", "index": 0 }]]
+    },
+    "Coletar CO₂": {
+      "main": [[{ "node": "Coletar Gelo Ártico", "type": "main", "index": 0 }]]
+    },
+    "Coletar Gelo Ártico": {
+      "main": [[{ "node": "Coletar Gelo Antártico", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

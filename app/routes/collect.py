@@ -242,6 +242,146 @@ def collect_qbo(x_api_key: str = Header(default="")):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/mjo")
+def collect_mjo(x_api_key: str = Header(default="")):
+    _auth(x_api_key)
+    try:
+        from collector.mjo_collector import baixar_dados, parse_rmm, salvar_payload_bruto, inserir_registros
+        from database.db import conectar
+
+        conn = conectar()
+        try:
+            texto = baixar_dados()
+            registros = parse_rmm(texto)
+            raw_payload_id = salvar_payload_bruto(conn, texto)
+            total = inserir_registros(conn, registros, raw_payload_id)
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+        return {"status": "ok", "records": total}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Erro na coleta MJO: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/co2")
+def collect_co2(x_api_key: str = Header(default="")):
+    _auth(x_api_key)
+    try:
+        from collector.noaa_co2_collector import baixar_dados, parse_co2, salvar_payload_bruto, inserir_registros
+        from database.db import conectar
+
+        conn = conectar()
+        try:
+            texto = baixar_dados()
+            registros = parse_co2(texto)
+            raw_payload_id = salvar_payload_bruto(conn, texto)
+            total = inserir_registros(conn, registros, raw_payload_id)
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+        return {"status": "ok", "records": total}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Erro na coleta CO₂: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/arctic_ice")
+def collect_arctic_ice(x_api_key: str = Header(default="")):
+    _auth(x_api_key)
+    try:
+        from collector.nsidc_ice_collector import (
+            baixar_dados, parse_ice, salvar_payload_bruto, inserir_registros,
+            URL_ARCTIC, ORIGEM_ARCTIC, TABLE_ARCTIC,
+        )
+        from database.db import conectar
+
+        conn = conectar()
+        try:
+            texto = baixar_dados(URL_ARCTIC)
+            registros = parse_ice(texto)
+            raw_payload_id = salvar_payload_bruto(conn, texto, ORIGEM_ARCTIC, URL_ARCTIC)
+            total = inserir_registros(conn, registros, raw_payload_id, TABLE_ARCTIC, ORIGEM_ARCTIC)
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+        return {"status": "ok", "records": total}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Erro na coleta gelo Ártico: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/antarctic_ice")
+def collect_antarctic_ice(x_api_key: str = Header(default="")):
+    _auth(x_api_key)
+    try:
+        from collector.nsidc_ice_collector import (
+            baixar_dados, parse_ice, salvar_payload_bruto, inserir_registros,
+            URL_ANTARCTIC, ORIGEM_ANTARCTIC, TABLE_ANTARCTIC,
+        )
+        from database.db import conectar
+
+        conn = conectar()
+        try:
+            texto = baixar_dados(URL_ANTARCTIC)
+            registros = parse_ice(texto)
+            raw_payload_id = salvar_payload_bruto(conn, texto, ORIGEM_ANTARCTIC, URL_ANTARCTIC)
+            total = inserir_registros(conn, registros, raw_payload_id, TABLE_ANTARCTIC, ORIGEM_ANTARCTIC)
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+        return {"status": "ok", "records": total}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Erro na coleta gelo Antártico: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/prediction")
+def collect_prediction(x_api_key: str = Header(default="")):
+    """Generate and persist a predictive climate analysis for the next 1-3 months."""
+    _auth(x_api_key)
+    try:
+        from app.services.zhora_service import generate_prediction
+        prediction = generate_prediction()
+        return {"status": "ok", "prediction": prediction}
+
+    except HTTPException:
+        raise
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception as e:
+        logger.error("Erro ao gerar predição: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/insight")
 def collect_insight(x_api_key: str = Header(default="")):
     """Generate and persist an AI insight from the current climate context."""

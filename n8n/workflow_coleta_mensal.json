@@ -161,6 +161,24 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [2000, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://climate.expansao-ai.com.br/api/collect/prediction",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "X-Api-Key", "value": "={{ $env.COLLECTOR_SECRET }}" }]
+        },
+        "options": { "timeout": 120000 }
+      },
+      "id": "node-prediction",
+      "name": "Gerar Análise Preditiva",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2220, 300]
     }
   ],
   "connections": {
@@ -187,6 +205,9 @@
     },
     "Coletar QBO": {
       "main": [[{ "node": "Gerar Insight IA", "type": "main", "index": 0 }]]
+    },
+    "Gerar Insight IA": {
+      "main": [[{ "node": "Gerar Análise Preditiva", "type": "main", "index": 0 }]]
     }
   },
   "settings": {

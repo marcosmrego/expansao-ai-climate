@@ -423,6 +423,87 @@ function montarGrafico(dados, dadosSOI = []) {
     })
 }
 
+// ── MJO ──────────────────────────────────────────────────────────────
+const MJO_PHASE_DESC = {
+    1: "África/Índico O.",
+    2: "Índico Oeste",
+    3: "Índico Leste",
+    4: "Cont. Marítimo",
+    5: "Pacífico Oeste",
+    6: "Pacífico Central",
+    7: "Pacífico Leste",
+    8: "Hemis. Ocidental"
+}
+
+async function carregarMJO() {
+    try {
+        const res = await fetch(`${API_BASE}/climate/mjo`)
+        if (!res.ok) throw new Error(res.status)
+        const d = await res.json()
+        const phaseDesc = MJO_PHASE_DESC[d.phase] || `Fase ${d.phase}`
+        document.getElementById("mjo-phase").textContent = `Fase ${d.phase}`
+        document.getElementById("mjo-amplitude").textContent = `Amp. ${d.amplitude.toFixed(2)}`
+        document.getElementById("mjo-fase").textContent = phaseDesc
+    } catch {
+        document.getElementById("mjo-phase").textContent = "—"
+        document.getElementById("mjo-amplitude").textContent = "sem dados"
+        document.getElementById("mjo-fase").textContent = ""
+    }
+}
+
+// ── CO₂ ──────────────────────────────────────────────────────────────
+async function carregarCO2() {
+    try {
+        const res = await fetch(`${API_BASE}/climate/co2`)
+        if (!res.ok) throw new Error(res.status)
+        const d = await res.json()
+        document.getElementById("co2-value").textContent = `${d.co2_ppm.toFixed(2)} ppm`
+        document.getElementById("co2-date").textContent = d.data_referencia
+    } catch {
+        document.getElementById("co2-value").textContent = "—"
+        document.getElementById("co2-date").textContent = "sem dados"
+    }
+}
+
+// ── Sea Ice ───────────────────────────────────────────────────────────
+async function carregarGeloArtico() {
+    try {
+        const res = await fetch(`${API_BASE}/climate/arctic_ice`)
+        if (!res.ok) throw new Error(res.status)
+        const d = await res.json()
+        document.getElementById("arctic-value").textContent = `${d.extent_mkm2.toFixed(3)} Mkm²`
+        document.getElementById("arctic-date").textContent = d.data_referencia
+    } catch {
+        document.getElementById("arctic-value").textContent = "—"
+        document.getElementById("arctic-date").textContent = "sem dados"
+    }
+}
+
+async function carregarGeloAntartico() {
+    try {
+        const res = await fetch(`${API_BASE}/climate/antarctic_ice`)
+        if (!res.ok) throw new Error(res.status)
+        const d = await res.json()
+        document.getElementById("antarctic-value").textContent = `${d.extent_mkm2.toFixed(3)} Mkm²`
+        document.getElementById("antarctic-date").textContent = d.data_referencia
+    } catch {
+        document.getElementById("antarctic-value").textContent = "—"
+        document.getElementById("antarctic-date").textContent = "sem dados"
+    }
+}
+
+// ── Prediction ────────────────────────────────────────────────────────
+async function carregarPredicao() {
+    try {
+        const res = await fetch(`${API_BASE}/climate/prediction`)
+        if (!res.ok) throw new Error(res.status)
+        const d = await res.json()
+        document.getElementById("prediction").innerHTML = renderInsight(d.prediction)
+    } catch {
+        document.getElementById("prediction").textContent = "Não foi possível carregar a análise preditiva."
+    }
+}
+
 // ── Init ─────────────────────────────────────────────────────────────
 carregarStatus()
 carregarHistorico()
@@ -435,3 +516,8 @@ carregarPDO()
 carregarNAO()
 carregarAMO()
 carregarQBO()
+carregarMJO()
+carregarCO2()
+carregarGeloArtico()
+carregarGeloAntartico()
+carregarPredicao()

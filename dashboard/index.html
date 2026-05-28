@@ -139,6 +139,50 @@
         </div>
     </section>
 
+    <!-- Daily indicators -->
+    <section class="panel">
+        <div class="panel-header">
+            <h2 class="panel-title">Indicadores Diários</h2>
+            <span class="panel-sub">MJO · CO₂ · Gelo Polar</span>
+        </div>
+        <div class="modulation-grid">
+
+            <div class="card">
+                <div class="card-label">MJO
+                    <span class="tooltip-icon" title="Madden-Julian Oscillation — pulso tropical intra-sazonal (30–60 dias). Fase 1-8; amplitude ≥ 1.0 = ativo. Fases 5-7 favorecem El Niño; fases 1-3 favorecem La Niña.">ℹ</span>
+                </div>
+                <div class="metric-value" id="mjo-phase"><span class="skeleton">---</span></div>
+                <div class="metric-unit" id="mjo-amplitude"><span class="skeleton">---------</span></div>
+                <div class="metric-unit" style="margin-top:4px" id="mjo-fase"><span class="skeleton">---------</span></div>
+            </div>
+
+            <div class="card">
+                <div class="card-label">CO₂ Atmosférico
+                    <span class="tooltip-icon" title="Concentração de CO₂ medida diariamente no Observatório de Mauna Loa (NOAA GML). Indicador do forçamento radiativo global.">ℹ</span>
+                </div>
+                <div class="metric-value sm" id="co2-value"><span class="skeleton">------</span></div>
+                <div class="metric-unit" id="co2-date"><span class="skeleton">----------</span></div>
+            </div>
+
+            <div class="card">
+                <div class="card-label">Gelo Ártico
+                    <span class="tooltip-icon" title="Extensão do gelo marinho no Ártico (NSIDC). Medido em milhões de km². Afeta albedo, circulação oceânica e padrões de teleconexão.">ℹ</span>
+                </div>
+                <div class="metric-value sm" id="arctic-value"><span class="skeleton">------</span></div>
+                <div class="metric-unit" id="arctic-date"><span class="skeleton">----------</span></div>
+            </div>
+
+            <div class="card">
+                <div class="card-label">Gelo Antártico
+                    <span class="tooltip-icon" title="Extensão do gelo marinho na Antártida (NSIDC). Medido em milhões de km². Indicador da saúde do sistema climático polar sul.">ℹ</span>
+                </div>
+                <div class="metric-value sm" id="antarctic-value"><span class="skeleton">------</span></div>
+                <div class="metric-unit" id="antarctic-date"><span class="skeleton">----------</span></div>
+            </div>
+
+        </div>
+    </section>
+
     <!-- Chart -->
     <section class="panel">
         <div class="panel-header">
@@ -166,6 +210,18 @@
             <h2 class="panel-title">🧠 Insight Operacional</h2>
         </div>
         <p id="analysis" class="insight-text">
+            <span class="skeleton skeleton-line"></span>
+            <span class="skeleton skeleton-line short"></span>
+        </p>
+    </section>
+
+    <!-- Predictive Analysis -->
+    <section class="panel panel-prediction">
+        <div class="panel-header">
+            <h2 class="panel-title">🔭 Análise Preditiva</h2>
+            <span class="panel-sub">próximos 1–3 meses</span>
+        </div>
+        <p id="prediction" class="insight-text">
             <span class="skeleton skeleton-line"></span>
             <span class="skeleton skeleton-line short"></span>
         </p>
@@ -220,6 +276,18 @@
             <div class="glossary-item">
                 <strong>QBO</strong>
                 <p>Quasi-Biennial Oscillation. Oscilação dos ventos estratosféricos equatoriais (∼30mb) entre fase oesteira e lesteira, com período de ∼28 meses. Influencia indiretamente a intensidade de ciclones tropicais.</p>
+            </div>
+            <div class="glossary-item">
+                <strong>MJO</strong>
+                <p>Madden-Julian Oscillation. Pulso convectivo tropical com período de 30 a 60 dias e 8 fases geográficas. Amplitude ≥ 1.0 indica MJO ativo. Fases 5–7 (Pacífico Oeste/Central) favorecem aquecimento ENSO; fases 1–3 (Oceano Índico) tendem a suprimir El Niño.</p>
+            </div>
+            <div class="glossary-item">
+                <strong>CO₂ Mauna Loa</strong>
+                <p>Concentração atmosférica de dióxido de carbono medida diariamente no Observatório de Mauna Loa, Havaí (NOAA GML). Referência global do forçamento radiativo antropogênico.</p>
+            </div>
+            <div class="glossary-item">
+                <strong>Gelo Polar (NSIDC)</strong>
+                <p>Extensão do gelo marinho no Ártico e na Antártida, medida em milhões de km² pelo National Snow and Ice Data Center. O gelo Ártico influencia o albedo e a circulação atmosférica do hemisfério norte; o gelo Antártico é indicador da saúde do sistema climático austral.</p>
             </div>
         </div>
     </details>
