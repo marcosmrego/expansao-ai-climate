@@ -557,6 +557,25 @@ def climate_qbo():
         conn.close()
 
 
+class MjoHistoryItem(BaseModel):
+    data_referencia: str
+    rmm1: float
+    rmm2: float
+    phase: int
+    amplitude: float
+    classificacao: str
+
+
+class Co2HistoryItem(BaseModel):
+    data_referencia: str
+    co2_ppm: float
+
+
+class IceHistoryItem(BaseModel):
+    data_referencia: str
+    extent_mkm2: float
+
+
 _MJO_FASE = {
     "FRACO":             "Inativo (amplitude < 1.0)",
     "ATIVO":             "Ativo",
@@ -694,6 +713,113 @@ def climate_antarctic_ice():
     except Exception as e:
         logger.error("Erro em /climate/antarctic_ice: %s", e)
         raise HTTPException(status_code=500, detail="Erro ao consultar gelo Antártico")
+    finally:
+        conn.close()
+
+
+@app.get("/climate/mjo/history", response_model=list[MjoHistoryItem])
+def climate_mjo_history():
+    cached = _cache.get("mjo_history")
+    if cached:
+        return cached
+    conn = conectar()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT to_char(data_referencia, 'YYYY-MM-DD'), rmm1, rmm2, phase, amplitude, classificacao
+            FROM climate.mjo_daily
+            WHERE data_referencia > NOW() - INTERVAL '60 days'
+              AND amplitude < 900
+            ORDER BY data_referencia ASC
+        """)
+        rows = cursor.fetchall()
+        dados = [
+            {
+                "data_referencia": r[0], "rmm1": float(r[1]), "rmm2": float(r[2]),
+                "phase": int(r[3]), "amplitude": float(r[4]), "classificacao": r[5],
+            }
+            for r in rows
+        ]
+        _cache.set("mjo_history", dados)
+        return dados
+    except Exception as e:
+        logger.error("Erro em /climate/mjo/history: %s", e)
+        raise HTTPException(status_code=500, detail="Erro ao consultar histórico MJO")
+    finally:
+        conn.close()
+
+
+@app.get("/climate/co2/history", response_model=list[Co2HistoryItem])
+def climate_co2_history():
+    cached = _cache.get("co2_history")
+    if cached:
+        return cached
+    conn = conectar()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT to_char(data_referencia, 'YYYY-MM-DD'), co2_ppm
+            FROM climate.noaa_co2_daily
+            WHERE data_referencia > NOW() - INTERVAL '5 years'
+            ORDER BY data_referencia ASC
+        """)
+        rows = cursor.fetchall()
+        dados = [{"data_referencia": r[0], "co2_ppm": float(r[1])} for r in rows]
+        _cache.set("co2_history", dados)
+        return dados
+    except Exception as e:
+        logger.error("Erro em /climate/co2/history: %s", e)
+        raise HTTPException(status_code=500, detail="Erro ao consultar histórico CO₂")
+    finally:
+        conn.close()
+
+
+@app.get("/climate/arctic_ice/history", response_model=list[IceHistoryItem])
+def climate_arctic_ice_history():
+    cached = _cache.get("arctic_ice_history")
+    if cached:
+        return cached
+    conn = conectar()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT to_char(data_referencia, 'YYYY-MM-DD'), extent_mkm2
+            FROM climate.nsidc_arctic_ice_daily
+            WHERE data_referencia > NOW() - INTERVAL '3 years'
+            ORDER BY data_referencia ASC
+        """)
+        rows = cursor.fetchall()
+        dados = [{"data_referencia": r[0], "extent_mkm2": float(r[1])} for r in rows]
+        _cache.set("arctic_ice_history", dados)
+        return dados
+    except Exception as e:
+        logger.error("Erro em /climate/arctic_ice/history: %s", e)
+        raise HTTPException(status_code=500, detail="Erro ao consultar histórico gelo Ártico")
+    finally:
+        conn.close()
+
+
+@app.get("/climate/antarctic_ice/history", response_model=list[IceHistoryItem])
+def climate_antarctic_ice_history():
+    cached = _cache.get("antarctic_ice_history")
+    if cached:
+        return cached
+    conn = conectar()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT to_char(data_referencia, 'YYYY-MM-DD'), extent_mkm2
+            FROM climate.nsidc_antarctic_ice_daily
+            WHERE data_referencia > NOW() - INTERVAL '3 years'
+            ORDER BY data_referencia ASC
+        """)
+        rows = cursor.fetchall()
+        dados = [{"data_referencia": r[0], "extent_mkm2": float(r[1])} for r in rows]
+        _cache.set("antarctic_ice_history", dados)
+        return dados
+    except Exception as e:
+        logger.error("Erro em /climate/antarctic_ice/history: %s", e)
+        raise HTTPException(status_code=500, detail="Erro ao consultar histórico gelo Antártico")
     finally:
         conn.close()
 

@@ -504,6 +504,360 @@ async function carregarPredicao() {
     }
 }
 
+// ── Wheeler-Hendon MJO Phase Diagram ────────────────────────────────
+async function montarWheelerHendon() {
+    const canvas = document.getElementById("whChart")
+    if (!canvas) return
+    try {
+        const res = await fetch(`${API_BASE}/climate/mjo/history`)
+        if (!res.ok) throw new Error(res.status)
+        const dados = await res.json()
+        if (!dados.length) return
+
+        // Colours per classification
+        const COR = {
+            FAVORAVEL_LANINA: "#42A5F5",
+            FAVORAVEL_ELNINO: "#FF7043",
+            ATIVO:            "#FFA726",
+            FRACO:            "#546A84",
+        }
+
+        // Phase wedge definitions: [startAngle, endAngle] in math-degrees
+        // Phase N centre at math angle 90 + (N-1)*45
+        const WEDGES = [
+            { phase: 1, label: "1", cor: "rgba(66,165,245,.18)",  start: 67.5,  end: 112.5 },
+            { phase: 2, label: "2", cor: "rgba(66,165,245,.12)",  start: 22.5,  end:  67.5 },
+            { phase: 3, label: "3", cor: "rgba(66,165,245,.08)",  start: -22.5, end:  22.5 },
+            { phase: 4, label: "4", cor: "rgba(120,144,156,.07)", start: -67.5, end: -22.5 },
+            { phase: 5, label: "5", cor: "rgba(255,112,67,.08)",  start: -112.5,end: -67.5 },
+            { phase: 6, label: "6", cor: "rgba(255,112,67,.12)",  start: -157.5,end: -112.5},
+            { phase: 7, label: "7", cor: "rgba(255,112,67,.18)",  start:  157.5,end:  202.5},
+            { phase: 8, label: "8", cor: "rgba(120,144,156,.07)", start:  112.5,end:  157.5},
+        ]
+
+        const bgPlugin = {
+            id: "whBackground",
+            beforeDraw(chart) {
+                const { ctx, chartArea: ca } = chart
+                const cx = (ca.left + ca.right) / 2
+                const cy = (ca.top  + ca.bottom) / 2
+                const rOuter = Math.min(ca.width, ca.height) / 2
+
+                // Draw phase wedges
+                WEDGES.forEach(w => {
+                    const toCanvas = deg => (360 - deg) * Math.PI / 180
+                    ctx.beginPath()
+                    ctx.moveTo(cx, cy)
+                    ctx.arc(cx, cy, rOuter, toCanvas(w.end), toCanvas(w.start), false)
+                    ctx.closePath()
+                    ctx.fillStyle = w.cor
+                    ctx.fill()
+
+                    // Phase number label at 75% radius
+                    const mid = (w.start + w.end) / 2
+                    const rad = mid * Math.PI / 180
+                    const lx  = cx + rOuter * 0.75 * Math.cos(rad)
+                    const ly  = cy - rOuter * 0.75 * Math.sin(rad)
+                    ctx.fillStyle = "rgba(200,215,230,.55)"
+                    ctx.font = `bold ${Math.max(10, rOuter * 0.07)}px Inter,sans-serif`
+                    ctx.textAlign = "center"
+                    ctx.textBaseline = "middle"
+                    ctx.fillText(w.label, lx, ly)
+                })
+
+                // Amplitude = 1.0 unit circle (dashed)
+                const rUnit = rOuter / (chart.scales.x.max)
+                ctx.beginPath()
+                ctx.arc(cx, cy, rUnit, 0, 2 * Math.PI)
+                ctx.strokeStyle = "rgba(255,255,255,.25)"
+                ctx.lineWidth = 1.5
+                ctx.setLineDash([4, 4])
+                ctx.stroke()
+                ctx.setLineDash([])
+
+                // Axes
+                ctx.beginPath()
+                ctx.moveTo(ca.left, cy)
+                ctx.lineTo(ca.right, cy)
+                ctx.moveTo(cx, ca.top)
+                ctx.lineTo(cx, ca.bottom)
+                ctx.strokeStyle = "rgba(255,255,255,.10)"
+                ctx.lineWidth = 1
+                ctx.stroke()
+            }
+        }
+
+        // Build datasets: trajectory line + coloured scatter points
+        const n = dados.length
+        const trajPoints = dados.map(d => ({ x: d.rmm1, y: d.rmm2 }))
+
+        // Colour each scatter point
+        const pColors = dados.map(d => COR[d.classificacao] || "#546A84")
+        const pBorder = dados.map((_, i) => i === n - 1 ? "#FFFFFF" : "transparent")
+        const pRadius = dados.map((_, i) => i === n - 1 ? 7 : 3.5)
+
+        // Trajectory line (ghost)
+        const trajLine = dados.map((d, i) => ({ x: d.rmm1, y: d.rmm2, a: (i + 1) / n }))
+
+        const maxAmp = Math.ceil(Math.max(...dados.map(d => d.amplitude), 2.5) * 1.15)
+
+        if (window._whChart) window._whChart.destroy()
+        window._whChart = new Chart(canvas, {
+            type: "scatter",
+            data: {
+                datasets: [
+                    {
+                        label: "Trajetória",
+                        data: trajPoints,
+                        type: "line",
+                        borderColor: "rgba(180,210,240,.30)",
+                        backgroundColor: "transparent",
+                        borderWidth: 1.5,
+                        pointRadius: 0,
+                        tension: 0.3,
+                        order: 2,
+                    },
+                    {
+                        label: "Dias",
+                        data: trajPoints,
+                        type: "scatter",
+                        pointBackgroundColor: pColors,
+                        pointBorderColor: pBorder,
+                        pointBorderWidth: 2,
+                        pointRadius: pRadius,
+                        pointHoverRadius: 6,
+                        order: 1,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                aspectRatio: 1,
+                animation: { duration: 600 },
+                scales: {
+                    x: {
+                        min: -maxAmp, max: maxAmp,
+                        grid: { color: "rgba(255,255,255,.05)" },
+                        ticks: { color: "#546A84", font: { size: 10 }, maxTicksLimit: 7 },
+                        title: { display: true, text: "RMM1", color: "#546A84", font: { size: 11 } }
+                    },
+                    y: {
+                        min: -maxAmp, max: maxAmp,
+                        grid: { color: "rgba(255,255,255,.05)" },
+                        ticks: { color: "#546A84", font: { size: 10 }, maxTicksLimit: 7 },
+                        title: { display: true, text: "RMM2", color: "#546A84", font: { size: 11 } }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => {
+                                if (ctx.datasetIndex !== 1) return null
+                                const d = dados[ctx.dataIndex]
+                                return [`${d.data_referencia}`, `RMM1: ${d.rmm1.toFixed(3)}  RMM2: ${d.rmm2.toFixed(3)}`, `Fase ${d.phase} · ${d.amplitude.toFixed(3)}`]
+                            }
+                        },
+                        backgroundColor: "rgba(12,22,40,.92)",
+                        borderColor: "rgba(255,255,255,.12)",
+                        borderWidth: 1,
+                        titleColor: "#E8EEF5",
+                        bodyColor: "#8EA2BE",
+                        padding: 10,
+                    }
+                }
+            },
+            plugins: [bgPlugin]
+        })
+    } catch {
+        /* silently skip if no data yet */
+    }
+}
+
+// ── CO₂ Keeling Curve ────────────────────────────────────────────────
+async function montarCO2Chart() {
+    const canvas = document.getElementById("co2Chart")
+    if (!canvas) return
+    try {
+        const res = await fetch(`${API_BASE}/climate/co2/history`)
+        if (!res.ok) throw new Error(res.status)
+        const dados = await res.json()
+        if (!dados.length) return
+
+        const ctx2 = canvas.getContext("2d")
+        const grad = ctx2.createLinearGradient(0, 0, 0, 280)
+        grad.addColorStop(0, "rgba(255,167,38,.22)")
+        grad.addColorStop(1, "rgba(255,167,38,.01)")
+
+        // Tick every Jan or Jul for readability
+        const labels = dados.map(d => d.data_referencia)
+        const tickIdx = labels.reduce((acc, lbl, i) => {
+            const m = lbl.slice(5, 7)
+            if (m === "01" || m === "07") acc.push(i)
+            return acc
+        }, [])
+
+        if (window._co2Chart) window._co2Chart.destroy()
+        window._co2Chart = new Chart(canvas, {
+            type: "line",
+            data: {
+                labels,
+                datasets: [{
+                    label: "CO₂ (ppm)",
+                    data: dados.map(d => d.co2_ppm),
+                    borderColor: "#FFA726",
+                    backgroundColor: grad,
+                    borderWidth: 1.5,
+                    pointRadius: 0,
+                    tension: 0.3,
+                    fill: true,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 600 },
+                scales: {
+                    x: {
+                        type: "category",
+                        grid: { color: "rgba(255,255,255,.04)" },
+                        ticks: {
+                            color: "#546A84",
+                            font: { size: 10 },
+                            maxRotation: 0,
+                            callback: (_, i) => tickIdx.includes(i) ? labels[i].slice(0, 7) : null,
+                        }
+                    },
+                    y: {
+                        grid: { color: "rgba(255,255,255,.05)" },
+                        ticks: { color: "#546A84", font: { size: 10 } },
+                        title: { display: true, text: "ppm", color: "#546A84", font: { size: 11 } }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: { label: ctx => `${ctx.parsed.y.toFixed(2)} ppm` },
+                        backgroundColor: "rgba(12,22,40,.92)",
+                        borderColor: "rgba(255,255,255,.12)",
+                        borderWidth: 1,
+                        titleColor: "#E8EEF5",
+                        bodyColor: "#FFA726",
+                        padding: 10,
+                    }
+                }
+            }
+        })
+    } catch {
+        /* silently skip if no data yet */
+    }
+}
+
+// ── Polar Ice Extent (Arctic + Antarctic) ────────────────────────────
+async function montarGeloChart() {
+    const canvas = document.getElementById("iceChart")
+    if (!canvas) return
+    try {
+        const [rA, rAn] = await Promise.all([
+            fetch(`${API_BASE}/climate/arctic_ice/history`),
+            fetch(`${API_BASE}/climate/antarctic_ice/history`),
+        ])
+        if (!rA.ok || !rAn.ok) throw new Error("ice fetch failed")
+        const [dadosArtico, dadosAntartico] = await Promise.all([rA.json(), rAn.json()])
+        if (!dadosArtico.length && !dadosAntartico.length) return
+
+        // Merge all dates for a unified label axis
+        const allDates = [...new Set([
+            ...dadosArtico.map(d => d.data_referencia),
+            ...dadosAntartico.map(d => d.data_referencia),
+        ])].sort()
+
+        const idxArtico    = Object.fromEntries(dadosArtico.map(d => [d.data_referencia, d.extent_mkm2]))
+        const idxAntartico = Object.fromEntries(dadosAntartico.map(d => [d.data_referencia, d.extent_mkm2]))
+
+        const tickIdx = allDates.reduce((acc, lbl, i) => {
+            const m = lbl.slice(5, 7)
+            if (m === "01" || m === "07") acc.push(i)
+            return acc
+        }, [])
+
+        if (window._iceChart) window._iceChart.destroy()
+        window._iceChart = new Chart(canvas, {
+            type: "line",
+            data: {
+                labels: allDates,
+                datasets: [
+                    {
+                        label: "Ártico",
+                        data: allDates.map(d => idxArtico[d] ?? null),
+                        borderColor: "#42A5F5",
+                        backgroundColor: "rgba(66,165,245,.06)",
+                        borderWidth: 1.8,
+                        pointRadius: 0,
+                        tension: 0.3,
+                        fill: true,
+                        spanGaps: true,
+                    },
+                    {
+                        label: "Antártico",
+                        data: allDates.map(d => idxAntartico[d] ?? null),
+                        borderColor: "#4DB6AC",
+                        backgroundColor: "rgba(77,182,172,.04)",
+                        borderWidth: 1.8,
+                        pointRadius: 0,
+                        tension: 0.3,
+                        fill: true,
+                        spanGaps: true,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 600 },
+                interaction: { mode: "index", intersect: false },
+                scales: {
+                    x: {
+                        type: "category",
+                        grid: { color: "rgba(255,255,255,.04)" },
+                        ticks: {
+                            color: "#546A84",
+                            font: { size: 10 },
+                            maxRotation: 0,
+                            callback: (_, i) => tickIdx.includes(i) ? allDates[i].slice(0, 7) : null,
+                        }
+                    },
+                    y: {
+                        grid: { color: "rgba(255,255,255,.05)" },
+                        ticks: { color: "#546A84", font: { size: 10 } },
+                        title: { display: true, text: "Mkm²", color: "#546A84", font: { size: 11 } }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        labels: { color: "#8EA2BE", font: { size: 11 }, boxWidth: 12, padding: 14 }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y?.toFixed(3) ?? "—"} Mkm²`
+                        },
+                        backgroundColor: "rgba(12,22,40,.92)",
+                        borderColor: "rgba(255,255,255,.12)",
+                        borderWidth: 1,
+                        titleColor: "#E8EEF5",
+                        bodyColor: "#8EA2BE",
+                        padding: 10,
+                    }
+                }
+            }
+        })
+    } catch {
+        /* silently skip if no data yet */
+    }
+}
+
 // ── Init ─────────────────────────────────────────────────────────────
 carregarStatus()
 carregarHistorico()
@@ -521,3 +875,6 @@ carregarCO2()
 carregarGeloArtico()
 carregarGeloAntartico()
 carregarPredicao()
+montarWheelerHendon()
+montarCO2Chart()
+montarGeloChart()

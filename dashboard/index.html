@@ -183,6 +183,55 @@
         </div>
     </section>
 
+    <!-- Wheeler-Hendon MJO Phase Diagram -->
+    <section class="panel">
+        <div class="panel-header">
+            <h2 class="panel-title">Diagrama de Fase MJO</h2>
+            <span class="panel-sub">Wheeler-Hendon · últimos 60 dias · trajetória RMM</span>
+        </div>
+        <div class="wh-layout">
+            <div class="wh-canvas-wrap">
+                <canvas id="whChart"></canvas>
+            </div>
+            <div class="wh-legend">
+                <div class="wh-legend-title">Interpretação</div>
+                <div class="wh-legend-item">
+                    <span class="wh-dot" style="background:#42A5F5"></span>
+                    Fases 1–3: La Niña favorável
+                </div>
+                <div class="wh-legend-item">
+                    <span class="wh-dot" style="background:#78909C"></span>
+                    Fases 4, 8: Neutro / transição
+                </div>
+                <div class="wh-legend-item">
+                    <span class="wh-dot" style="background:#FF7043"></span>
+                    Fases 5–7: El Niño favorável
+                </div>
+                <div class="wh-legend-sep"></div>
+                <div class="wh-legend-item wh-legend-note">
+                    Círculo tracejado = amplitude 1.0<br>
+                    (abaixo = MJO inativo)
+                </div>
+                <div class="wh-legend-item">
+                    <span class="wh-dot wh-dot-current"></span>
+                    Posição atual
+                </div>
+                <div class="wh-legend-sep"></div>
+                <div class="wh-legend-title">Fases geográficas</div>
+                <div class="wh-phase-list">
+                    <span>1 — África / Índico O.</span>
+                    <span>2 — Oceano Índico O.</span>
+                    <span>3 — Oceano Índico L.</span>
+                    <span>4 — Cont. Marítimo</span>
+                    <span>5 — Pacífico Oeste</span>
+                    <span>6 — Pacífico Central</span>
+                    <span>7 — Pacífico Leste</span>
+                    <span>8 — Hemis. Ocidental</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Chart -->
     <section class="panel">
         <div class="panel-header">
@@ -193,6 +242,28 @@
             <canvas id="oniChart"></canvas>
         </div>
     </section>
+
+    <!-- CO₂ + Polar Ice -->
+    <div class="chart-pair-grid">
+        <section class="panel">
+            <div class="panel-header">
+                <h2 class="panel-title">CO₂ Atmosférico</h2>
+                <span class="panel-sub">Mauna Loa · últimos 5 anos · NOAA GML</span>
+            </div>
+            <div class="chart-wrap">
+                <canvas id="co2Chart"></canvas>
+            </div>
+        </section>
+        <section class="panel">
+            <div class="panel-header">
+                <h2 class="panel-title">Extensão do Gelo Polar</h2>
+                <span class="panel-sub">Ártico · Antártico · Mkm² · NSIDC · últimos 3 anos</span>
+            </div>
+            <div class="chart-wrap">
+                <canvas id="iceChart"></canvas>
+            </div>
+        </section>
+    </div>
 
     <!-- Alert ticker -->
     <div class="alert-ticker-wrap" id="alert-ticker-wrap">
