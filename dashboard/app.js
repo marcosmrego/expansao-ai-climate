@@ -538,14 +538,15 @@ async function montarWheelerHendon() {
         const bgPlugin = {
             id: "whBackground",
             beforeDraw(chart) {
+                if (!chart.chartArea || !chart.scales?.x) return
                 const { ctx, chartArea: ca } = chart
                 const cx = (ca.left + ca.right) / 2
                 const cy = (ca.top  + ca.bottom) / 2
                 const rOuter = Math.min(ca.width, ca.height) / 2
+                const toCanvas = deg => (360 - deg) * Math.PI / 180
 
                 // Draw phase wedges
                 WEDGES.forEach(w => {
-                    const toCanvas = deg => (360 - deg) * Math.PI / 180
                     ctx.beginPath()
                     ctx.moveTo(cx, cy)
                     ctx.arc(cx, cy, rOuter, toCanvas(w.end), toCanvas(w.start), false)
@@ -566,7 +567,8 @@ async function montarWheelerHendon() {
                 })
 
                 // Amplitude = 1.0 unit circle (dashed)
-                const rUnit = rOuter / (chart.scales.x.max)
+                const scaleMax = chart.scales.x.max || maxAmp
+                const rUnit = rOuter / scaleMax
                 ctx.beginPath()
                 ctx.arc(cx, cy, rUnit, 0, 2 * Math.PI)
                 ctx.strokeStyle = "rgba(255,255,255,.25)"
@@ -587,7 +589,7 @@ async function montarWheelerHendon() {
             }
         }
 
-        // Build datasets: trajectory line + coloured scatter points
+        // Build scatter points with trajectory line via showLine
         const n = dados.length
         const trajPoints = dados.map(d => ({ x: d.rmm1, y: d.rmm2 }))
 
@@ -595,9 +597,6 @@ async function montarWheelerHendon() {
         const pColors = dados.map(d => COR[d.classificacao] || "#546A84")
         const pBorder = dados.map((_, i) => i === n - 1 ? "#FFFFFF" : "transparent")
         const pRadius = dados.map((_, i) => i === n - 1 ? 7 : 3.5)
-
-        // Trajectory line (ghost)
-        const trajLine = dados.map((d, i) => ({ x: d.rmm1, y: d.rmm2, a: (i + 1) / n }))
 
         const maxAmp = Math.ceil(Math.max(...dados.map(d => d.amplitude), 2.5) * 1.15)
 
@@ -609,24 +608,16 @@ async function montarWheelerHendon() {
                     {
                         label: "Trajetória",
                         data: trajPoints,
-                        type: "line",
-                        borderColor: "rgba(180,210,240,.30)",
+                        showLine: true,
+                        borderColor: "rgba(180,210,240,.28)",
                         backgroundColor: "transparent",
                         borderWidth: 1.5,
-                        pointRadius: 0,
-                        tension: 0.3,
-                        order: 2,
-                    },
-                    {
-                        label: "Dias",
-                        data: trajPoints,
-                        type: "scatter",
+                        pointRadius: pRadius,
+                        pointHoverRadius: 6,
                         pointBackgroundColor: pColors,
                         pointBorderColor: pBorder,
                         pointBorderWidth: 2,
-                        pointRadius: pRadius,
-                        pointHoverRadius: 6,
-                        order: 1,
+                        tension: 0.3,
                     }
                 ]
             },
@@ -654,8 +645,8 @@ async function montarWheelerHendon() {
                     tooltip: {
                         callbacks: {
                             label: ctx => {
-                                if (ctx.datasetIndex !== 1) return null
                                 const d = dados[ctx.dataIndex]
+                                if (!d) return null
                                 return [`${d.data_referencia}`, `RMM1: ${d.rmm1.toFixed(3)}  RMM2: ${d.rmm2.toFixed(3)}`, `Fase ${d.phase} · ${d.amplitude.toFixed(3)}`]
                             }
                         },

@@ -674,12 +674,9 @@ footer {
 .wh-canvas-wrap {
     position: relative;
     width: 100%;
-    aspect-ratio: 1 / 1;
     max-width: 480px;
     margin: 0 auto;
 }
-
-.wh-canvas-wrap canvas { width: 100% !important; height: 100% !important; }
 
 .wh-legend {
     display: flex;
