@@ -262,6 +262,13 @@ def collect_mjo(x_api_key: str = Header(default="")):
         finally:
             conn.close()
 
+        try:
+            import api.zhora_api as _api
+            _api._cache.delete("mjo")
+            _api._cache.delete("mjo_history")
+        except Exception:
+            pass
+
         return {"status": "ok", "records": total}
 
     except HTTPException:

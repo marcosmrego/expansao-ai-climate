@@ -32,6 +32,9 @@ class _TTLCache:
     def set(self, key: str, value) -> None:
         self._store[key] = (value, time.monotonic() + self._ttl)
 
+    def delete(self, key: str) -> None:
+        self._store.pop(key, None)
+
 
 _cache = _TTLCache(ttl=3600)
 
