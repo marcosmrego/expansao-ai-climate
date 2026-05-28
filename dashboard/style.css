@@ -190,6 +190,13 @@ main {
     gap: 16px;
 }
 
+/* ── Modulation grid (PDO · NAO · AMO · QBO) ───────────────────────── */
+.modulation-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+}
+
 /* Hero card — the big ONI number */
 .card-hero {
     border-top: 3px solid var(--accent);
@@ -657,6 +664,7 @@ footer {
         grid-template-columns: 1fr 1fr 1fr;
     }
     .card-hero { grid-column: 1 / -1; }
+    .modulation-grid { grid-template-columns: 1fr 1fr; }
 }
 
 @media (max-width: 768px) {
@@ -667,6 +675,7 @@ footer {
     .hero-value { font-size: 48px; }
     .two-col { grid-template-columns: 1fr; }
     .header-inner { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .modulation-grid { grid-template-columns: 1fr 1fr; }
 }
 
 @media (max-width: 480px) {

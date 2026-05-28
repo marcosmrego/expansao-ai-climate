@@ -113,6 +113,135 @@ def collect_soi(x_api_key: str = Header(default="")):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/pdo")
+def collect_pdo(x_api_key: str = Header(default="")):
+    _auth(x_api_key)
+    try:
+        from collector.noaa_pdo_collector import classificar_pdo
+        from collector.noaa_psl_base import baixar_dados, salvar_payload_bruto, parse_noaa_psl_monthly, inserir_registros_mensais
+        from app.services.climate_alert_repository import check_and_save_pdo_alerts
+        from database.db import conectar
+
+        conn = conectar()
+        try:
+            from collector.noaa_pdo_collector import URL, ORIGEM
+            texto = baixar_dados(URL)
+            registros = parse_noaa_psl_monthly(texto)
+            raw_payload_id = salvar_payload_bruto(conn, texto, ORIGEM, URL)
+            total = inserir_registros_mensais(conn, registros, raw_payload_id, "noaa_pdo", "pdo", classificar_pdo, ORIGEM)
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+        alert_result = check_and_save_pdo_alerts()
+        return {"status": "ok", "records": total, "alerts": alert_result}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Erro na coleta PDO: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/nao")
+def collect_nao(x_api_key: str = Header(default="")):
+    _auth(x_api_key)
+    try:
+        from collector.noaa_nao_collector import classificar_nao, URL, ORIGEM
+        from collector.noaa_psl_base import baixar_dados, salvar_payload_bruto, parse_noaa_psl_monthly, inserir_registros_mensais
+        from app.services.climate_alert_repository import check_and_save_nao_alerts
+        from database.db import conectar
+
+        conn = conectar()
+        try:
+            texto = baixar_dados(URL)
+            registros = parse_noaa_psl_monthly(texto)
+            raw_payload_id = salvar_payload_bruto(conn, texto, ORIGEM, URL)
+            total = inserir_registros_mensais(conn, registros, raw_payload_id, "noaa_nao", "nao", classificar_nao, ORIGEM)
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+        alert_result = check_and_save_nao_alerts()
+        return {"status": "ok", "records": total, "alerts": alert_result}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Erro na coleta NAO: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/amo")
+def collect_amo(x_api_key: str = Header(default="")):
+    _auth(x_api_key)
+    try:
+        from collector.noaa_amo_collector import classificar_amo, URL, ORIGEM
+        from collector.noaa_psl_base import baixar_dados, salvar_payload_bruto, parse_noaa_psl_monthly, inserir_registros_mensais
+        from app.services.climate_alert_repository import check_and_save_amo_alerts
+        from database.db import conectar
+
+        conn = conectar()
+        try:
+            texto = baixar_dados(URL)
+            registros = parse_noaa_psl_monthly(texto)
+            raw_payload_id = salvar_payload_bruto(conn, texto, ORIGEM, URL)
+            total = inserir_registros_mensais(conn, registros, raw_payload_id, "noaa_amo", "amo", classificar_amo, ORIGEM)
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+        alert_result = check_and_save_amo_alerts()
+        return {"status": "ok", "records": total, "alerts": alert_result}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Erro na coleta AMO: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/qbo")
+def collect_qbo(x_api_key: str = Header(default="")):
+    _auth(x_api_key)
+    try:
+        from collector.noaa_qbo_collector import classificar_qbo, URL, ORIGEM
+        from collector.noaa_psl_base import baixar_dados, salvar_payload_bruto, parse_noaa_psl_monthly, inserir_registros_mensais
+        from app.services.climate_alert_repository import check_and_save_qbo_alerts
+        from database.db import conectar
+
+        conn = conectar()
+        try:
+            texto = baixar_dados(URL)
+            registros = parse_noaa_psl_monthly(texto)
+            raw_payload_id = salvar_payload_bruto(conn, texto, ORIGEM, URL)
+            total = inserir_registros_mensais(conn, registros, raw_payload_id, "noaa_qbo", "qbo", classificar_qbo, ORIGEM)
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+        alert_result = check_and_save_qbo_alerts()
+        return {"status": "ok", "records": total, "alerts": alert_result}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Erro na coleta QBO: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/insight")
 def collect_insight(x_api_key: str = Header(default="")):
     """Generate and persist an AI insight from the current climate context."""

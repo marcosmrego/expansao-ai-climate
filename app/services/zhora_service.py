@@ -61,6 +61,22 @@ def build_climate_context() -> dict:
                 soi_row = cur.fetchone()
             except Exception:
                 soi_row = None
+
+            def _fetch_latest(table, col, missing=-99.0):
+                try:
+                    cur.execute(
+                        f"SELECT {col}, classificacao FROM climate.{table} "
+                        f"WHERE {col} > {missing} ORDER BY data_referencia DESC LIMIT 1"
+                    )
+                    return cur.fetchone()
+                except Exception:
+                    return None
+
+            pdo_row = _fetch_latest("noaa_pdo", "pdo")
+            nao_row = _fetch_latest("noaa_nao", "nao")
+            amo_row = _fetch_latest("noaa_amo", "amo")
+            qbo_row = _fetch_latest("noaa_qbo", "qbo", missing=-999.0)
+
     finally:
         conn.close()
 
@@ -88,6 +104,14 @@ def build_climate_context() -> dict:
         "trend": trend,
         "soi": soi,
         "soi_classificacao": soi_classificacao,
+        "pdo": float(pdo_row[0]) if pdo_row else None,
+        "pdo_classificacao": pdo_row[1] if pdo_row else None,
+        "nao": float(nao_row[0]) if nao_row else None,
+        "nao_classificacao": nao_row[1] if nao_row else None,
+        "amo": float(amo_row[0]) if amo_row else None,
+        "amo_classificacao": amo_row[1] if amo_row else None,
+        "qbo": float(qbo_row[0]) if qbo_row else None,
+        "qbo_classificacao": qbo_row[1] if qbo_row else None,
         "alerts": [
             {"severity": r[0], "title": r[1], "message": r[2]}
             for r in alert_rows
@@ -111,6 +135,27 @@ def context_to_text(ctx: dict) -> str:
         soi_fase_map = {"EL_NINO": "sinal El Niño", "LA_NINA": "sinal La Niña", "NEUTRO": "neutro"}
         soi_fase = soi_fase_map.get(ctx.get("soi_classificacao", "NEUTRO"), "neutro")
         lines.append(f"- SOI: {ctx['soi']:.2f} ({soi_fase})")
+
+    if ctx.get("pdo") is not None:
+        pdo_fase = {"POSITIVO": "fase quente", "NEGATIVO": "fase fria", "NEUTRO": "neutro"}.get(
+            ctx.get("pdo_classificacao", "NEUTRO"), "neutro"
+        )
+        lines.append(f"- PDO: {ctx['pdo']:.2f} ({pdo_fase})")
+    if ctx.get("nao") is not None:
+        nao_fase = {"POSITIVO": "fase positiva", "NEGATIVO": "fase negativa", "NEUTRO": "neutro"}.get(
+            ctx.get("nao_classificacao", "NEUTRO"), "neutro"
+        )
+        lines.append(f"- NAO: {ctx['nao']:.2f} ({nao_fase})")
+    if ctx.get("amo") is not None:
+        amo_fase = {"QUENTE": "fase quente", "FRIO": "fase fria", "NEUTRO": "transição"}.get(
+            ctx.get("amo_classificacao", "NEUTRO"), "transição"
+        )
+        lines.append(f"- AMO: {ctx['amo']:.4f} ({amo_fase})")
+    if ctx.get("qbo") is not None:
+        qbo_fase = {"OESTE": "oesteira/QBO-W", "LESTE": "lesteira/QBO-E", "NEUTRO": "transição"}.get(
+            ctx.get("qbo_classificacao", "NEUTRO"), "transição"
+        )
+        lines.append(f"- QBO: {ctx['qbo']:.1f} m/s ({qbo_fase})")
 
     if ctx["alerts"]:
         lines.append("\nAlertas ativos:")
@@ -143,6 +188,14 @@ def save_context_snapshot(ctx: dict) -> int:
                         "trend": ctx.get("trend"),
                         "soi": ctx.get("soi"),
                         "soi_classificacao": ctx.get("soi_classificacao"),
+                        "pdo": ctx.get("pdo"),
+                        "pdo_classificacao": ctx.get("pdo_classificacao"),
+                        "nao": ctx.get("nao"),
+                        "nao_classificacao": ctx.get("nao_classificacao"),
+                        "amo": ctx.get("amo"),
+                        "amo_classificacao": ctx.get("amo_classificacao"),
+                        "qbo": ctx.get("qbo"),
+                        "qbo_classificacao": ctx.get("qbo_classificacao"),
                         "alert_count": len(ctx.get("alerts", [])),
                     }),
                 ),
@@ -207,6 +260,10 @@ def generate_insight() -> str:
                         "classificacao": ctx["classificacao"],
                         "nino34_anom": ctx.get("nino34_anom"),
                         "soi": ctx.get("soi"),
+                        "pdo": ctx.get("pdo"),
+                        "nao": ctx.get("nao"),
+                        "amo": ctx.get("amo"),
+                        "qbo": ctx.get("qbo"),
                         "alert_count": len(ctx.get("alerts", [])),
                     }),
                 ),

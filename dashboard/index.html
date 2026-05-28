@@ -96,6 +96,49 @@
 
     </section>
 
+    <!-- Modulation indices -->
+    <section class="panel">
+        <div class="panel-header">
+            <h2 class="panel-title">Índices de Modulação Climática</h2>
+            <span class="panel-sub">PDO · NAO · AMO · QBO</span>
+        </div>
+        <div class="modulation-grid">
+
+            <div class="card">
+                <div class="card-label">PDO
+                    <span class="tooltip-icon" title="Pacific Decadal Oscillation — Oscilação Decadal do Pacífico. Fase quente amplifica El Niño; fase fria amplifica La Niña.">ℹ</span>
+                </div>
+                <div class="metric-value" id="pdo-value"><span class="skeleton">----</span></div>
+                <div class="metric-unit" id="pdo-fase"><span class="skeleton">---------</span></div>
+            </div>
+
+            <div class="card">
+                <div class="card-label">NAO
+                    <span class="tooltip-icon" title="North Atlantic Oscillation — Oscilação do Atlântico Norte. Fase positiva = invernos suaves na Europa; fase negativa = bloqueios e frio intenso.">ℹ</span>
+                </div>
+                <div class="metric-value" id="nao-value"><span class="skeleton">----</span></div>
+                <div class="metric-unit" id="nao-fase"><span class="skeleton">---------</span></div>
+            </div>
+
+            <div class="card">
+                <div class="card-label">AMO
+                    <span class="tooltip-icon" title="Atlantic Multidecadal Oscillation — Oscilação Multidecadal do Atlântico. Fase quente = mais furacões e seca no Sahel.">ℹ</span>
+                </div>
+                <div class="metric-value sm" id="amo-value"><span class="skeleton">------</span></div>
+                <div class="metric-unit" id="amo-fase"><span class="skeleton">---------</span></div>
+            </div>
+
+            <div class="card">
+                <div class="card-label">QBO
+                    <span class="tooltip-icon" title="Quasi-Biennial Oscillation — Oscilação Quasi-Bienal. Ventos estratosféricos em m/s; influência indireta em ciclones tropicais.">ℹ</span>
+                </div>
+                <div class="metric-value sm" id="qbo-value"><span class="skeleton">------</span></div>
+                <div class="metric-unit" id="qbo-fase"><span class="skeleton">---------</span></div>
+            </div>
+
+        </div>
+    </section>
+
     <!-- Chart -->
     <section class="panel">
         <div class="panel-header">
@@ -161,6 +204,22 @@
             <div class="glossary-item">
                 <strong>La Niña</strong>
                 <p>Resfriamento anormal do Pacífico Equatorial. ONI ≤ −0.5 por 5+ meses consecutivos.</p>
+            </div>
+            <div class="glossary-item">
+                <strong>PDO</strong>
+                <p>Pacific Decadal Oscillation. Variabilidade climática decadal do Pacífico Norte. Fase quente amplifica El Niño; fase fria amplifica La Niña — modulando eventos ENSO por décadas.</p>
+            </div>
+            <div class="glossary-item">
+                <strong>NAO</strong>
+                <p>North Atlantic Oscillation. Diferença de pressão entre o Anticiclone dos Açores e a Depressão da Islândia. Fase positiva favorece invernos suaves na Europa; fase negativa traz frio e bloqueios.</p>
+            </div>
+            <div class="glossary-item">
+                <strong>AMO</strong>
+                <p>Atlantic Multidecadal Oscillation. Variação lenta da temperatura superficial do Atlântico Norte. Fase quente está associada a mais furacões no Atlântico e secas no Sahel.</p>
+            </div>
+            <div class="glossary-item">
+                <strong>QBO</strong>
+                <p>Quasi-Biennial Oscillation. Oscilação dos ventos estratosféricos equatoriais (∼30mb) entre fase oesteira e lesteira, com período de ∼28 meses. Influencia indiretamente a intensidade de ciclones tropicais.</p>
             </div>
         </div>
     </details>

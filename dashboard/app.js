@@ -159,6 +159,59 @@ async function carregarAtualizacao() {
     }
 }
 
+// ── Modulation Indices ───────────────────────────────────────────────
+async function carregarPDO() {
+    try {
+        const res = await fetch(`${API_BASE}/climate/pdo`)
+        if (!res.ok) throw new Error(res.status)
+        const d = await res.json()
+        document.getElementById("pdo-value").textContent = d.value.toFixed(2)
+        document.getElementById("pdo-fase").textContent = d.fase
+    } catch {
+        document.getElementById("pdo-value").textContent = "—"
+        document.getElementById("pdo-fase").textContent = "sem dados"
+    }
+}
+
+async function carregarNAO() {
+    try {
+        const res = await fetch(`${API_BASE}/climate/nao`)
+        if (!res.ok) throw new Error(res.status)
+        const d = await res.json()
+        document.getElementById("nao-value").textContent = d.value.toFixed(2)
+        document.getElementById("nao-fase").textContent = d.fase
+    } catch {
+        document.getElementById("nao-value").textContent = "—"
+        document.getElementById("nao-fase").textContent = "sem dados"
+    }
+}
+
+async function carregarAMO() {
+    try {
+        const res = await fetch(`${API_BASE}/climate/amo`)
+        if (!res.ok) throw new Error(res.status)
+        const d = await res.json()
+        document.getElementById("amo-value").textContent = d.value.toFixed(4)
+        document.getElementById("amo-fase").textContent = d.fase
+    } catch {
+        document.getElementById("amo-value").textContent = "—"
+        document.getElementById("amo-fase").textContent = "sem dados"
+    }
+}
+
+async function carregarQBO() {
+    try {
+        const res = await fetch(`${API_BASE}/climate/qbo`)
+        if (!res.ok) throw new Error(res.status)
+        const d = await res.json()
+        document.getElementById("qbo-value").textContent = `${d.value.toFixed(1)} m/s`
+        document.getElementById("qbo-fase").textContent = d.fase
+    } catch {
+        document.getElementById("qbo-value").textContent = "—"
+        document.getElementById("qbo-fase").textContent = "sem dados"
+    }
+}
+
 // ── Alert Ticker ─────────────────────────────────────────────────────
 async function carregarAlertas() {
     try {
@@ -370,3 +423,7 @@ carregarInsight()
 carregarTendencia()
 carregarAtualizacao()
 carregarAlertas()
+carregarPDO()
+carregarNAO()
+carregarAMO()
+carregarQBO()

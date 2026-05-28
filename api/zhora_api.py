@@ -79,6 +79,12 @@ class SoiHistoryItem(BaseModel):
     classificacao: str
 
 
+class IndexStatusResponse(BaseModel):
+    value: float
+    classificacao: str
+    fase: str
+
+
 app = FastAPI(
     title="Expansao AI Climate API"
 )
@@ -411,6 +417,120 @@ def climate_soi_history():
     except Exception as e:
         logger.error("Erro em /climate/soi/history: %s", e)
         raise HTTPException(status_code=500, detail="Erro ao consultar histórico SOI")
+    finally:
+        conn.close()
+
+
+_PDO_FASE = {"POSITIVO": "Fase quente", "NEGATIVO": "Fase fria", "NEUTRO": "Neutro"}
+_NAO_FASE = {"POSITIVO": "Fase positiva", "NEGATIVO": "Fase negativa", "NEUTRO": "Neutro"}
+_AMO_FASE = {"QUENTE": "Fase quente", "FRIO": "Fase fria", "NEUTRO": "Transição"}
+_QBO_FASE = {"OESTE": "Oesteira (QBO-W)", "LESTE": "Lesteira (QBO-E)", "NEUTRO": "Transição"}
+
+
+@app.get("/climate/pdo", response_model=IndexStatusResponse)
+def climate_pdo():
+    cached = _cache.get("pdo")
+    if cached:
+        return cached
+    conn = conectar()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT pdo, classificacao FROM climate.noaa_pdo
+            WHERE pdo > -99 ORDER BY data_referencia DESC LIMIT 1
+        """)
+        r = cursor.fetchone()
+        if r is None:
+            raise HTTPException(status_code=404, detail="Sem dados PDO disponíveis")
+        result = {"value": float(r[0]), "classificacao": r[1], "fase": _PDO_FASE.get(r[1], r[1])}
+        _cache.set("pdo", result)
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Erro em /climate/pdo: %s", e)
+        raise HTTPException(status_code=500, detail="Erro ao consultar PDO")
+    finally:
+        conn.close()
+
+
+@app.get("/climate/nao", response_model=IndexStatusResponse)
+def climate_nao():
+    cached = _cache.get("nao")
+    if cached:
+        return cached
+    conn = conectar()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT nao, classificacao FROM climate.noaa_nao
+            WHERE nao > -99 ORDER BY data_referencia DESC LIMIT 1
+        """)
+        r = cursor.fetchone()
+        if r is None:
+            raise HTTPException(status_code=404, detail="Sem dados NAO disponíveis")
+        result = {"value": float(r[0]), "classificacao": r[1], "fase": _NAO_FASE.get(r[1], r[1])}
+        _cache.set("nao", result)
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Erro em /climate/nao: %s", e)
+        raise HTTPException(status_code=500, detail="Erro ao consultar NAO")
+    finally:
+        conn.close()
+
+
+@app.get("/climate/amo", response_model=IndexStatusResponse)
+def climate_amo():
+    cached = _cache.get("amo")
+    if cached:
+        return cached
+    conn = conectar()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT amo, classificacao FROM climate.noaa_amo
+            WHERE amo > -99 ORDER BY data_referencia DESC LIMIT 1
+        """)
+        r = cursor.fetchone()
+        if r is None:
+            raise HTTPException(status_code=404, detail="Sem dados AMO disponíveis")
+        result = {"value": float(r[0]), "classificacao": r[1], "fase": _AMO_FASE.get(r[1], r[1])}
+        _cache.set("amo", result)
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Erro em /climate/amo: %s", e)
+        raise HTTPException(status_code=500, detail="Erro ao consultar AMO")
+    finally:
+        conn.close()
+
+
+@app.get("/climate/qbo", response_model=IndexStatusResponse)
+def climate_qbo():
+    cached = _cache.get("qbo")
+    if cached:
+        return cached
+    conn = conectar()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT qbo, classificacao FROM climate.noaa_qbo
+            WHERE qbo > -999 ORDER BY data_referencia DESC LIMIT 1
+        """)
+        r = cursor.fetchone()
+        if r is None:
+            raise HTTPException(status_code=404, detail="Sem dados QBO disponíveis")
+        result = {"value": float(r[0]), "classificacao": r[1], "fase": _QBO_FASE.get(r[1], r[1])}
+        _cache.set("qbo", result)
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Erro em /climate/qbo: %s", e)
+        raise HTTPException(status_code=500, detail="Erro ao consultar QBO")
     finally:
         conn.close()
 

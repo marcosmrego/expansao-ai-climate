@@ -7,6 +7,11 @@ from app.services.climate_alert_engine import (
     check_sst_oni_combined,
     classify_soi_alert,
     check_soi_oni_agreement,
+    classify_pdo_alert,
+    check_pdo_oni_agreement,
+    classify_nao_alert,
+    classify_amo_alert,
+    classify_qbo_alert,
 )
 
 logger = logging.getLogger(__name__)
@@ -26,6 +31,20 @@ _RESOLVES_ON_CREATE = {
     "SOI_TREND_DOWN":            ["SOI_TREND_UP"],
     "ONI_SOI_EL_NINO_AGREEMENT": ["ONI_SOI_LA_NINA_AGREEMENT"],
     "ONI_SOI_LA_NINA_AGREEMENT": ["ONI_SOI_EL_NINO_AGREEMENT"],
+    "PDO_WARM_PHASE":            ["PDO_COOL_PHASE", "PDO_NEUTRAL"],
+    "PDO_COOL_PHASE":            ["PDO_WARM_PHASE", "PDO_NEUTRAL"],
+    "PDO_NEUTRAL":               ["PDO_WARM_PHASE", "PDO_COOL_PHASE"],
+    "PDO_ONI_EL_NINO_BOOST":    ["PDO_ONI_LA_NINA_BOOST"],
+    "PDO_ONI_LA_NINA_BOOST":    ["PDO_ONI_EL_NINO_BOOST"],
+    "NAO_POSITIVE":              ["NAO_NEGATIVE", "NAO_NEUTRAL"],
+    "NAO_NEGATIVE":              ["NAO_POSITIVE", "NAO_NEUTRAL"],
+    "NAO_NEUTRAL":               ["NAO_POSITIVE", "NAO_NEGATIVE"],
+    "AMO_WARM_PHASE":            ["AMO_COOL_PHASE", "AMO_NEUTRAL"],
+    "AMO_COOL_PHASE":            ["AMO_WARM_PHASE", "AMO_NEUTRAL"],
+    "AMO_NEUTRAL":               ["AMO_WARM_PHASE", "AMO_COOL_PHASE"],
+    "QBO_WESTERLY":              ["QBO_EASTERLY", "QBO_NEUTRAL"],
+    "QBO_EASTERLY":              ["QBO_WESTERLY", "QBO_NEUTRAL"],
+    "QBO_NEUTRAL":               ["QBO_WESTERLY", "QBO_EASTERLY"],
 }
 
 
@@ -232,6 +251,113 @@ def check_and_save_soi_alerts() -> dict:
                 saved_ids.append(result["id"])
 
     return {"saved": len(saved_ids), "ids": saved_ids}
+
+
+def check_and_save_pdo_alerts() -> dict:
+    """Query latest PDO + ONI, run PDO classification and PDO×ONI convergence check."""
+    conn = conectar()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                "SELECT pdo FROM climate.noaa_pdo WHERE pdo > -99 ORDER BY data_referencia DESC LIMIT 1;"
+            )
+            pdo_row = cursor.fetchone()
+            if not pdo_row:
+                return {"saved": 0, "skipped": True, "reason": "no PDO data"}
+
+            cursor.execute(
+                "SELECT oni FROM climate.noaa_oni WHERE oni > -99 ORDER BY data_referencia DESC LIMIT 1;"
+            )
+            oni_row = cursor.fetchone()
+    finally:
+        conn.close()
+
+    pdo = float(pdo_row[0])
+    saved_ids = []
+
+    for alert in classify_pdo_alert(pdo):
+        result = save_alert(alert)
+        if not result.get("skipped"):
+            saved_ids.append(result["id"])
+
+    if oni_row:
+        agreement = check_pdo_oni_agreement(pdo, float(oni_row[0]))
+        if agreement:
+            result = save_alert(agreement)
+            if not result.get("skipped"):
+                saved_ids.append(result["id"])
+
+    return {"saved": len(saved_ids), "ids": saved_ids}
+
+
+def check_and_save_nao_alerts() -> dict:
+    """Query latest NAO and run classification."""
+    conn = conectar()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                "SELECT nao FROM climate.noaa_nao WHERE nao > -99 ORDER BY data_referencia DESC LIMIT 1;"
+            )
+            row = cursor.fetchone()
+    finally:
+        conn.close()
+
+    if not row:
+        return {"saved": 0, "skipped": True, "reason": "no NAO data"}
+
+    saved_ids = []
+    for alert in classify_nao_alert(float(row[0])):
+        result = save_alert(alert)
+        if not result.get("skipped"):
+            saved_ids.append(result["id"])
+
+    return {"saved": len(saved_ids), "ids": saved_ids}
+
+
+def check_and_save_amo_alerts() -> dict:
+    """Query latest AMO and run classification."""
+    conn = conectar()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                "SELECT amo FROM climate.noaa_amo WHERE amo > -99 ORDER BY data_referencia DESC LIMIT 1;"
+            )
+            row = cursor.fetchone()
+    finally:
+        conn.close()
+
+    if not row:
+        return {"saved": 0, "skipped": True, "reason": "no AMO data"}
+
+    alert = classify_amo_alert(float(row[0]))
+    if not alert:
+        return {"saved": 0}
+
+    result = save_alert(alert)
+    return {"saved": 0 if result.get("skipped") else 1, "ids": [] if result.get("skipped") else [result["id"]]}
+
+
+def check_and_save_qbo_alerts() -> dict:
+    """Query latest QBO and run classification."""
+    conn = conectar()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                "SELECT qbo FROM climate.noaa_qbo WHERE qbo > -999 ORDER BY data_referencia DESC LIMIT 1;"
+            )
+            row = cursor.fetchone()
+    finally:
+        conn.close()
+
+    if not row:
+        return {"saved": 0, "skipped": True, "reason": "no QBO data"}
+
+    alert = classify_qbo_alert(float(row[0]))
+    if not alert:
+        return {"saved": 0}
+
+    result = save_alert(alert)
+    return {"saved": 0 if result.get("skipped") else 1, "ids": [] if result.get("skipped") else [result["id"]]}
 
 
 def get_active_alerts(limit=10):

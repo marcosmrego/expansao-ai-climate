@@ -367,3 +367,226 @@ def generate_alerts_from_oni(current_oni: float, previous_oni: float) -> Dict[st
         "previous_oni": previous_oni,
         "alerts": alerts
     }
+
+
+# ── PDO ──────────────────────────────────────────────────────────────────────
+_PDO_THRESHOLD = 0.5
+_PDO_STRONG_THRESHOLD = 1.5
+
+
+def classify_pdo_alert(pdo: float) -> List[Dict[str, Any]]:
+    """PDO positive (warm) amplifies El Niño; negative (cool) amplifies La Niña."""
+    if pdo >= _PDO_THRESHOLD:
+        severity = "CRITICAL" if pdo >= _PDO_STRONG_THRESHOLD else "WARNING"
+        label = " — sinal forte" if severity == "CRITICAL" else ""
+        return [{
+            "alert_type": "PDO_WARM_PHASE",
+            "severity": severity,
+            "title": f"PDO em fase quente{label}",
+            "message": (
+                f"O Índice de Oscilação Decadal do Pacífico (PDO) está em {pdo:.2f}, "
+                f"acima do limiar de +{_PDO_THRESHOLD}. "
+                "A fase quente do PDO amplifica eventos El Niño e atenua La Niña."
+            ),
+            "source": "NOAA",
+        }]
+
+    if pdo <= -_PDO_THRESHOLD:
+        severity = "CRITICAL" if pdo <= -_PDO_STRONG_THRESHOLD else "WARNING"
+        label = " — sinal forte" if severity == "CRITICAL" else ""
+        return [{
+            "alert_type": "PDO_COOL_PHASE",
+            "severity": severity,
+            "title": f"PDO em fase fria{label}",
+            "message": (
+                f"O Índice de Oscilação Decadal do Pacífico (PDO) está em {pdo:.2f}, "
+                f"abaixo do limiar de -{_PDO_THRESHOLD}. "
+                "A fase fria do PDO amplifica eventos La Niña e atenua El Niño."
+            ),
+            "source": "NOAA",
+        }]
+
+    return [{
+        "alert_type": "PDO_NEUTRAL",
+        "severity": "INFO",
+        "title": "PDO em fase neutra",
+        "message": (
+            f"O Índice de Oscilação Decadal do Pacífico (PDO) está em {pdo:.2f}, "
+            f"dentro da faixa neutra entre -{_PDO_THRESHOLD} e +{_PDO_THRESHOLD}."
+        ),
+        "source": "NOAA",
+    }]
+
+
+def check_pdo_oni_agreement(pdo: float, oni: float) -> Optional[Dict[str, Any]]:
+    """Convergence of PDO and ONI on the same ENSO phase = amplified event signal."""
+    pdo_warm = pdo >= _PDO_THRESHOLD
+    pdo_cool = pdo <= -_PDO_THRESHOLD
+    oni_el_nino = oni >= _ONI_THRESHOLD
+    oni_la_nina = oni <= -_ONI_THRESHOLD
+
+    if pdo_warm and oni_el_nino:
+        severity = (
+            "CRITICAL"
+            if pdo >= _PDO_STRONG_THRESHOLD or oni >= _ONI_STRONG_THRESHOLD
+            else "WARNING"
+        )
+        return {
+            "alert_type": "PDO_ONI_EL_NINO_BOOST",
+            "severity": severity,
+            "title": "Amplificação El Niño: PDO quente + ONI positivo",
+            "message": (
+                f"PDO ({pdo:.2f}) e ONI ({oni:.2f}) convergem para El Niño. "
+                "A fase quente do PDO amplifica o evento, aumentando impactos climáticos globais."
+            ),
+            "source": "NOAA",
+        }
+
+    if pdo_cool and oni_la_nina:
+        severity = (
+            "CRITICAL"
+            if pdo <= -_PDO_STRONG_THRESHOLD or oni <= -_ONI_STRONG_THRESHOLD
+            else "WARNING"
+        )
+        return {
+            "alert_type": "PDO_ONI_LA_NINA_BOOST",
+            "severity": severity,
+            "title": "Amplificação La Niña: PDO frio + ONI negativo",
+            "message": (
+                f"PDO ({pdo:.2f}) e ONI ({oni:.2f}) convergem para La Niña. "
+                "A fase fria do PDO potencializa o evento e seus impactos globais."
+            ),
+            "source": "NOAA",
+        }
+
+    return None
+
+
+# ── NAO ──────────────────────────────────────────────────────────────────────
+_NAO_THRESHOLD = 0.5
+
+
+def classify_nao_alert(nao: float) -> List[Dict[str, Any]]:
+    """NAO positive = stronger westerlies; negative = weaker westerlies/blocking."""
+    if nao >= _NAO_THRESHOLD:
+        return [{
+            "alert_type": "NAO_POSITIVE",
+            "severity": "INFO",
+            "title": "NAO em fase positiva",
+            "message": (
+                f"O Índice da Oscilação do Atlântico Norte (NAO) está em {nao:.2f}. "
+                "Fase positiva indica ventos de oeste mais intensos, favorecendo invernos "
+                "suaves e úmidos no noroeste da Europa."
+            ),
+            "source": "NOAA",
+        }]
+
+    if nao <= -_NAO_THRESHOLD:
+        return [{
+            "alert_type": "NAO_NEGATIVE",
+            "severity": "WARNING",
+            "title": "NAO em fase negativa",
+            "message": (
+                f"O Índice da Oscilação do Atlântico Norte (NAO) está em {nao:.2f}. "
+                "Fase negativa associada a invernos mais frios no noroeste da Europa "
+                "e maior frequência de bloqueios atmosféricos."
+            ),
+            "source": "NOAA",
+        }]
+
+    return [{
+        "alert_type": "NAO_NEUTRAL",
+        "severity": "INFO",
+        "title": "NAO em fase neutra",
+        "message": (
+            f"O Índice da Oscilação do Atlântico Norte (NAO) está em {nao:.2f}, "
+            f"dentro da faixa neutra entre -{_NAO_THRESHOLD} e +{_NAO_THRESHOLD}."
+        ),
+        "source": "NOAA",
+    }]
+
+
+# ── AMO ──────────────────────────────────────────────────────────────────────
+_AMO_THRESHOLD = 0.1
+
+
+def classify_amo_alert(amo: float) -> Optional[Dict[str, Any]]:
+    """AMO warm phase = more Atlantic hurricanes and Sahel drought."""
+    if amo >= _AMO_THRESHOLD:
+        return {
+            "alert_type": "AMO_WARM_PHASE",
+            "severity": "WARNING",
+            "title": "AMO em fase quente",
+            "message": (
+                f"A Oscilação Multidecadal do Atlântico (AMO) está em {amo:.4f}. "
+                "Fase quente favorece maior atividade de furacões no Atlântico "
+                "e secas no Sahel."
+            ),
+            "source": "NOAA",
+        }
+
+    if amo <= -_AMO_THRESHOLD:
+        return {
+            "alert_type": "AMO_COOL_PHASE",
+            "severity": "INFO",
+            "title": "AMO em fase fria",
+            "message": (
+                f"A Oscilação Multidecadal do Atlântico (AMO) está em {amo:.4f}. "
+                "Fase fria associada à menor atividade de furacões e maior precipitação "
+                "no Sahel."
+            ),
+            "source": "NOAA",
+        }
+
+    return {
+        "alert_type": "AMO_NEUTRAL",
+        "severity": "INFO",
+        "title": "AMO em transição de fase",
+        "message": (
+            f"A Oscilação Multidecadal do Atlântico (AMO) está em {amo:.4f}, "
+            "próximo à neutralidade."
+        ),
+        "source": "NOAA",
+    }
+
+
+# ── QBO ──────────────────────────────────────────────────────────────────────
+_QBO_THRESHOLD = 5.0
+
+
+def classify_qbo_alert(qbo: float) -> Optional[Dict[str, Any]]:
+    """QBO in m/s at 30mb. Positive = westerly (QBO-W); negative = easterly (QBO-E)."""
+    if qbo >= _QBO_THRESHOLD:
+        return {
+            "alert_type": "QBO_WESTERLY",
+            "severity": "INFO",
+            "title": "QBO em fase oesteira",
+            "message": (
+                f"A Oscilação Quasi-Bienal (QBO) está em {qbo:.1f} m/s — fase oesteira (positiva). "
+                "Ventos estratosféricos de oeste; modulação indireta na intensidade de ciclones."
+            ),
+            "source": "NOAA",
+        }
+
+    if qbo <= -_QBO_THRESHOLD:
+        return {
+            "alert_type": "QBO_EASTERLY",
+            "severity": "INFO",
+            "title": "QBO em fase lesteira",
+            "message": (
+                f"A Oscilação Quasi-Bienal (QBO) está em {qbo:.1f} m/s — fase lesteira (negativa). "
+                "Ventos estratosféricos de leste; associada a maior atividade de furacões no Atlântico."
+            ),
+            "source": "NOAA",
+        }
+
+    return {
+        "alert_type": "QBO_NEUTRAL",
+        "severity": "INFO",
+        "title": "QBO em transição de fase",
+        "message": (
+            f"A Oscilação Quasi-Bienal (QBO) está em {qbo:.1f} m/s, "
+            "próxima à transição entre fase oesteira e lesteira."
+        ),
+        "source": "NOAA",
+    }
