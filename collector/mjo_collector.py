@@ -21,10 +21,17 @@ def classificar_mjo(phase: int, amplitude: float) -> str:
     return "ATIVO"
 
 
+_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Referer": "https://www.bom.gov.au/climate/mjo/",
+    "Accept": "text/plain, */*",
+}
+
+
 def baixar_dados() -> str:
     for tentativa in range(1, 4):
         try:
-            r = requests.get(URL, timeout=30)
+            r = requests.get(URL, headers=_HEADERS, timeout=30)
             r.raise_for_status()
             return r.text
         except requests.RequestException as e:
