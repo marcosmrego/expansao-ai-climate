@@ -5,9 +5,10 @@ from datetime import date
 
 import requests
 
-URL = "https://www.cpc.ncep.noaa.gov/products/precip/CWlink/daily_mjo_index/rmm.74toRealtime.txt"
-ORIGEM = "NOAA_CPC_MJO"
+URL = "http://www.bom.gov.au/climate/mjo/graphics/rmm.74toRealtime.txt"
+ORIGEM = "BOM_MJO_RMM"
 _MISSING = 999.0
+_MISSING_LARGE = 1e30
 
 
 def classificar_mjo(phase: int, amplitude: float) -> str:
@@ -71,6 +72,8 @@ def parse_rmm(texto: str) -> list:
             phase = int(float(partes[5]))
             amplitude = float(partes[6])
         except (ValueError, IndexError):
+            continue
+        if abs(rmm1) >= _MISSING_LARGE or abs(rmm2) >= _MISSING_LARGE or amplitude >= _MISSING_LARGE:
             continue
         if abs(rmm1) >= _MISSING or abs(rmm2) >= _MISSING or amplitude >= _MISSING:
             continue
