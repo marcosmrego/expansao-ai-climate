@@ -233,7 +233,9 @@ _INSIGHT_PROMPT = (
     "Com base no contexto climático fornecido, escreva um parágrafo técnico de 2 a 4 frases "
     "para uso como insight operacional em um dashboard de monitoramento ENSO. "
     "Inclua os valores numéricos relevantes e interprete a convergência dos indicadores oceânicos "
-    "e atmosféricos. Seja direto e objetivo."
+    "e atmosféricos. Seja direto e objetivo. "
+    "IMPORTANTE: escreva somente texto corrido, sem formatação markdown, sem asteriscos, "
+    "sem títulos com #, sem bullet points. Apenas texto puro."
 )
 
 

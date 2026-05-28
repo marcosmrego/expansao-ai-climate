@@ -113,12 +113,20 @@ async function carregarHistorico() {
 }
 
 // ── Analysis ─────────────────────────────────────────────────────────
+function renderInsight(text) {
+    return text
+        .replace(/^#+\s*/gm, "")                        // remove headings (#, ##, ...)
+        .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") // **bold**
+        .replace(/\*(.*?)\*/g, "<em>$1</em>")            // *italic*
+        .trim()
+}
+
 async function carregarInsight() {
     try {
         const res = await fetch(`${API_BASE}/climate/analysis`)
         if (!res.ok) throw new Error(res.status)
         const d = await res.json()
-        document.getElementById("analysis").textContent = d.analysis
+        document.getElementById("analysis").innerHTML = renderInsight(d.analysis)
     } catch {
         registrarErro("análise")
         document.getElementById("analysis").textContent = "Não foi possível carregar a análise."
