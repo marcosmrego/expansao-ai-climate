@@ -243,7 +243,7 @@ main {
 /* ── Modulation grid (PDO · NAO · AMO · QBO) ───────────────────────── */
 .modulation-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 16px;
 }
 
@@ -912,6 +912,13 @@ footer {
     gap: 24px;
 }
 
+.panel-iod-chart {
+    grid-column: 1 / -1;
+}
+.panel-iod-chart .chart-wrap {
+    height: 220px;
+}
+
 /* ── Wheeler-Hendon MJO diagram ─────────────────────────────────────── */
 .wh-layout {
     display: grid;
@@ -993,12 +1000,16 @@ footer {
 }
 
 /* ── Responsive ─────────────────────────────────────────────────────── */
+@media (max-width: 1200px) {
+    .modulation-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
 @media (max-width: 1100px) {
     .hero-grid {
         grid-template-columns: 1fr 1fr 1fr;
     }
     .card-hero { grid-column: 1 / -1; }
-    .modulation-grid { grid-template-columns: 1fr 1fr; }
+    .modulation-grid { grid-template-columns: 1fr 1fr 1fr; }
 }
 
 @media (max-width: 900px) {
