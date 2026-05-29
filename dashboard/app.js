@@ -570,7 +570,9 @@ async function perguntarZhora() {
         })
         if (!res.ok) throw new Error(res.status)
         const d = await res.json()
-        resp.innerHTML = renderInsight(d.answer)
+        resp.innerHTML = typeof marked !== "undefined"
+            ? marked.parse(d.answer)
+            : renderInsight(d.answer)
     } catch {
         resp.innerHTML = `<span style="color:var(--critical)">Não foi possível obter resposta. Tente novamente em alguns instantes.</span>`
     } finally {
