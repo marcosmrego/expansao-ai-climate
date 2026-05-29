@@ -971,17 +971,19 @@ const _MOD_COLORS = {
     nao: { pos: "rgba(171,71,188,.75)",  neg: "rgba(38,198,218,.65)", gradTop: "rgba(171,71,188,.2)",  gradBot: "transparent" },
     amo: { pos: "rgba(255,112,67,.75)",  neg: "rgba(66,165,245,.65)", gradTop: "rgba(255,112,67,.2)",  gradBot: "transparent" },
     qbo: { pos: "rgba(38,198,218,.75)",  neg: "rgba(212,225,87,.65)", gradTop: "rgba(38,198,218,.2)",  gradBot: "transparent" },
+    iod: { pos: "rgba(255,167,38,.75)",  neg: "rgba(66,165,245,.65)", gradTop: "rgba(255,167,38,.2)",  gradBot: "transparent" },
 }
 
 async function montarGraficosPDO()  { await montarModulacaoChart("pdoChart",  "/climate/pdo/history", _MOD_COLORS.pdo, "PDO", null) }
 async function montarGraficosNAO()  { await montarModulacaoChart("naoChart",  "/climate/nao/history", _MOD_COLORS.nao, "NAO", null) }
 async function montarGraficosAMO()  { await montarModulacaoChart("amoChart",  "/climate/amo/history", _MOD_COLORS.amo, "AMO", "°C") }
 async function montarGraficosQBO()  { await montarModulacaoChart("qboChart",  "/climate/qbo/history", _MOD_COLORS.qbo, "QBO", "m/s") }
+async function montarGraficosIOD()  { await montarModulacaoChart("iodChart",  "/climate/iod/history", _MOD_COLORS.iod, "DMI", null) }
 
 // ── Tab switching ─────────────────────────────────────────────────────
 const _CHART_KEYS = {
     enso:      ["_oniChart"],
-    modulacao: ["_pdoChart", "_naoChart", "_amoChart", "_qboChart"],
+    modulacao: ["_pdoChart", "_naoChart", "_amoChart", "_qboChart", "_iodChart"],
     diarios:   ["_whChart", "_co2Chart", "_iceChart"],
     analise:   [],
 }
@@ -1003,6 +1005,7 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
             montarGraficosNAO()
             montarGraficosAMO()
             montarGraficosQBO()
+            montarGraficosIOD()
         }
 
         // Resize charts so they fill the now-visible canvas

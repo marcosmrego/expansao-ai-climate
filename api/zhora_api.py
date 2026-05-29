@@ -667,6 +667,11 @@ def climate_qbo_history():
     return _modulation_history("qbo_history", "noaa_qbo", "qbo", "qbo > -999")
 
 
+@app.get("/climate/iod/history", response_model=list[ModulationHistoryItem])
+def climate_iod_history():
+    return _modulation_history("iod_history", "noaa_iod", "dmi", "dmi > -99")
+
+
 class MjoHistoryItem(BaseModel):
     data_referencia: str
     rmm1: float
