@@ -512,6 +512,16 @@ async function carregarGeloAntartico() {
 
 // ── Prediction ────────────────────────────────────────────────────────
 // ── Zhora Conversacional ─────────────────────────────────────────────
+function abrirZhora() {
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"))
+    document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"))
+    const btn = document.querySelector("[data-tab='zhora']")
+    if (btn) btn.classList.add("active")
+    const panel = document.getElementById("tab-zhora")
+    if (panel) panel.classList.add("active")
+    setTimeout(() => document.getElementById("zhora-input")?.focus(), 100)
+}
+
 function preencherPergunta(btn) {
     const input = document.getElementById("zhora-input")
     input.value = btn.textContent
@@ -1036,6 +1046,7 @@ const _CHART_KEYS = {
     modulacao: ["_pdoChart", "_naoChart", "_amoChart", "_qboChart", "_iodChart"],
     diarios:   ["_whChart", "_co2Chart", "_iceChart"],
     analise:   [],
+    zhora:     [],
 }
 
 let _modulacaoLoaded = false

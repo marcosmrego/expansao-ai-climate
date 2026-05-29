@@ -110,6 +110,50 @@ h1 {
     white-space: nowrap;
 }
 
+.zhora-header-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(94,200,248,.10);
+    border: 1px solid rgba(94,200,248,.30);
+    border-radius: 100px;
+    padding: 7px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    cursor: pointer;
+    transition: all var(--transition);
+    white-space: nowrap;
+    font-family: inherit;
+}
+.zhora-header-btn:hover {
+    background: rgba(94,200,248,.20);
+    border-color: rgba(94,200,248,.55);
+    transform: scale(1.03);
+}
+.zhora-header-label { letter-spacing: .02em; }
+
+.tab-btn-zhora {
+    color: var(--accent);
+    font-weight: 600;
+}
+.tab-btn-zhora.active,
+.tab-btn-zhora:hover {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+}
+
+.zhora-intro {
+    font-size: 14px;
+    color: var(--text-2);
+    line-height: 1.65;
+    margin-bottom: 20px;
+    padding: 12px 16px;
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    border-left: 3px solid var(--accent);
+}
+
 .phase-dot {
     width: 7px;
     height: 7px;

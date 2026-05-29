@@ -39,7 +39,8 @@ def ask_zhora(payload: AskRequest):
             logger.warning("Falha ao buscar contexto do DB, usando snapshot: %s", e)
             context_text = get_latest_context() or "Contexto climático não disponível."
 
-        answer = ask_claude(payload.question, context_text)
+        from app.services.zhora_service import _strip_headers
+        answer = _strip_headers(ask_claude(payload.question, context_text))
         return {"question": payload.question, "answer": answer, "context_used": context_text}
 
     except RuntimeError as e:

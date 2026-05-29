@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=4">
+    <link rel="stylesheet" href="style.css?v=5">
 </head>
 <body class="neutral">
 
@@ -26,6 +26,9 @@
             <span class="phase-dot"></span>
             <span id="phase-label">Carregando...</span>
         </div>
+        <button class="zhora-header-btn" onclick="abrirZhora()" title="Pergunte à Zhora">
+            🤖 <span class="zhora-header-label">Zhora</span>
+        </button>
     </div>
 </header>
 
@@ -39,6 +42,7 @@
         <button class="tab-btn" data-tab="modulacao" role="tab">Modulação</button>
         <button class="tab-btn" data-tab="diarios" role="tab">Diários</button>
         <button class="tab-btn" data-tab="analise" role="tab">Análise</button>
+        <button class="tab-btn tab-btn-zhora" data-tab="zhora" role="tab">🤖 Zhora</button>
     </nav>
 
     <!-- ── Tab: ENSO ──────────────────────────────────────────────────── -->
@@ -387,35 +391,6 @@
     <!-- ── Tab: Análise ───────────────────────────────────────────────── -->
     <div class="tab-panel" id="tab-analise" role="tabpanel">
 
-        <!-- Zhora Conversational -->
-        <section class="panel panel-zhora">
-            <div class="panel-header">
-                <h2 class="panel-title">🤖 Pergunte à Zhora</h2>
-                <span class="panel-sub">IA climática · contexto atualizado com todos os índices</span>
-            </div>
-            <div class="zhora-suggestions">
-                <span class="zhora-hint">Experimente:</span>
-                <button class="zhora-chip" onclick="preencherPergunta(this)">O que o IOD negativo significa para o Brasil?</button>
-                <button class="zhora-chip" onclick="preencherPergunta(this)">Qual é o risco de El Niño nos próximos meses?</button>
-                <button class="zhora-chip" onclick="preencherPergunta(this)">Como o MJO atual afeta a previsão climática?</button>
-            </div>
-            <div class="zhora-input-wrap">
-                <textarea id="zhora-input" class="zhora-input" rows="2"
-                    placeholder="Faça uma pergunta sobre o clima atual..." maxlength="600"
-                    onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();perguntarZhora()}"></textarea>
-                <button id="zhora-btn" class="zhora-btn" onclick="perguntarZhora()">
-                    <span id="zhora-btn-label">Enviar</span>
-                </button>
-            </div>
-            <div id="zhora-response-wrap" class="zhora-response-wrap hidden">
-                <div class="zhora-response-header">
-                    <span class="zhora-avatar">🤖</span>
-                    <span class="zhora-response-label">Zhora</span>
-                </div>
-                <div id="zhora-response" class="zhora-response"></div>
-            </div>
-        </section>
-
         <!-- Predictive Analysis — Technical -->
         <section class="panel panel-prediction">
             <div class="panel-header">
@@ -511,6 +486,43 @@
 
     </div><!-- /tab-analise -->
 
+    <!-- ── Tab: Zhora ───────────────────────────────────────────────────── -->
+    <div class="tab-panel" id="tab-zhora" role="tabpanel">
+
+        <section class="panel panel-zhora">
+            <div class="panel-header">
+                <h2 class="panel-title">🤖 Pergunte à Zhora</h2>
+                <span class="panel-sub">IA climática · contexto atualizado com todos os índices</span>
+            </div>
+            <p class="zhora-intro">
+                A Zhora analisa em tempo real todos os dados que o sistema monitora — ONI, SOI, PDO, NAO, AMO, QBO, IOD, MJO, CO₂ e gelo polar — e responde suas perguntas sobre o clima com base nesses dados.
+            </p>
+            <div class="zhora-suggestions">
+                <span class="zhora-hint">Experimente:</span>
+                <button class="zhora-chip" onclick="preencherPergunta(this)">Qual é o risco de El Niño nos próximos meses?</button>
+                <button class="zhora-chip" onclick="preencherPergunta(this)">O que o IOD atual significa para o Brasil?</button>
+                <button class="zhora-chip" onclick="preencherPergunta(this)">Como o MJO em fase 7 afeta a previsão?</button>
+                <button class="zhora-chip" onclick="preencherPergunta(this)">Por que o CO₂ importa para o clima?</button>
+            </div>
+            <div class="zhora-input-wrap">
+                <textarea id="zhora-input" class="zhora-input" rows="2"
+                    placeholder="Faça uma pergunta sobre o clima atual..." maxlength="600"
+                    onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();perguntarZhora()}"></textarea>
+                <button id="zhora-btn" class="zhora-btn" onclick="perguntarZhora()">
+                    <span id="zhora-btn-label">Enviar</span>
+                </button>
+            </div>
+            <div id="zhora-response-wrap" class="zhora-response-wrap hidden">
+                <div class="zhora-response-header">
+                    <span class="zhora-avatar">🤖</span>
+                    <span class="zhora-response-label">Zhora</span>
+                </div>
+                <div id="zhora-response" class="zhora-response"></div>
+            </div>
+        </section>
+
+    </div><!-- /tab-zhora -->
+
 </main>
 
 <footer>
@@ -520,6 +532,6 @@
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="app.js?v=4"></script>
+<script src="app.js?v=5"></script>
 </body>
 </html>
