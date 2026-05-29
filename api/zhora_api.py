@@ -973,5 +973,22 @@ def climate_plain():
     return result
 
 
+@app.get("/climate/insight_plain", response_model=PlainResponse)
+def climate_insight_plain():
+    cached = _cache.get("insight_plain")
+    if cached:
+        return cached
+
+    from app.services.zhora_service import get_latest_insight_plain
+
+    plain = get_latest_insight_plain()
+    if plain is None:
+        plain = "Resumo ainda não gerado. Execute POST /api/collect/insight para gerar."
+
+    result = {"plain": plain}
+    _cache.set("insight_plain", result)
+    return result
+
+
 # Serve the dashboard — must be mounted last so API routes take precedence
 app.mount("/", StaticFiles(directory="dashboard", html=True), name="dashboard")

@@ -533,6 +533,17 @@ async function carregarPlain() {
     }
 }
 
+async function carregarInsightPlain() {
+    try {
+        const res = await fetch(`${API_BASE}/climate/insight_plain`)
+        if (!res.ok) throw new Error(res.status)
+        const d = await res.json()
+        document.getElementById("insight-plain-text").textContent = d.plain
+    } catch {
+        document.getElementById("insight-plain-text").textContent = "Resumo não disponível ainda."
+    }
+}
+
 // ── Wheeler-Hendon MJO Phase Diagram ────────────────────────────────
 async function montarWheelerHendon() {
     const canvas = document.getElementById("whChart")
@@ -1006,6 +1017,7 @@ carregarStatus()
 carregarHistorico()
 carregarSOI()
 carregarInsight()
+carregarInsightPlain()
 carregarTendencia()
 carregarAtualizacao()
 carregarAlertas()

@@ -293,10 +293,24 @@ _INSIGHT_PROMPT = (
 
 
 def generate_insight() -> str:
-    """Call Gemini with the current climate context and persist the result as CLIMATE_INSIGHT."""
+    """Generate and persist both a technical insight and a plain-language summary."""
     ctx = build_climate_context()
     context_text = context_to_text(ctx)
-    insight_text = ask_claude(_INSIGHT_PROMPT, context_text)
+    insight_text = _strip_headers(ask_claude(_INSIGHT_PROMPT, context_text))
+    plain_text = _gerar_resumo_simples(insight_text)
+
+    meta = json.dumps({
+        "classificacao": ctx["classificacao"],
+        "nino34_anom": ctx.get("nino34_anom"),
+        "soi": ctx.get("soi"),
+        "pdo": ctx.get("pdo"),
+        "nao": ctx.get("nao"),
+        "amo": ctx.get("amo"),
+        "qbo": ctx.get("qbo"),
+        "iod": ctx.get("iod"),
+        "alert_count": len(ctx.get("alerts", [])),
+    })
+    oni_snap = ctx.get("oni")
 
     conn = conectar()
     try:
@@ -306,24 +320,18 @@ def generate_insight() -> str:
                 INSERT INTO climate.operational_context
                     (context_type, content, oni_snapshot, metadata)
                 VALUES ('CLIMATE_INSIGHT', %s, %s, %s::jsonb)
-                RETURNING id
                 """,
-                (
-                    insight_text,
-                    ctx.get("oni"),
-                    json.dumps({
-                        "classificacao": ctx["classificacao"],
-                        "nino34_anom": ctx.get("nino34_anom"),
-                        "soi": ctx.get("soi"),
-                        "pdo": ctx.get("pdo"),
-                        "nao": ctx.get("nao"),
-                        "amo": ctx.get("amo"),
-                        "qbo": ctx.get("qbo"),
-                        "alert_count": len(ctx.get("alerts", [])),
-                    }),
-                ),
+                (insight_text, oni_snap, meta),
             )
-            cur.fetchone()
+            if plain_text:
+                cur.execute(
+                    """
+                    INSERT INTO climate.operational_context
+                        (context_type, content, oni_snapshot, metadata)
+                    VALUES ('CLIMATE_INSIGHT_PLAIN', %s, %s, %s::jsonb)
+                    """,
+                    (plain_text, oni_snap, meta),
+                )
         conn.commit()
     except Exception:
         conn.rollback()
@@ -343,8 +351,25 @@ def get_latest_insight() -> Optional[str]:
                 """
                 SELECT content FROM climate.operational_context
                 WHERE context_type = 'CLIMATE_INSIGHT'
-                ORDER BY created_at DESC
-                LIMIT 1
+                ORDER BY created_at DESC LIMIT 1
+                """
+            )
+            row = cur.fetchone()
+        return row[0] if row else None
+    finally:
+        conn.close()
+
+
+def get_latest_insight_plain() -> Optional[str]:
+    """Retrieve the most recent plain-language insight summary."""
+    conn = conectar()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT content FROM climate.operational_context
+                WHERE context_type = 'CLIMATE_INSIGHT_PLAIN'
+                ORDER BY created_at DESC LIMIT 1
                 """
             )
             row = cur.fetchone()

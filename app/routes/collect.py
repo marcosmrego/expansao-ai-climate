@@ -441,6 +441,14 @@ def collect_insight(x_api_key: str = Header(default="")):
     try:
         from app.services.zhora_service import generate_insight
         insight = generate_insight()
+
+        try:
+            import api.zhora_api as _api
+            _api._cache.delete("analysis")
+            _api._cache.delete("insight_plain")
+        except Exception:
+            pass
+
         return {"status": "ok", "insight": insight}
 
     except HTTPException:
