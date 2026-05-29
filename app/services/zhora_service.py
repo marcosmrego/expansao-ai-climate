@@ -346,49 +346,52 @@ def get_latest_insight() -> Optional[str]:
 
 
 _PREDICTION_PROMPT = (
-    "Responda SOMENTE com um objeto JSON válido, sem nenhum texto antes ou depois, sem markdown.\n\n"
-    'Formato obrigatório: {"technical": "...", "plain": "..."}\n\n'
-    'Campo "technical" (4-6 frases em português): análise preditiva técnica para os próximos 1-3 meses '
-    "considerando fase ENSO atual (ONI, SOI), moduladores de baixa frequência (PDO, AMO, NAO, QBO), "
-    "oscilação intra-sazonal (MJO), CO₂ atmosférico e extensão do gelo polar. "
-    "Identifique sinais que reforçam ou contradizem a tendência ENSO. Texto corrido, sem markdown.\n\n"
-    'Campo "plain" (2-3 frases em português): explique o mesmo cenário para uma pessoa leiga, '
-    "sem usar nenhuma sigla ou termo científico. "
-    "Fale de chuva, calor, seca, frio e impacto prático no dia a dia. Texto corrido, sem markdown."
+    "Com base no contexto climático atual fornecido, elabore uma análise preditiva técnica "
+    "para os próximos 1 a 3 meses. "
+    "Considere a convergência entre: fase ENSO atual (ONI, SOI), moduladores de baixa frequência "
+    "(PDO, AMO, NAO, QBO), oscilação intra-sazonal (MJO), CO₂ atmosférico e extensão do gelo polar. "
+    "Identifique quais sinais reforçam ou contradizem a tendência ENSO atual. "
+    "Escreva 4 a 6 frases técnicas em português. "
+    "Texto corrido, sem formatação markdown, sem asteriscos, sem títulos, sem bullet points."
 )
 
-import json as _json
-import re as _re
+_PLAIN_SYSTEM = (
+    "Você é um comunicador de ciência climática especializado em traduzir conceitos complexos "
+    "para o público geral. Responda sempre em português, de forma clara, direta e acessível. "
+    "Nunca use siglas, termos técnicos ou jargão científico."
+)
+
+_PLAIN_PROMPT = (
+    "Leia a análise climática abaixo e reescreva-a em 2 a 3 frases simples para alguém que "
+    "não entende nada de meteorologia. Fale sobre o que as pessoas podem esperar do clima nos "
+    "próximos meses: mais chuva, mais calor, secas, tempestades — algo que faça sentido no "
+    "dia a dia. Sem siglas, sem termos técnicos.\n\nANÁLISE:\n"
+)
 
 
-def _parse_prediction_response(raw: str) -> tuple[str, str]:
-    """Parse Claude's JSON response into (technical, plain).
-
-    Tries JSON first; falls back to regex extraction if Claude added surrounding text.
-    """
-    # Strip markdown code fences if present
-    clean = _re.sub(r"^```(?:json)?\s*|\s*```$", "", raw.strip(), flags=_re.MULTILINE).strip()
-
+def _gerar_resumo_simples(technical: str) -> str:
+    """Call Claude with a plain-language system prompt to simplify the technical analysis."""
+    if not ANTHROPIC_API_KEY:
+        return ""
+    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
     try:
-        data = _json.loads(clean)
-        return data.get("technical", "").strip(), data.get("plain", "").strip()
-    except (_json.JSONDecodeError, ValueError):
-        pass
-
-    # Fallback: extract fields with regex
-    tech = _re.search(r'"technical"\s*:\s*"((?:[^"\\]|\\.)*)"', clean)
-    plain = _re.search(r'"plain"\s*:\s*"((?:[^"\\]|\\.)*)"', clean)
-    technical = tech.group(1).replace("\\n", " ").strip() if tech else clean
-    plain_text = plain.group(1).replace("\\n", " ").strip() if plain else ""
-    return technical, plain_text
+        msg = client.messages.create(
+            model=ANTHROPIC_MODEL,
+            max_tokens=300,
+            system=_PLAIN_SYSTEM,
+            messages=[{"role": "user", "content": _PLAIN_PROMPT + technical}],
+        )
+        return msg.content[0].text.strip()
+    except Exception:
+        return ""
 
 
 def generate_prediction() -> str:
     """Generate and persist both a technical and a plain-language climate prediction."""
     ctx = build_climate_context()
     context_text = context_to_text(ctx)
-    raw = ask_claude(_PREDICTION_PROMPT, context_text)
-    technical, plain = _parse_prediction_response(raw)
+    technical = ask_claude(_PREDICTION_PROMPT, context_text)
+    plain = _gerar_resumo_simples(technical)
 
     meta = json.dumps({
         "classificacao": ctx["classificacao"],
