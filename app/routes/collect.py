@@ -242,6 +242,43 @@ def collect_qbo(x_api_key: str = Header(default="")):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/iod")
+def collect_iod(x_api_key: str = Header(default="")):
+    """Collect IOD DMI — incremental (last 24 months) via ERSSTv5 OPeNDAP."""
+    _auth(x_api_key)
+    try:
+        from collector.noaa_iod_collector import (
+            baixar_e_calcular, salvar_payload_bruto, inserir_registros, ORIGEM, N_TIME_TOTAL
+        )
+        from database.db import conectar
+
+        registros = baixar_e_calcular(n_time=N_TIME_TOTAL, incremental=True)
+        conn = conectar()
+        try:
+            raw_id = salvar_payload_bruto(conn, ORIGEM)
+            total = inserir_registros(conn, registros, raw_id)
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+        try:
+            import api.zhora_api as _api
+            _api._cache.delete("iod")
+        except Exception:
+            pass
+
+        return {"status": "ok", "records": total}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Erro na coleta IOD: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/mjo")
 def collect_mjo(x_api_key: str = Header(default="")):
     _auth(x_api_key)

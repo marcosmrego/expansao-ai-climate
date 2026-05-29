@@ -220,6 +220,21 @@ async function carregarQBO() {
     }
 }
 
+async function carregarIOD() {
+    try {
+        const res = await fetch(`${API_BASE}/climate/iod`)
+        if (!res.ok) throw new Error(res.status)
+        const d = await res.json()
+        document.getElementById("iod-value").textContent = `${d.dmi >= 0 ? '+' : ''}${d.dmi.toFixed(4)}`
+        document.getElementById("iod-fase").textContent = d.classificacao
+        document.getElementById("iod-date").textContent = d.data_referencia || ""
+    } catch {
+        document.getElementById("iod-value").textContent = "—"
+        document.getElementById("iod-fase").textContent = "sem dados"
+        document.getElementById("iod-date").textContent = ""
+    }
+}
+
 // ── Alert Ticker ─────────────────────────────────────────────────────
 async function carregarAlertas() {
     try {
@@ -998,6 +1013,7 @@ carregarPDO()
 carregarNAO()
 carregarAMO()
 carregarQBO()
+carregarIOD()
 carregarMJO()
 carregarCO2()
 carregarGeloArtico()

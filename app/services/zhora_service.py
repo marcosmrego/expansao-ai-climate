@@ -88,6 +88,7 @@ def build_climate_context() -> dict:
             nao_row = _fetch_latest("noaa_nao", "nao")
             amo_row = _fetch_latest("noaa_amo", "amo")
             qbo_row = _fetch_latest("noaa_qbo", "qbo", missing=-999.0)
+            iod_row = _fetch_latest("noaa_iod", "dmi")
 
             mjo_row      = _fetch_latest_daily("mjo_daily",               ["phase", "amplitude", "classificacao"])
             co2_row      = _fetch_latest_daily("noaa_co2_daily",          ["co2_ppm", "data_referencia"])
@@ -129,6 +130,8 @@ def build_climate_context() -> dict:
         "amo_classificacao": amo_row[1] if amo_row else None,
         "qbo": float(qbo_row[0]) if qbo_row else None,
         "qbo_classificacao": qbo_row[1] if qbo_row else None,
+        "iod": float(iod_row[0]) if iod_row else None,
+        "iod_classificacao": iod_row[1] if iod_row else None,
         "mjo_phase": int(mjo_row[0]) if mjo_row else None,
         "mjo_amplitude": float(mjo_row[1]) if mjo_row else None,
         "mjo_classificacao": mjo_row[2] if mjo_row else None,
@@ -182,6 +185,11 @@ def context_to_text(ctx: dict) -> str:
             ctx.get("qbo_classificacao", "NEUTRO"), "transição"
         )
         lines.append(f"- QBO: {ctx['qbo']:.1f} m/s ({qbo_fase})")
+    if ctx.get("iod") is not None:
+        iod_fase = {"POSITIVO": "positivo (seca Índico leste)", "NEGATIVO": "negativo (chuvas Índico leste)", "NEUTRO": "neutro"}.get(
+            ctx.get("iod_classificacao", "NEUTRO"), "neutro"
+        )
+        lines.append(f"- IOD/DMI: {ctx['iod']:+.4f} ({iod_fase})")
 
     if ctx.get("mjo_phase") is not None:
         mjo_cls_map = {

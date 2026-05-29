@@ -115,6 +115,13 @@ class PlainResponse(BaseModel):
     plain: str
 
 
+class IodResponse(BaseModel):
+    dmi: float
+    classificacao: str
+    fase: str
+    data_referencia: str
+
+
 app = FastAPI(
     title="Expansao AI Climate API"
 )
@@ -561,6 +568,46 @@ def climate_qbo():
     except Exception as e:
         logger.error("Erro em /climate/qbo: %s", e)
         raise HTTPException(status_code=500, detail="Erro ao consultar QBO")
+    finally:
+        conn.close()
+
+
+_IOD_FASE = {
+    "POSITIVO": "Positivo — seca no Índico leste, chuvas no Índico oeste",
+    "NEGATIVO": "Negativo — chuvas no Índico leste, seca no Índico oeste",
+    "NEUTRO":   "Neutro",
+}
+
+
+@app.get("/climate/iod", response_model=IodResponse)
+def climate_iod():
+    cached = _cache.get("iod")
+    if cached:
+        return cached
+    conn = conectar()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT dmi, classificacao, to_char(data_referencia, 'YYYY-MM-DD')
+            FROM climate.noaa_iod
+            ORDER BY data_referencia DESC LIMIT 1
+        """)
+        r = cursor.fetchone()
+        if r is None:
+            raise HTTPException(status_code=404, detail="Sem dados IOD disponíveis")
+        result = {
+            "dmi": float(r[0]),
+            "classificacao": r[1],
+            "fase": _IOD_FASE.get(r[1], r[1]),
+            "data_referencia": r[2],
+        }
+        _cache.set("iod", result)
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Erro em /climate/iod: %s", e)
+        raise HTTPException(status_code=500, detail="Erro ao consultar IOD")
     finally:
         conn.close()
 

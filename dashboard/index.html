@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=2">
+    <link rel="stylesheet" href="style.css?v=3">
 </head>
 <body class="neutral">
 
@@ -146,7 +146,7 @@
         <section class="panel">
             <div class="panel-header">
                 <h2 class="panel-title">Índices de Modulação Climática</h2>
-                <span class="panel-sub">PDO · NAO · AMO · QBO · últimos dados disponíveis</span>
+                <span class="panel-sub">PDO · NAO · AMO · QBO · IOD · últimos dados disponíveis</span>
             </div>
             <div class="modulation-grid">
 
@@ -180,6 +180,15 @@
                     </div>
                     <div class="metric-value sm" id="qbo-value"><span class="skeleton">------</span></div>
                     <div class="metric-unit" id="qbo-fase"><span class="skeleton">---------</span></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-label">IOD
+                        <span class="tooltip-icon" title="Indian Ocean Dipole — Dipolo do Índico. DMI positivo = seca no Índico leste e Brasil Centro-Oeste; DMI negativo = chuvas excessivas no Índico leste.">ℹ</span>
+                    </div>
+                    <div class="metric-value" id="iod-value"><span class="skeleton">----</span></div>
+                    <div class="metric-unit" id="iod-fase"><span class="skeleton">---------</span></div>
+                    <div class="metric-unit" style="margin-top:4px;font-size:11px;color:var(--text-3)" id="iod-date"></div>
                 </div>
 
             </div>
@@ -441,6 +450,10 @@
                     <strong>Gelo Polar (NSIDC)</strong>
                     <p>Extensão do gelo marinho no Ártico e na Antártida, medida em milhões de km² pelo National Snow and Ice Data Center. O gelo Ártico influencia o albedo e a circulação atmosférica do hemisfério norte; o gelo Antártico é indicador da saúde do sistema climático austral.</p>
                 </div>
+                <div class="glossary-item">
+                    <strong>IOD — Dipolo do Índico</strong>
+                    <p>Indian Ocean Dipole. Diferença de temperatura entre o Oceano Índico ocidental (50–70°E) e oriental (90–110°E). DMI positivo aquece o Índico oeste e resfria o leste — tende a reduzir chuvas no Centro-Oeste e Nordeste do Brasil quando combinado com La Niña. DMI negativo tem efeito oposto. Calculado a partir do ERSSTv5 (NOAA PSL), climatologia 1981–2010.</p>
+                </div>
             </div>
         </details>
 
@@ -455,6 +468,6 @@
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="app.js?v=2"></script>
+<script src="app.js?v=3"></script>
 </body>
 </html>
