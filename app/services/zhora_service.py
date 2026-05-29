@@ -346,29 +346,45 @@ def get_latest_insight() -> Optional[str]:
 
 
 _PREDICTION_PROMPT = (
-    "Com base no contexto climático atual fornecido, produza DUAS seções separadas pelo marcador ---PLAIN---.\n\n"
-    "SEÇÃO 1 — Análise técnica (4 a 6 frases): elabore uma análise preditiva para os próximos 1 a 3 meses "
-    "considerando a convergência entre fase ENSO atual (ONI, SOI), moduladores de baixa frequência "
-    "(PDO, AMO, NAO, QBO), oscilação intra-sazonal (MJO), CO₂ atmosférico e extensão do gelo polar. "
-    "Identifique quais sinais reforçam ou contradizem a tendência ENSO atual. "
-    "Texto corrido, sem markdown, sem asteriscos, sem títulos, sem bullet points.\n\n"
+    "Responda APENAS com texto puro, sem nenhum markdown, sem '#', sem '##', sem '**', sem '-', sem bullets.\n\n"
+    "Escreva exatamente dois blocos separados pela linha: ---PLAIN---\n\n"
+    "BLOCO 1 (análise técnica, 4-6 frases): análise preditiva para os próximos 1 a 3 meses considerando "
+    "fase ENSO atual (ONI, SOI), moduladores de baixa frequência (PDO, AMO, NAO, QBO), "
+    "oscilação intra-sazonal (MJO), CO₂ e extensão do gelo polar. "
+    "Identifique sinais que reforçam ou contradizem a tendência ENSO.\n\n"
     "---PLAIN---\n\n"
-    "SEÇÃO 2 — Resumo acessível (2 a 3 frases): explique o mesmo cenário em linguagem simples e cotidiana, "
-    "como se estivesse conversando com alguém que nunca ouviu falar de ENSO, ONI ou PDO. "
-    "Foque no impacto prático: o que as pessoas podem esperar do clima nos próximos meses? "
-    "Use palavras como chuva, calor, seca, frio — nunca siglas ou termos científicos. "
-    "Texto corrido, sem markdown, sem asteriscos."
+    "BLOCO 2 (linguagem simples, 2-3 frases): explique o cenário acima para uma pessoa comum, "
+    "sem usar nenhuma sigla ou termo científico. Fale de chuva, calor, seca, frio e impacto no dia a dia."
 )
 
 _PLAIN_SEPARATOR = "---PLAIN---"
 
+import re as _re
+
+
+def _limpar_markdown(texto: str) -> str:
+    """Remove markdown headers and leading labels from text."""
+    texto = _re.sub(r"^#+\s.*\n?", "", texto, flags=_re.MULTILINE)
+    texto = _re.sub(r"^(BLOCO|SEÇÃO)\s*\d.*\n?", "", texto, flags=_re.MULTILINE | _re.IGNORECASE)
+    return texto.strip()
+
 
 def _parse_prediction_response(raw: str) -> tuple[str, str]:
-    """Split Claude's response into (technical, plain) at the ---PLAIN--- marker."""
+    """Split Claude's response into (technical, plain) at the ---PLAIN--- marker.
+
+    Falls back to heuristic splitting on common section headers if marker is absent.
+    """
     if _PLAIN_SEPARATOR in raw:
         parts = raw.split(_PLAIN_SEPARATOR, 1)
-        return parts[0].strip(), parts[1].strip()
-    return raw.strip(), ""
+        return _limpar_markdown(parts[0]), _limpar_markdown(parts[1])
+
+    # Fallback: Claude sometimes uses section headers instead of the separator
+    for pattern in [r"(?:^|\n)##?\s*(?:SEÇÃO|BLOCO)\s*2", r"(?:^|\n)---+\n"]:
+        m = _re.search(pattern, raw, _re.IGNORECASE)
+        if m:
+            return _limpar_markdown(raw[:m.start()]), _limpar_markdown(raw[m.end():])
+
+    return _limpar_markdown(raw), ""
 
 
 def generate_prediction() -> str:
