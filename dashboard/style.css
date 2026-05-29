@@ -602,6 +602,19 @@ details[open] .glossary-summary {
     border-top: 3px solid rgba(171, 71, 188, .6);
 }
 
+.panel-plain {
+    background: linear-gradient(135deg, rgba(38,166,154,.08) 0%, rgba(38,166,154,.03) 100%);
+    border: 1px solid rgba(38,166,154,.22);
+    border-top: 3px solid rgba(38,166,154,.7);
+}
+
+.plain-text {
+    font-size: 16px;
+    line-height: 1.75;
+    color: var(--text);
+    font-weight: 400;
+}
+
 /* ── Footer ─────────────────────────────────────────────────────────── */
 footer {
     text-align: center;

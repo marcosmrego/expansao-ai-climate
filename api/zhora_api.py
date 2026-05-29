@@ -111,6 +111,10 @@ class PredictionResponse(BaseModel):
     prediction: str
 
 
+class PlainResponse(BaseModel):
+    plain: str
+
+
 app = FastAPI(
     title="Expansao AI Climate API"
 )
@@ -902,6 +906,23 @@ def climate_prediction():
 
     result = {"prediction": prediction}
     _cache.set("prediction", result)
+    return result
+
+
+@app.get("/climate/plain", response_model=PlainResponse)
+def climate_plain():
+    cached = _cache.get("plain")
+    if cached:
+        return cached
+
+    from app.services.zhora_service import get_latest_plain
+
+    plain = get_latest_plain()
+    if plain is None:
+        plain = "Nenhum resumo disponível ainda. Execute POST /api/collect/prediction para gerar."
+
+    result = {"plain": plain}
+    _cache.set("plain", result)
     return result
 
 

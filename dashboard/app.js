@@ -507,6 +507,17 @@ async function carregarPredicao() {
     }
 }
 
+async function carregarPlain() {
+    try {
+        const res = await fetch(`${API_BASE}/climate/plain`)
+        if (!res.ok) throw new Error(res.status)
+        const d = await res.json()
+        document.getElementById("plain-text").textContent = d.plain
+    } catch {
+        document.getElementById("plain-text").textContent = "Resumo não disponível ainda."
+    }
+}
+
 // ── Wheeler-Hendon MJO Phase Diagram ────────────────────────────────
 async function montarWheelerHendon() {
     const canvas = document.getElementById("whChart")
@@ -992,6 +1003,7 @@ carregarCO2()
 carregarGeloArtico()
 carregarGeloAntartico()
 carregarPredicao()
+carregarPlain()
 montarWheelerHendon()
 montarCO2Chart()
 montarGeloChart()

@@ -378,6 +378,14 @@ def collect_prediction(x_api_key: str = Header(default="")):
     try:
         from app.services.zhora_service import generate_prediction
         prediction = generate_prediction()
+
+        try:
+            import api.zhora_api as _api
+            _api._cache.delete("prediction")
+            _api._cache.delete("plain")
+        except Exception:
+            pass
+
         return {"status": "ok", "prediction": prediction}
 
     except HTTPException:

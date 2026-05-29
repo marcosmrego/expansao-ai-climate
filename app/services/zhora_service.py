@@ -346,22 +346,54 @@ def get_latest_insight() -> Optional[str]:
 
 
 _PREDICTION_PROMPT = (
-    "Com base no contexto climático atual fornecido, elabore uma análise preditiva técnica "
-    "para os próximos 1 a 3 meses. "
-    "Considere a convergência entre: fase ENSO atual (ONI, SOI), moduladores de baixa frequência "
+    "Com base no contexto climático atual fornecido, produza DUAS seções separadas pelo marcador ---PLAIN---.\n\n"
+    "SEÇÃO 1 — Análise técnica (4 a 6 frases): elabore uma análise preditiva para os próximos 1 a 3 meses "
+    "considerando a convergência entre fase ENSO atual (ONI, SOI), moduladores de baixa frequência "
     "(PDO, AMO, NAO, QBO), oscilação intra-sazonal (MJO), CO₂ atmosférico e extensão do gelo polar. "
     "Identifique quais sinais reforçam ou contradizem a tendência ENSO atual. "
-    "Escreva 4 a 6 frases técnicas em português. "
-    "IMPORTANTE: texto corrido, sem formatação markdown, sem asteriscos, "
-    "sem títulos com #, sem bullet points. Apenas texto puro."
+    "Texto corrido, sem markdown, sem asteriscos, sem títulos, sem bullet points.\n\n"
+    "---PLAIN---\n\n"
+    "SEÇÃO 2 — Resumo acessível (2 a 3 frases): explique o mesmo cenário em linguagem simples e cotidiana, "
+    "como se estivesse conversando com alguém que nunca ouviu falar de ENSO, ONI ou PDO. "
+    "Foque no impacto prático: o que as pessoas podem esperar do clima nos próximos meses? "
+    "Use palavras como chuva, calor, seca, frio — nunca siglas ou termos científicos. "
+    "Texto corrido, sem markdown, sem asteriscos."
 )
+
+_PLAIN_SEPARATOR = "---PLAIN---"
+
+
+def _parse_prediction_response(raw: str) -> tuple[str, str]:
+    """Split Claude's response into (technical, plain) at the ---PLAIN--- marker."""
+    if _PLAIN_SEPARATOR in raw:
+        parts = raw.split(_PLAIN_SEPARATOR, 1)
+        return parts[0].strip(), parts[1].strip()
+    return raw.strip(), ""
 
 
 def generate_prediction() -> str:
-    """Generate and persist a predictive climate analysis for the next 1-3 months."""
+    """Generate and persist both a technical and a plain-language climate prediction."""
     ctx = build_climate_context()
     context_text = context_to_text(ctx)
-    prediction_text = ask_claude(_PREDICTION_PROMPT, context_text)
+    raw = ask_claude(_PREDICTION_PROMPT, context_text)
+    technical, plain = _parse_prediction_response(raw)
+
+    meta = json.dumps({
+        "classificacao": ctx["classificacao"],
+        "nino34_anom": ctx.get("nino34_anom"),
+        "soi": ctx.get("soi"),
+        "pdo": ctx.get("pdo"),
+        "nao": ctx.get("nao"),
+        "amo": ctx.get("amo"),
+        "qbo": ctx.get("qbo"),
+        "mjo_phase": ctx.get("mjo_phase"),
+        "mjo_amplitude": ctx.get("mjo_amplitude"),
+        "co2_ppm": ctx.get("co2_ppm"),
+        "arctic_ice_mkm2": ctx.get("arctic_ice_mkm2"),
+        "antarctic_ice_mkm2": ctx.get("antarctic_ice_mkm2"),
+        "alert_count": len(ctx.get("alerts", [])),
+    })
+    oni_snap = ctx.get("oni")
 
     conn = conectar()
     try:
@@ -371,29 +403,18 @@ def generate_prediction() -> str:
                 INSERT INTO climate.operational_context
                     (context_type, content, oni_snapshot, metadata)
                 VALUES ('CLIMATE_PREDICTION', %s, %s, %s::jsonb)
-                RETURNING id
                 """,
-                (
-                    prediction_text,
-                    ctx.get("oni"),
-                    json.dumps({
-                        "classificacao": ctx["classificacao"],
-                        "nino34_anom": ctx.get("nino34_anom"),
-                        "soi": ctx.get("soi"),
-                        "pdo": ctx.get("pdo"),
-                        "nao": ctx.get("nao"),
-                        "amo": ctx.get("amo"),
-                        "qbo": ctx.get("qbo"),
-                        "mjo_phase": ctx.get("mjo_phase"),
-                        "mjo_amplitude": ctx.get("mjo_amplitude"),
-                        "co2_ppm": ctx.get("co2_ppm"),
-                        "arctic_ice_mkm2": ctx.get("arctic_ice_mkm2"),
-                        "antarctic_ice_mkm2": ctx.get("antarctic_ice_mkm2"),
-                        "alert_count": len(ctx.get("alerts", [])),
-                    }),
-                ),
+                (technical, oni_snap, meta),
             )
-            cur.fetchone()
+            if plain:
+                cur.execute(
+                    """
+                    INSERT INTO climate.operational_context
+                        (context_type, content, oni_snapshot, metadata)
+                    VALUES ('CLIMATE_PLAIN', %s, %s, %s::jsonb)
+                    """,
+                    (plain, oni_snap, meta),
+                )
         conn.commit()
     except Exception:
         conn.rollback()
@@ -401,11 +422,11 @@ def generate_prediction() -> str:
     finally:
         conn.close()
 
-    return prediction_text
+    return technical
 
 
 def get_latest_prediction() -> Optional[str]:
-    """Retrieve the most recent AI-generated predictive analysis."""
+    """Retrieve the most recent technical predictive analysis."""
     conn = conectar()
     try:
         with conn.cursor() as cur:
@@ -413,8 +434,25 @@ def get_latest_prediction() -> Optional[str]:
                 """
                 SELECT content FROM climate.operational_context
                 WHERE context_type = 'CLIMATE_PREDICTION'
-                ORDER BY created_at DESC
-                LIMIT 1
+                ORDER BY created_at DESC LIMIT 1
+                """
+            )
+            row = cur.fetchone()
+        return row[0] if row else None
+    finally:
+        conn.close()
+
+
+def get_latest_plain() -> Optional[str]:
+    """Retrieve the most recent plain-language climate summary."""
+    conn = conectar()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT content FROM climate.operational_context
+                WHERE context_type = 'CLIMATE_PLAIN'
+                ORDER BY created_at DESC LIMIT 1
                 """
             )
             row = cur.fetchone()
