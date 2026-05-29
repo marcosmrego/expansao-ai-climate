@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=5">
+    <link rel="stylesheet" href="style.css?v=6">
 </head>
 <body class="neutral">
 
@@ -22,13 +22,15 @@
                 <p class="brand-sub">Monitoramento climático global · NOAA · ENSO · IA</p>
             </div>
         </div>
-        <div class="phase-pill" id="phase-pill">
-            <span class="phase-dot"></span>
-            <span id="phase-label">Carregando...</span>
+        <div class="header-right">
+            <div class="phase-pill" id="phase-pill">
+                <span class="phase-dot"></span>
+                <span id="phase-label">Carregando...</span>
+            </div>
+            <button class="zhora-header-btn" onclick="abrirZhora()" title="Pergunte à Zhora">
+                🤖 <span class="zhora-header-label">Zhora</span>
+            </button>
         </div>
-        <button class="zhora-header-btn" onclick="abrirZhora()" title="Pergunte à Zhora">
-            🤖 <span class="zhora-header-label">Zhora</span>
-        </button>
     </div>
 </header>
 

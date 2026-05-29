@@ -78,6 +78,12 @@ header {
     gap: 16px;
 }
 
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 .brand-icon { font-size: 32px; }
 
 h1 {
