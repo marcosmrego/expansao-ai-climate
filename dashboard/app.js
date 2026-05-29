@@ -511,6 +511,56 @@ async function carregarGeloAntartico() {
 }
 
 // ── Prediction ────────────────────────────────────────────────────────
+// ── Zhora Conversacional ─────────────────────────────────────────────
+function preencherPergunta(btn) {
+    const input = document.getElementById("zhora-input")
+    input.value = btn.textContent
+    input.focus()
+}
+
+async function perguntarZhora() {
+    const input  = document.getElementById("zhora-input")
+    const btn    = document.getElementById("zhora-btn")
+    const label  = document.getElementById("zhora-btn-label")
+    const wrap   = document.getElementById("zhora-response-wrap")
+    const resp   = document.getElementById("zhora-response")
+
+    const question = input.value.trim()
+    if (!question) return
+
+    // Loading state
+    btn.disabled  = true
+    input.disabled = true
+    label.textContent = "Pensando..."
+    wrap.classList.remove("hidden")
+    resp.innerHTML = `
+        <div class="zhora-thinking">
+            <div class="zhora-thinking-dots">
+                <span></span><span></span><span></span>
+            </div>
+            Consultando os dados climáticos...
+        </div>`
+
+    try {
+        const res = await fetch(`${API_BASE}/api/zhora/ask`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ question })
+        })
+        if (!res.ok) throw new Error(res.status)
+        const d = await res.json()
+        resp.innerHTML = renderInsight(d.answer)
+    } catch {
+        resp.innerHTML = `<span style="color:var(--critical)">Não foi possível obter resposta. Tente novamente em alguns instantes.</span>`
+    } finally {
+        btn.disabled   = false
+        input.disabled = false
+        label.textContent = "Enviar"
+        input.value    = ""
+        input.focus()
+    }
+}
+
 async function carregarPredicao() {
     try {
         const res = await fetch(`${API_BASE}/climate/prediction`)
