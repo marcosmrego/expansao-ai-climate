@@ -369,6 +369,24 @@ _PLAIN_PROMPT = (
 )
 
 
+import re as _re
+
+
+def _strip_headers(text: str) -> str:
+    """Remove markdown headers and section label lines Claude tends to add."""
+    lines = text.splitlines()
+    cleaned = []
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("#"):
+            continue
+        if _re.match(r"^(SEÇÃO|BLOCO|SECTION)\s+\d", stripped, _re.IGNORECASE):
+            continue
+        cleaned.append(line)
+    result = "\n".join(cleaned).strip()
+    return _re.sub(r"\n{3,}", "\n\n", result)
+
+
 def _gerar_resumo_simples(technical: str) -> str:
     """Call Claude with a plain-language system prompt to simplify the technical analysis."""
     if not ANTHROPIC_API_KEY:
@@ -381,7 +399,7 @@ def _gerar_resumo_simples(technical: str) -> str:
             system=_PLAIN_SYSTEM,
             messages=[{"role": "user", "content": _PLAIN_PROMPT + technical}],
         )
-        return msg.content[0].text.strip()
+        return _strip_headers(msg.content[0].text)
     except Exception:
         return ""
 
@@ -390,7 +408,7 @@ def generate_prediction() -> str:
     """Generate and persist both a technical and a plain-language climate prediction."""
     ctx = build_climate_context()
     context_text = context_to_text(ctx)
-    technical = ask_claude(_PREDICTION_PROMPT, context_text)
+    technical = _strip_headers(ask_claude(_PREDICTION_PROMPT, context_text))
     plain = _gerar_resumo_simples(technical)
 
     meta = json.dumps({
