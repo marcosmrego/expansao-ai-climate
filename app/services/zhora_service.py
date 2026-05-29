@@ -346,45 +346,41 @@ def get_latest_insight() -> Optional[str]:
 
 
 _PREDICTION_PROMPT = (
-    "Responda APENAS com texto puro, sem nenhum markdown, sem '#', sem '##', sem '**', sem '-', sem bullets.\n\n"
-    "Escreva exatamente dois blocos separados pela linha: ---PLAIN---\n\n"
-    "BLOCO 1 (análise técnica, 4-6 frases): análise preditiva para os próximos 1 a 3 meses considerando "
-    "fase ENSO atual (ONI, SOI), moduladores de baixa frequência (PDO, AMO, NAO, QBO), "
-    "oscilação intra-sazonal (MJO), CO₂ e extensão do gelo polar. "
-    "Identifique sinais que reforçam ou contradizem a tendência ENSO.\n\n"
-    "---PLAIN---\n\n"
-    "BLOCO 2 (linguagem simples, 2-3 frases): explique o cenário acima para uma pessoa comum, "
-    "sem usar nenhuma sigla ou termo científico. Fale de chuva, calor, seca, frio e impacto no dia a dia."
+    "Responda SOMENTE com um objeto JSON válido, sem nenhum texto antes ou depois, sem markdown.\n\n"
+    'Formato obrigatório: {"technical": "...", "plain": "..."}\n\n'
+    'Campo "technical" (4-6 frases em português): análise preditiva técnica para os próximos 1-3 meses '
+    "considerando fase ENSO atual (ONI, SOI), moduladores de baixa frequência (PDO, AMO, NAO, QBO), "
+    "oscilação intra-sazonal (MJO), CO₂ atmosférico e extensão do gelo polar. "
+    "Identifique sinais que reforçam ou contradizem a tendência ENSO. Texto corrido, sem markdown.\n\n"
+    'Campo "plain" (2-3 frases em português): explique o mesmo cenário para uma pessoa leiga, '
+    "sem usar nenhuma sigla ou termo científico. "
+    "Fale de chuva, calor, seca, frio e impacto prático no dia a dia. Texto corrido, sem markdown."
 )
 
-_PLAIN_SEPARATOR = "---PLAIN---"
-
+import json as _json
 import re as _re
 
 
-def _limpar_markdown(texto: str) -> str:
-    """Remove markdown headers and leading labels from text."""
-    texto = _re.sub(r"^#+\s.*\n?", "", texto, flags=_re.MULTILINE)
-    texto = _re.sub(r"^(BLOCO|SEÇÃO)\s*\d.*\n?", "", texto, flags=_re.MULTILINE | _re.IGNORECASE)
-    return texto.strip()
-
-
 def _parse_prediction_response(raw: str) -> tuple[str, str]:
-    """Split Claude's response into (technical, plain) at the ---PLAIN--- marker.
+    """Parse Claude's JSON response into (technical, plain).
 
-    Falls back to heuristic splitting on common section headers if marker is absent.
+    Tries JSON first; falls back to regex extraction if Claude added surrounding text.
     """
-    if _PLAIN_SEPARATOR in raw:
-        parts = raw.split(_PLAIN_SEPARATOR, 1)
-        return _limpar_markdown(parts[0]), _limpar_markdown(parts[1])
+    # Strip markdown code fences if present
+    clean = _re.sub(r"^```(?:json)?\s*|\s*```$", "", raw.strip(), flags=_re.MULTILINE).strip()
 
-    # Fallback: Claude sometimes uses section headers instead of the separator
-    for pattern in [r"(?:^|\n)##?\s*(?:SEÇÃO|BLOCO)\s*2", r"(?:^|\n)---+\n"]:
-        m = _re.search(pattern, raw, _re.IGNORECASE)
-        if m:
-            return _limpar_markdown(raw[:m.start()]), _limpar_markdown(raw[m.end():])
+    try:
+        data = _json.loads(clean)
+        return data.get("technical", "").strip(), data.get("plain", "").strip()
+    except (_json.JSONDecodeError, ValueError):
+        pass
 
-    return _limpar_markdown(raw), ""
+    # Fallback: extract fields with regex
+    tech = _re.search(r'"technical"\s*:\s*"((?:[^"\\]|\\.)*)"', clean)
+    plain = _re.search(r'"plain"\s*:\s*"((?:[^"\\]|\\.)*)"', clean)
+    technical = tech.group(1).replace("\\n", " ").strip() if tech else clean
+    plain_text = plain.group(1).replace("\\n", " ").strip() if plain else ""
+    return technical, plain_text
 
 
 def generate_prediction() -> str:
