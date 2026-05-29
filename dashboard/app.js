@@ -522,6 +522,17 @@ function abrirZhora() {
     setTimeout(() => document.getElementById("zhora-input")?.focus(), 100)
 }
 
+function abrirZhoraComPergunta() {
+    abrirZhora()
+    setTimeout(() => {
+        const input = document.getElementById("zhora-input")
+        if (input && !input.value) {
+            input.value = "Como o clima atual vai impactar a agricultura na minha região nos próximos meses?"
+            input.focus()
+        }
+    }, 150)
+}
+
 function preencherPergunta(btn) {
     const input = document.getElementById("zhora-input")
     input.value = btn.textContent
