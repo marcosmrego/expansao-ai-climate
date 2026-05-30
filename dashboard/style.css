@@ -820,6 +820,125 @@ details[open] .glossary-summary {
     40%           { opacity: 1;  transform: scale(1); }
 }
 
+/* ── Home / Início ───────────────────────────────────────────────────── */
+.home-hero {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 28px;
+    align-items: start;
+    background: linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%);
+    border: 1px solid var(--border-accent);
+    border-radius: var(--radius);
+    padding: 32px;
+}
+
+.home-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--text);
+    margin-bottom: 12px;
+}
+
+.home-subtitle {
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--text-2);
+    max-width: 520px;
+}
+
+.home-status-card {
+    background: var(--bg2);
+    border: 1px solid var(--border-accent);
+    border-radius: var(--radius-sm);
+    padding: 20px;
+}
+
+.home-status-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--text-3);
+    margin-bottom: 8px;
+}
+
+.home-status-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 12px;
+}
+
+.home-status-plain {
+    font-size: 13px;
+    line-height: 1.65;
+    color: var(--text-2);
+}
+
+.home-nav-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.home-nav-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    cursor: pointer;
+    transition: all var(--transition);
+}
+.home-nav-card:hover {
+    border-color: var(--accent);
+    background: var(--surface2);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(0,0,0,.2);
+}
+
+.home-nav-icon { font-size: 24px; flex-shrink: 0; margin-top: 2px; }
+
+.home-nav-content { flex: 1; }
+
+.home-nav-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+}
+
+.home-nav-desc {
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--text-3);
+    margin-bottom: 10px;
+}
+
+.home-nav-value {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent);
+}
+
+.home-nav-arrow {
+    font-size: 18px;
+    color: var(--text-3);
+    flex-shrink: 0;
+    transition: color var(--transition);
+}
+.home-nav-card:hover .home-nav-arrow { color: var(--accent); }
+
+@media (max-width: 900px) {
+    .home-hero { grid-template-columns: 1fr; }
+    .home-nav-grid { grid-template-columns: 1fr; }
+    .home-title { font-size: 22px; }
+}
+
 /* ── Regional Consulting CTA ────────────────────────────────────────── */
 .regional-cta {
     display: grid;

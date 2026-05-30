@@ -512,6 +512,84 @@ async function carregarGeloAntartico() {
 
 // ── Prediction ────────────────────────────────────────────────────────
 // ── Zhora Conversacional ─────────────────────────────────────────────
+// ── Home / Início ────────────────────────────────────────────────────
+function irParaAba(tab) {
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"))
+    document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"))
+    const btn = document.querySelector(`[data-tab="${tab}"]`)
+    if (btn) btn.classList.add("active")
+    const panel = document.getElementById(`tab-${tab}`)
+    if (panel) panel.classList.add("active")
+    // lazy-load modulation charts if needed
+    if (tab === "modulacao" && !_modulacaoLoaded) {
+        _modulacaoLoaded = true
+        montarGraficosPDO(); montarGraficosNAO(); montarGraficosAMO()
+        montarGraficosQBO(); montarGraficosIOD()
+    }
+    setTimeout(() => {
+        ;(_CHART_KEYS[tab] || []).forEach(k => { if (window[k]) window[k].resize() })
+    }, 50)
+}
+
+async function carregarHome() {
+    const FASE = { EL_NINO: "El Niño ativo", LA_NINA: "La Niña ativa", NEUTRO: "Fase Neutra" }
+    const COR  = { EL_NINO: "var(--warning)", LA_NINA: "var(--info)", NEUTRO: "var(--accent)" }
+
+    // Busca em paralelo: status + insight_plain + iod + mjo + co2 + prediction
+    const [rStatus, rPlain, rIod, rMjo, rCo2, rPred] = await Promise.allSettled([
+        fetch(`${API_BASE}/climate/status`),
+        fetch(`${API_BASE}/climate/insight_plain`),
+        fetch(`${API_BASE}/climate/iod`),
+        fetch(`${API_BASE}/climate/mjo`),
+        fetch(`${API_BASE}/climate/co2`),
+        fetch(`${API_BASE}/climate/plain`),
+    ])
+
+    const j = async r => r.status === "fulfilled" && r.value.ok ? r.value.json() : null
+    const [status, plain, iod, mjo, co2, pred] = await Promise.all([
+        j(rStatus), j(rPlain), j(rIod), j(rMjo), j(rCo2), j(rPred)
+    ])
+
+    // Estado atual (hero)
+    if (status) {
+        const el = document.getElementById("home-status")
+        el.textContent = FASE[status.classificacao] || status.classificacao
+        el.style.color = COR[status.classificacao] || "var(--accent)"
+    }
+    if (plain) {
+        document.getElementById("home-status-plain").textContent = plain.plain
+    }
+
+    // Badge ENSO
+    if (status) {
+        document.getElementById("home-oni-badge").textContent =
+            `ONI ${status.oni >= 0 ? "+" : ""}${status.oni?.toFixed(2)} · ${FASE[status.classificacao] || status.classificacao}`
+    }
+
+    // Badge Modulação (usa IOD como destaque)
+    if (iod) {
+        const iodDesc = iod.classificacao === "POSITIVO" ? "IOD Positivo" :
+                        iod.classificacao === "NEGATIVO" ? "IOD Negativo" : "IOD Neutro"
+        document.getElementById("home-mod-badge").textContent = `${iodDesc} · PDO/NAO/AMO/QBO ativos`
+    }
+
+    // Badge Diários (MJO + CO₂)
+    if (mjo && co2) {
+        const mjoDesc = mjo.amplitude >= 1.0 ? `MJO Fase ${mjo.phase} ativo` : "MJO inativo"
+        document.getElementById("home-daily-badge").textContent =
+            `${mjoDesc} · CO₂ ${co2.co2_ppm?.toFixed(1)} ppm`
+    } else if (co2) {
+        document.getElementById("home-daily-badge").textContent = `CO₂ ${co2.co2_ppm?.toFixed(1)} ppm`
+    }
+
+    // Badge Análise preditiva
+    if (pred) {
+        const snippet = pred.plain.split(".")[0] + "."
+        document.getElementById("home-pred-badge").textContent =
+            snippet.length > 80 ? snippet.slice(0, 80) + "…" : snippet
+    }
+}
+
 function abrirZhora() {
     document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"))
     document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"))
@@ -1055,6 +1133,7 @@ async function montarGraficosIOD()  { await montarModulacaoChart("iodChart",  "/
 
 // ── Tab switching ─────────────────────────────────────────────────────
 const _CHART_KEYS = {
+    inicio:    [],
     enso:      ["_oniChart"],
     modulacao: ["_pdoChart", "_naoChart", "_amoChart", "_qboChart", "_iodChart"],
     diarios:   ["_whChart", "_co2Chart", "_iceChart"],
@@ -1090,6 +1169,7 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
 })
 
 // ── Init ─────────────────────────────────────────────────────────────
+carregarHome()
 carregarStatus()
 carregarHistorico()
 carregarSOI()
