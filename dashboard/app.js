@@ -513,6 +513,8 @@ async function carregarGeloAntartico() {
 // ── Prediction ────────────────────────────────────────────────────────
 // ── Zhora Conversacional ─────────────────────────────────────────────
 // ── Home / Início ────────────────────────────────────────────────────
+const _track = (event, data) => { try { if (typeof umami !== "undefined") umami.track(event, data) } catch {} }
+
 function irParaAba(tab) {
     document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"))
     document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"))
@@ -520,6 +522,7 @@ function irParaAba(tab) {
     if (btn) btn.classList.add("active")
     const panel = document.getElementById(`tab-${tab}`)
     if (panel) panel.classList.add("active")
+    _track("tab_view", { tab })
     // lazy-load modulation charts if needed
     if (tab === "modulacao" && !_modulacaoLoaded) {
         _modulacaoLoaded = true
@@ -602,6 +605,7 @@ function abrirZhora() {
 
 function abrirZhoraComPergunta() {
     abrirZhora()
+    _track("regional_cta_click")
     setTimeout(() => {
         const input = document.getElementById("zhora-input")
         if (input && !input.value) {
@@ -615,6 +619,7 @@ function preencherPergunta(btn) {
     const input = document.getElementById("zhora-input")
     input.value = btn.textContent
     input.focus()
+    _track("zhora_chip", { text: btn.textContent.slice(0, 60) })
 }
 
 async function perguntarZhora() {
@@ -626,6 +631,7 @@ async function perguntarZhora() {
 
     const question = input.value.trim()
     if (!question) return
+    _track("zhora_question_sent")
 
     // Loading state
     btn.disabled  = true
@@ -1150,6 +1156,7 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
         btn.classList.add("active")
         const tab = btn.dataset.tab
         document.getElementById("tab-" + tab).classList.add("active")
+        _track("tab_view", { tab })
 
         // Lazy-load modulation charts on first visit
         if (tab === "modulacao" && !_modulacaoLoaded) {
