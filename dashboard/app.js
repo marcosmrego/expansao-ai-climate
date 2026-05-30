@@ -1169,6 +1169,7 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
         const tab = btn.dataset.tab
         document.getElementById("tab-" + tab).classList.add("active")
         _track("tab_view", { tab })
+        try { if (typeof umami !== "undefined") umami.track({ url: "/" + tab, title: tab }) } catch {}
 
         // Lazy-load modulation charts on first visit
         if (tab === "modulacao" && !_modulacaoLoaded) {
