@@ -167,6 +167,18 @@ async function carregarAtualizacao() {
     }
 }
 
+async function carregarFreshness() {
+    try {
+        const res = await fetch(`${API_BASE}/climate/freshness`)
+        if (!res.ok) return
+        const d = await res.json()
+        const el = document.getElementById("brand-freshness")
+        if (el && d.ultima_coleta && d.ultima_coleta !== "—") {
+            el.textContent = `Última atualização: ${d.ultima_coleta}`
+        }
+    } catch { /* silencioso — não é crítico */ }
+}
+
 // ── Modulation Indices ───────────────────────────────────────────────
 async function carregarPDO() {
     try {
@@ -1177,6 +1189,7 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
 
 // ── Init ─────────────────────────────────────────────────────────────
 carregarHome()
+carregarFreshness()
 carregarStatus()
 carregarHistorico()
 carregarSOI()

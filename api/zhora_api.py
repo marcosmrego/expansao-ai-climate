@@ -387,6 +387,34 @@ def climate_update():
         conn.close()
 
 
+@app.get("/climate/freshness")
+def climate_freshness():
+    """Return the timestamp of the most recent data ingestion across all tables."""
+    cached = _cache.get("freshness")
+    if cached:
+        return cached
+    conn = conectar()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT MAX(ts) FROM (
+                SELECT MAX(criado_em) AS ts FROM climate.noaa_co2_daily
+                UNION ALL SELECT MAX(criado_em) FROM climate.nsidc_arctic_ice_daily
+                UNION ALL SELECT MAX(criado_em) FROM climate.mjo_daily
+                UNION ALL SELECT MAX(created_at)  FROM climate.operational_context
+            ) t
+        """)
+        ts = cursor.fetchone()[0]
+        result = {"ultima_coleta": ts.strftime("%d/%m/%Y às %H:%Mh UTC") if ts else "—"}
+        _cache.set("freshness", result)
+        return result
+    except Exception as e:
+        logger.error("Erro em /climate/freshness: %s", e)
+        return {"ultima_coleta": "—"}
+    finally:
+        conn.close()
+
+
 @app.get("/climate/soi", response_model=SoiStatusResponse)
 def climate_soi():
     cached = _cache.get("soi")

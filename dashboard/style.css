@@ -101,6 +101,13 @@ h1 {
     letter-spacing: .2px;
 }
 
+.brand-freshness {
+    font-size: 10px;
+    color: var(--text-3);
+    margin-top: 1px;
+    opacity: .7;
+}
+
 .phase-pill {
     display: flex;
     align-items: center;
