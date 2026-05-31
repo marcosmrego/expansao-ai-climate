@@ -800,7 +800,7 @@ async function montarMapaClimatico() {
         .attr("r","70%")
     gradArctic.append("stop").attr("offset","0%").attr("stop-color","#FFFFFF").attr("stop-opacity","0.95")
     gradArctic.append("stop").attr("offset","40%").attr("stop-color","#B3E5FC").attr("stop-opacity","0.75")
-    gradArctic.append("stop").attr("offset","100%").attr("stop-color","#4FC3F7").attr("stop-opacity","0.15")
+    gradArctic.append("stop").attr("offset","100%").attr("stop-color","#4FC3F7").attr("stop-opacity","0")
 
     // Gradiente antártico: branco → azul gelo → transparente
     const gradAntarctic = defs.append("radialGradient")
@@ -808,7 +808,7 @@ async function montarMapaClimatico() {
         .attr("r","70%")
     gradAntarctic.append("stop").attr("offset","0%").attr("stop-color","#FFFFFF").attr("stop-opacity","0.9")
     gradAntarctic.append("stop").attr("offset","40%").attr("stop-color","#E1F5FE").attr("stop-opacity","0.7")
-    gradAntarctic.append("stop").attr("offset","100%").attr("stop-color","#81D4FA").attr("stop-opacity","0.1")
+    gradAntarctic.append("stop").attr("offset","100%").attr("stop-color","#81D4FA").attr("stop-opacity","0")
 
     // Sphere (ocean background) — azul mais profundo
     svg.append("path")
