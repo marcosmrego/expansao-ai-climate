@@ -861,39 +861,7 @@ async function montarMapaClimatico() {
             ]]
         }
     }
-    const nino34Path = svg.append("path")
-        .datum(nino34)
-        .attr("class", "map-nino34")
-        .attr("d", path)
-
-    // Label "Niño 3.4" sobre o polígono do Pacífico
-    const [lx, ly] = projection([-145, 0]) || [0, 0]
-    svg.append("text")
-        .attr("x", lx).attr("y", ly + 4)
-        .attr("text-anchor", "middle")
-        .attr("font-size", Math.max(8, W * 0.009))
-        .attr("font-weight", "600")
-        .attr("fill", "rgba(255,255,255,0.6)")
-        .attr("letter-spacing", "0.5")
-        .style("pointer-events", "none")
-        .text("Niño 3.4")
-
-    // 9. IOD region (Índico: 50-110°E, 10S-10N)
-    // IOD: contorno do Oceano Índico (sem fill — evita polígono escuro sobre terra/mar)
-    // IOD: winding counterclockwise (N→E→S→W) = preenche interior
-    const iodGeo = {
-        type: "Feature",
-        geometry: {
-            type: "Polygon",
-            coordinates: [[[50,-8],[50,8],[90,8],[90,-8],[50,-8]]]
-        }
-    }
-    const iodPath = svg.append("path")
-        .datum(iodGeo)
-        .attr("stroke-width", 1.5)
-        .attr("stroke-dasharray", "4 3")
-        .attr("opacity", 0.5)
-        .attr("d", path)
+    // (polígonos ONI e IOD removidos — substituídos pelos marcadores pulsantes)
 
     // MJO: marcador no mapa + badge externo
     const mjoPhase = mjoData?.phase ?? null
@@ -995,6 +963,31 @@ async function montarMapaClimatico() {
 
     INDEX_MARKERS.forEach(m => addPulseMarker(m.lon, m.lat, m.label, m.color, m.active))
 
+    // Popula badges no footer para PDO, NAO, AMO, QBO
+    const _badge = (id, label, value, unit, cls) => {
+        const el = document.getElementById(id)
+        if (el && value !== null && value !== undefined) {
+            const sign = value >= 0 ? "+" : ""
+            el.textContent = `${label} ${sign}${parseFloat(value).toFixed(2)}${unit||""}`
+            el.style.color = cls
+        }
+    }
+    _badge("mapPdoBadge", "PDO", pdoData?.value, "",
+        (pdoData?.value||0) >= 0.5 ? "#FF8A65" : (pdoData?.value||0) <= -0.5 ? "#42A5F5" : "#78909C")
+    _badge("mapNaoBadge", "NAO", naoData?.value, "",
+        (naoData?.value||0) >= 0.5 ? "#42A5F5" : (naoData?.value||0) <= -0.5 ? "#EF5350" : "#78909C")
+    _badge("mapAmoBadge", "AMO", amoData?.value, "°C",
+        (amoData?.value||0) >= 0.1 ? "#EF5350" : (amoData?.value||0) <= -0.1 ? "#42A5F5" : "#78909C")
+    if (qboData) {
+        const el = document.getElementById("mapQboBadge")
+        if (el) {
+            const sign = (qboData.value||0) >= 0 ? "+" : ""
+            el.textContent = `QBO ${sign}${parseFloat(qboData.value||0).toFixed(1)} m/s`
+            el.style.color = qboData.classificacao === "LESTE" ? "#FFD740"
+                           : qboData.classificacao === "OESTE" ? "#4DD0E1" : "#78909C"
+        }
+    }
+
     // ONI: marcador animado junto com o frame (sobre a região Niño 3.4)
     const oniMarkerG = svg.append("g").style("pointer-events","none")
     const oniDot = oniMarkerG.append("circle")
@@ -1043,12 +1036,6 @@ async function montarMapaClimatico() {
         const f = frames[i]
         const color = oniColor(f.oni)
         const icolor = iodColor(f.iod ?? 0)
-
-        // Color Niño 3.4 region (Pacific)
-        nino34Path.attr("fill", color)
-
-        // IOD: fill colorido semitransparente + contorno tracejado
-        iodPath.attr("fill", icolor).attr("stroke", icolor)
 
         // Marcadores ONI e IOD animados por frame
         oniDot.attr("fill", color).attr("stroke", color)
