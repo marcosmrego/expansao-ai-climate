@@ -719,21 +719,23 @@ async function montarMapaClimatico() {
     if (!svgEl || typeof d3 === "undefined" || typeof topojson === "undefined") return
 
     // 1. Fetch data in parallel
-    const [rOni, rArctic, rAntarctic, rIod, rMjo, rPdo, rNao, rAmo, rQbo] = await Promise.allSettled([
+    const [rOni, rArctic, rAntarctic, rIod, rMjo,
+           rPdoH, rNaoH, rAmoH, rQboH] = await Promise.allSettled([
         fetch(`${API_BASE}/climate/history`),
         fetch(`${API_BASE}/climate/arctic_ice/history`),
         fetch(`${API_BASE}/climate/antarctic_ice/history`),
         fetch(`${API_BASE}/climate/iod/history`),
         fetch(`${API_BASE}/climate/mjo`),
-        fetch(`${API_BASE}/climate/pdo`),
-        fetch(`${API_BASE}/climate/nao`),
-        fetch(`${API_BASE}/climate/amo`),
-        fetch(`${API_BASE}/climate/qbo`),
+        fetch(`${API_BASE}/climate/pdo/history`),
+        fetch(`${API_BASE}/climate/nao/history`),
+        fetch(`${API_BASE}/climate/amo/history`),
+        fetch(`${API_BASE}/climate/qbo/history`),
     ])
     const jj = async r => r.status === "fulfilled" && r.value.ok ? r.value.json() : null
-    const [oniData, arcticData, antarcticData, iodData, mjoData, pdoData, naoData, amoData, qboData] = await Promise.all([
+    const [oniData, arcticData, antarcticData, iodData, mjoData,
+           pdoHist, naoHist, amoHist, qboHist] = await Promise.all([
         jj(rOni), jj(rArctic), jj(rAntarctic), jj(rIod), jj(rMjo),
-        jj(rPdo), jj(rNao), jj(rAmo), jj(rQbo)
+        jj(rPdoH), jj(rNaoH), jj(rAmoH), jj(rQboH)
     ])
     if (!oniData || !oniData.length) return
     if (!oniData.length) return
@@ -750,9 +752,13 @@ async function montarMapaClimatico() {
     }
     const arcticByMonth    = monthlyAvg(arcticData)
     const antarcticByMonth = monthlyAvg(antarcticData)
-    const iodByMonth       = Object.fromEntries((iodData||[]).map(d => [d.data_referencia?.slice(0,7), d.value]))
+    const iodByMonth = Object.fromEntries((iodData||[]).map(d => [d.data_referencia?.slice(0,7), d.value]))
+    const pdoByMonth = Object.fromEntries((pdoHist||[]).map(d => [d.data_referencia?.slice(0,7), d.value]))
+    const naoByMonth = Object.fromEntries((naoHist||[]).map(d => [d.data_referencia?.slice(0,7), d.value]))
+    const amoByMonth = Object.fromEntries((amoHist||[]).map(d => [d.data_referencia?.slice(0,7), d.value]))
+    const qboByMonth = Object.fromEntries((qboHist||[]).map(d => [d.data_referencia?.slice(0,7), {v:d.value, cls:d.classificacao}]))
 
-    // 3. Build 12-month dataset (most recent 12 months from ONI)
+    // 3. Build 12-month dataset
     const frames = oniData.slice(-12).map(o => ({
         period: o.periodo,
         oni: o.oni,
@@ -760,6 +766,10 @@ async function montarMapaClimatico() {
         arctic: arcticByMonth[o.periodo] ?? 11.0,
         antarctic: antarcticByMonth[o.periodo] ?? 10.0,
         iod: iodByMonth[o.periodo] ?? 0,
+        pdo: pdoByMonth[o.periodo] ?? null,
+        nao: naoByMonth[o.periodo] ?? null,
+        amo: amoByMonth[o.periodo] ?? null,
+        qbo: qboByMonth[o.periodo] ?? null,
     }))
 
     // MJO phase → equatorial longitude center
@@ -912,80 +922,56 @@ async function montarMapaClimatico() {
     }
 
     // 11. Marcadores pulsantes dos índices de modulação — estáticos (valor atual)
-    const INDEX_MARKERS = [
-        // [lon, lat, label, valor, cor+, cor-, limite_positivo, limite_negativo]
-        { lon: -170, lat: 45, label: "PDO",
-          color: pdoData?.value >= 0.5 ? "#FF7043" : pdoData?.value <= -0.5 ? "#42A5F5" : "#78909C",
-          active: pdoData && Math.abs(pdoData.value || 0) >= 0.5 },
-        { lon: -30,  lat: 60, label: "NAO",
-          color: naoData?.value >= 0.5 ? "#42A5F5" : naoData?.value <= -0.5 ? "#EF5350" : "#78909C",
-          active: naoData && Math.abs(naoData.value || 0) >= 0.5 },
-        { lon: -45,  lat: 28, label: "AMO",
-          color: amoData?.value >= 0.1 ? "#EF5350" : amoData?.value <= -0.1 ? "#42A5F5" : "#78909C",
-          active: amoData && Math.abs(amoData.value || 0) >= 0.1 },
-        { lon: 20,   lat:  5, label: "QBO",
-          color: qboData?.classificacao === "LESTE" ? "#FFD740" : qboData?.classificacao === "OESTE" ? "#4DD0E1" : "#78909C",
-          active: qboData && qboData.classificacao !== "NEUTRO" },
-    ]
-
-    function addPulseMarker(lon, lat, label, color, active) {
+    // Marcadores de modulação — criados com cor neutra, atualizados por frame
+    const r = Math.max(5, W * 0.008)
+    function createModMarker(lon, lat, label) {
         const pos = projection([lon, lat])
-        if (!pos) return
+        if (!pos) return null
         const [mx, my] = pos
-        const r = Math.max(5, W * 0.008)
         const g = svg.append("g").style("pointer-events","none")
+        const dot = g.append("circle").attr("cx",mx).attr("cy",my)
+            .attr("r",r).attr("fill","#78909C").attr("fill-opacity",0.3)
+            .attr("stroke","#78909C").attr("stroke-width",1.5)
+        const pulse = g.append("circle").attr("cx",mx).attr("cy",my)
+            .attr("r",r).attr("fill","none").attr("stroke","#78909C")
+            .attr("stroke-width",1).attr("stroke-opacity",0)
+        g.append("text").attr("x",mx).attr("y",my - r - 4)
+            .attr("text-anchor","middle")
+            .attr("font-size", Math.max(7, W*0.008)).attr("font-weight","600")
+            .attr("fill","rgba(255,255,255,0.7)").text(label)
+        return { dot, pulse }
+    }
 
-        // Círculo base
-        g.append("circle").attr("cx",mx).attr("cy",my)
-            .attr("r",r).attr("fill",color).attr("fill-opacity",0.3)
-            .attr("stroke",color).attr("stroke-width",1.5)
+    const modMarkers = {
+        pdo: createModMarker(-170, 45, "PDO"),
+        nao: createModMarker(-30,  60, "NAO"),
+        amo: createModMarker(-45,  28, "AMO"),
+        qbo: createModMarker( 20,   5, "QBO"),
+    }
 
-        // Pulso quando ativo
+    function updateModMarker(m, color, active) {
+        if (!m) return
+        m.dot.attr("fill",color).attr("stroke",color)
         if (active) {
-            const pulse = g.append("circle").attr("cx",mx).attr("cy",my)
-                .attr("r",r).attr("fill","none")
-                .attr("stroke",color).attr("stroke-width",1)
-            const anim = () => pulse
+            const anim = () => m.pulse.attr("stroke",color).attr("stroke-opacity",1)
                 .transition().duration(1000).attr("r",r*2.2).attr("stroke-opacity",0)
-                .transition().duration(0).attr("r",r).attr("stroke-opacity",1)
+                .transition().duration(0).attr("r",r)
                 .on("end", anim)
             anim()
         }
-
-        // Label
-        g.append("text").attr("x",mx).attr("y",my - r - 4)
-            .attr("text-anchor","middle")
-            .attr("font-size", Math.max(7, W*0.008))
-            .attr("font-weight","600")
-            .attr("fill", color)
-            .text(label)
     }
 
-    INDEX_MARKERS.forEach(m => addPulseMarker(m.lon, m.lat, m.label, m.color, m.active))
+    function modColor(val, posThresh, negThresh, posColor, negColor) {
+        if (val === null || val === undefined) return "#78909C"
+        return val >= posThresh ? posColor : val <= negThresh ? negColor : "#78909C"
+    }
 
-    // Popula badges no footer para PDO, NAO, AMO, QBO
-    const _badge = (id, label, value, unit, cls) => {
+    function setBadge(id, label, val, unit, color) {
         const el = document.getElementById(id)
-        if (el && value !== null && value !== undefined) {
-            const sign = value >= 0 ? "+" : ""
-            el.textContent = `${label} ${sign}${parseFloat(value).toFixed(2)}${unit||""}`
-            el.style.color = cls
-        }
-    }
-    _badge("mapPdoBadge", "PDO", pdoData?.value, "",
-        (pdoData?.value||0) >= 0.5 ? "#FF8A65" : (pdoData?.value||0) <= -0.5 ? "#42A5F5" : "#78909C")
-    _badge("mapNaoBadge", "NAO", naoData?.value, "",
-        (naoData?.value||0) >= 0.5 ? "#42A5F5" : (naoData?.value||0) <= -0.5 ? "#EF5350" : "#78909C")
-    _badge("mapAmoBadge", "AMO", amoData?.value, "°C",
-        (amoData?.value||0) >= 0.1 ? "#EF5350" : (amoData?.value||0) <= -0.1 ? "#42A5F5" : "#78909C")
-    if (qboData) {
-        const el = document.getElementById("mapQboBadge")
-        if (el) {
-            const sign = (qboData.value||0) >= 0 ? "+" : ""
-            el.textContent = `QBO ${sign}${parseFloat(qboData.value||0).toFixed(1)} m/s`
-            el.style.color = qboData.classificacao === "LESTE" ? "#FFD740"
-                           : qboData.classificacao === "OESTE" ? "#4DD0E1" : "#78909C"
-        }
+        if (!el || val === null || val === undefined) return
+        const sign = val >= 0 ? "+" : ""
+        el.textContent = `${label} ${sign}${parseFloat(val).toFixed(2)}${unit||""}`
+        el.style.color = color
     }
 
     // ONI: marcador animado junto com o frame (sobre a região Niño 3.4)
@@ -1040,6 +1026,30 @@ async function montarMapaClimatico() {
         // Marcadores ONI e IOD animados por frame
         oniDot.attr("fill", color).attr("stroke", color)
         iodDot.attr("fill", icolor).attr("stroke", icolor)
+
+        // Marcadores PDO/NAO/AMO/QBO animados por frame
+        const pdoVal = f.pdo, naoVal = f.nao, amoVal = f.amo, qboObj = f.qbo
+        const pdoC = modColor(pdoVal,  0.5, -0.5, "#FF7043","#42A5F5")
+        const naoC = modColor(naoVal,  0.5, -0.5, "#42A5F5","#EF5350")
+        const amoC = modColor(amoVal,  0.1, -0.1, "#EF5350","#42A5F5")
+        const qboC = qboObj?.cls === "LESTE" ? "#FFD740" : qboObj?.cls === "OESTE" ? "#4DD0E1" : "#78909C"
+        updateModMarker(modMarkers.pdo, pdoC, pdoVal !== null && Math.abs(pdoVal||0) >= 0.5)
+        updateModMarker(modMarkers.nao, naoC, naoVal !== null && Math.abs(naoVal||0) >= 0.5)
+        updateModMarker(modMarkers.amo, amoC, amoVal !== null && Math.abs(amoVal||0) >= 0.1)
+        updateModMarker(modMarkers.qbo, qboC, qboObj && qboObj.cls !== "NEUTRO")
+
+        // Badges footer linha 2 — animados por frame
+        setBadge("mapPdoBadge","PDO",pdoVal,"",pdoC)
+        setBadge("mapNaoBadge","NAO",naoVal,"",naoC)
+        setBadge("mapAmoBadge","AMO",amoVal,"°C",amoC)
+        if (qboObj) {
+            const el = document.getElementById("mapQboBadge")
+            if (el) {
+                const sign = (qboObj.v||0) >= 0 ? "+" : ""
+                el.textContent = `QBO ${sign}${parseFloat(qboObj.v||0).toFixed(1)} m/s`
+                el.style.color = qboC
+            }
+        }
 
         // Ice caps
         const arcticR    = extentToRadius(f.arctic)
