@@ -794,6 +794,11 @@ async function montarMapaClimatico() {
     // Definições SVG: gradientes radiais para gelo polar
     const defs = svg.append("defs")
 
+    // Filtro de blur para suavizar bordas do gelo
+    const iceFilter = defs.append("filter").attr("id","iceBlur")
+        .attr("x","-20%").attr("y","-20%").attr("width","140%").attr("height","140%")
+    iceFilter.append("feGaussianBlur").attr("stdDeviation","6")
+
     // Gradiente ártico: branco → ciano → transparente
     const gradArctic = defs.append("radialGradient")
         .attr("id", "gradArctic").attr("cx","50%").attr("cy","20%")
@@ -886,12 +891,12 @@ async function montarMapaClimatico() {
     // 10. Ice cap circles — gradiente radial + borda brilhante
     const arcticPath = svg.append("path")
         .attr("fill","url(#gradArctic)")
-        .attr("stroke","rgba(180,230,255,.6)")
-        .attr("stroke-width","1")
+        .attr("stroke","none")
+        .attr("filter","url(#iceBlur)")
     const antarcticPath = svg.append("path")
         .attr("fill","url(#gradAntarctic)")
-        .attr("stroke","rgba(180,230,255,.5)")
-        .attr("stroke-width","1")
+        .attr("stroke","none")
+        .attr("filter","url(#iceBlur)")
 
     // 11. MJO badge externo inline com ONI
     const mjoPhase = mjoData?.phase ?? null
