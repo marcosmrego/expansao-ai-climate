@@ -31,7 +31,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=43">
+    <link rel="stylesheet" href="style.css?v=44">
     <script defer src="http://umami-qkr89esvo1szlexgp9y67gy8.212.85.22.227.sslip.io/script.js"
             data-website-id="794d96e4-9652-4d3e-8df4-adb3ba9fad61"></script>
 </head>
@@ -109,7 +109,17 @@
                             <span class="map-badge-sep">·</span>
                             <span id="mapQboBadge" class="map-oni-label"></span>
                         </div>
+                        <div class="climate-map-badges seismic-legend">
+                            <span class="seismic-legend-title">Sismos:</span>
+                            <span class="seismic-dot" style="color:#FF1744">▲</span><span class="map-oni-label">M≥7.5</span>
+                            <span class="seismic-dot" style="color:#FF7043">▲</span><span class="map-oni-label">M≥7.0</span>
+                            <span class="seismic-dot" style="color:#FFA726">▲</span><span class="map-oni-label">M≥6.5</span>
+                            <span class="seismic-dot" style="color:#FFD740">▲</span><span class="map-oni-label">M≥6.0</span>
+                        </div>
                     </div>
+
+                    <!-- Tooltip sísmico -->
+                    <div id="seismicTooltip" class="seismic-tooltip hidden"></div>
                 </div>
                 <div class="home-status-card">
                     <div class="home-status-label">Estado climático atual</div>
@@ -729,7 +739,7 @@
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script src="app.js?v=43"></script>
+<script src="app.js?v=44"></script>
 <!-- Cloudflare Web Analytics -->
 <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "0ba9b0dc7997464f8a13b01a7616ed51"}'></script>
 <!-- End Cloudflare Web Analytics -->

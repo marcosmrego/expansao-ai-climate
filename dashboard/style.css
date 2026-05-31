@@ -924,6 +924,27 @@ details[open] .glossary-summary {
     width: 0%;
 }
 
+.seismic-legend { gap: 8px; margin-top: 2px; }
+.seismic-legend-title { font-size: 10px; color: var(--text-3); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+.seismic-dot { font-size: 10px; line-height: 1; }
+
+.seismic-tooltip {
+    position: absolute;
+    background: rgba(12,22,40,.95);
+    border: 1px solid rgba(255,255,255,.15);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: var(--text);
+    pointer-events: none;
+    z-index: 10;
+    max-width: 240px;
+    line-height: 1.5;
+    box-shadow: 0 4px 16px rgba(0,0,0,.4);
+}
+.seismic-tooltip.hidden { display: none; }
+.seismic-tooltip strong { color: #FF7043; }
+
 .map-mjo-badge {
     display: flex;
     align-items: center;

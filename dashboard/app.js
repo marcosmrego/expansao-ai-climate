@@ -887,28 +887,46 @@ async function montarMapaClimatico() {
         .attr("stroke-width","0.4")
         .attr("d", path)
 
-    // 8. Marcadores sísmicos — triângulos coloridos por magnitude
+    // 8. Marcadores sísmicos — triângulos coloridos por magnitude + tooltip HTML
+    const seismicTip = document.getElementById("seismicTooltip")
     if (seismicData && seismicData.length) {
-        const seismicG = svg.append("g").style("pointer-events","none")
+        const seismicG = svg.append("g")
         seismicData.forEach(ev => {
             const pos = projection([ev.longitude, ev.latitude])
             if (!pos) return
             const [sx, sy] = pos
-            // Triângulo (▲) usando path: tamanho proporcional à magnitude
-            const sz = Math.max(3, (ev.magnitude - 5) * 2.5)
-            const triPath = `M ${sx},${sy - sz*1.2} L ${sx + sz},${sy + sz*0.6} L ${sx - sz},${sy + sz*0.6} Z`
+            const sz = Math.max(4, (ev.magnitude - 5) * 3)
+            const triPath = `M ${sx},${sy - sz*1.3} L ${sx + sz},${sy + sz*0.7} L ${sx - sz},${sy + sz*0.7} Z`
             const col = ev.magnitude >= 7.5 ? "#FF1744"
                       : ev.magnitude >= 7.0 ? "#FF5252"
                       : ev.magnitude >= 6.5 ? "#FF7043"
-                      : "#FFA726"
+                      : "#FFD740"
+
             seismicG.append("path")
                 .attr("d", triPath)
                 .attr("fill", col)
-                .attr("fill-opacity", 0.75)
-                .attr("stroke", col)
+                .attr("fill-opacity", 0.8)
+                .attr("stroke","rgba(0,0,0,.3)")
                 .attr("stroke-width", 0.5)
-            // Tooltip-like title
-            seismicG.append("title").text(`M${ev.magnitude} — ${ev.place}\n${ev.data_referencia}`)
+                .attr("cursor","pointer")
+                .on("mouseover", function(event) {
+                    if (!seismicTip) return
+                    const etype = ev.event_type?.includes("volcanic") ? "🌋 Vulcânico" : "🔴 Terremoto"
+                    seismicTip.innerHTML = `<strong>M${ev.magnitude} — ${etype}</strong><br>${ev.place}<br><span style="color:var(--text-3)">${ev.data_referencia}</span>`
+                    seismicTip.classList.remove("hidden")
+                    const rect = svgEl.parentElement.getBoundingClientRect()
+                    seismicTip.style.left = (event.clientX - rect.left + 12) + "px"
+                    seismicTip.style.top  = (event.clientY - rect.top  - 10) + "px"
+                })
+                .on("mousemove", function(event) {
+                    if (!seismicTip) return
+                    const rect = svgEl.parentElement.getBoundingClientRect()
+                    seismicTip.style.left = (event.clientX - rect.left + 12) + "px"
+                    seismicTip.style.top  = (event.clientY - rect.top  - 10) + "px"
+                })
+                .on("mouseout", function() {
+                    if (seismicTip) seismicTip.classList.add("hidden")
+                })
         })
     }
 
