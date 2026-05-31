@@ -101,6 +101,21 @@ def build_climate_context() -> dict:
             arctic_row   = _fetch_latest_daily("nsidc_arctic_ice_daily",  ["extent_mkm2", "data_referencia"])
             antarctic_row = _fetch_latest_daily("nsidc_antarctic_ice_daily", ["extent_mkm2", "data_referencia"])
 
+            # Eventos sísmicos climate-relevant dos últimos 90 dias
+            try:
+                cur.execute("""
+                    SELECT magnitude, event_type, place,
+                           to_char(data_referencia,'YYYY-MM-DD'), climate_relevant
+                    FROM climate.seismic_events
+                    WHERE data_referencia > NOW() - INTERVAL '90 days'
+                      AND climate_relevant = TRUE
+                    ORDER BY magnitude DESC
+                    LIMIT 5
+                """)
+                seismic_rows = cur.fetchall()
+            except Exception:
+                seismic_rows = []
+
     finally:
         conn.close()
 
@@ -147,6 +162,11 @@ def build_climate_context() -> dict:
         "arctic_ice_date": str(arctic_row[1]) if arctic_row else None,
         "antarctic_ice_mkm2": float(antarctic_row[0]) if antarctic_row else None,
         "antarctic_ice_date": str(antarctic_row[1]) if antarctic_row else None,
+        "seismic_events": [
+            {"magnitude": float(r[0]), "event_type": r[1],
+             "place": r[2], "date": r[3], "climate_relevant": r[4]}
+            for r in seismic_rows
+        ],
         "alerts": [
             {"severity": r[0], "title": r[1], "message": r[2]}
             for r in alert_rows
@@ -215,6 +235,13 @@ def context_to_text(ctx: dict) -> str:
 
     if ctx.get("antarctic_ice_mkm2") is not None:
         lines.append(f"- Gelo Antártico: {ctx['antarctic_ice_mkm2']:.3f} milhões km²")
+
+    seismic = ctx.get("seismic_events", [])
+    if seismic:
+        lines.append("\nEventos sísmicos relevantes (últimos 90 dias):")
+        for e in seismic:
+            etype = "Erupção vulcânica" if "volcanic" in (e.get("event_type") or "") else "Terremoto"
+            lines.append(f"  {etype} M{e['magnitude']:.1f} — {e['place']} ({e['date']})")
 
     if ctx["alerts"]:
         lines.append("\nAlertas ativos:")

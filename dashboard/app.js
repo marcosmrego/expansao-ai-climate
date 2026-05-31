@@ -720,7 +720,7 @@ async function montarMapaClimatico() {
 
     // 1. Fetch data in parallel
     const [rOni, rArctic, rAntarctic, rIod, rMjo, rMjoH,
-           rPdoH, rNaoH, rAmoH, rQboH] = await Promise.allSettled([
+           rPdoH, rNaoH, rAmoH, rQboH, rSeismic] = await Promise.allSettled([
         fetch(`${API_BASE}/climate/history`),
         fetch(`${API_BASE}/climate/arctic_ice/history`),
         fetch(`${API_BASE}/climate/antarctic_ice/history`),
@@ -731,12 +731,13 @@ async function montarMapaClimatico() {
         fetch(`${API_BASE}/climate/nao/history`),
         fetch(`${API_BASE}/climate/amo/history`),
         fetch(`${API_BASE}/climate/qbo/history`),
+        fetch(`${API_BASE}/climate/seismic?days=365&min_mag=6.0`),
     ])
     const jj = async r => r.status === "fulfilled" && r.value.ok ? r.value.json() : null
     const [oniData, arcticData, antarcticData, iodData, mjoData, mjoHist,
-           pdoHist, naoHist, amoHist, qboHist] = await Promise.all([
+           pdoHist, naoHist, amoHist, qboHist, seismicData] = await Promise.all([
         jj(rOni), jj(rArctic), jj(rAntarctic), jj(rIod), jj(rMjo), jj(rMjoH),
-        jj(rPdoH), jj(rNaoH), jj(rAmoH), jj(rQboH)
+        jj(rPdoH), jj(rNaoH), jj(rAmoH), jj(rQboH), jj(rSeismic)
     ])
     if (!oniData || !oniData.length) return
     if (!oniData.length) return
@@ -886,7 +887,32 @@ async function montarMapaClimatico() {
         .attr("stroke-width","0.4")
         .attr("d", path)
 
-    // 8. Niño 3.4 region polygon (5N-5S, 120W-170W → lon -170 to -120)
+    // 8. Marcadores sísmicos — triângulos coloridos por magnitude
+    if (seismicData && seismicData.length) {
+        const seismicG = svg.append("g").style("pointer-events","none")
+        seismicData.forEach(ev => {
+            const pos = projection([ev.longitude, ev.latitude])
+            if (!pos) return
+            const [sx, sy] = pos
+            // Triângulo (▲) usando path: tamanho proporcional à magnitude
+            const sz = Math.max(3, (ev.magnitude - 5) * 2.5)
+            const triPath = `M ${sx},${sy - sz*1.2} L ${sx + sz},${sy + sz*0.6} L ${sx - sz},${sy + sz*0.6} Z`
+            const col = ev.magnitude >= 7.5 ? "#FF1744"
+                      : ev.magnitude >= 7.0 ? "#FF5252"
+                      : ev.magnitude >= 6.5 ? "#FF7043"
+                      : "#FFA726"
+            seismicG.append("path")
+                .attr("d", triPath)
+                .attr("fill", col)
+                .attr("fill-opacity", 0.75)
+                .attr("stroke", col)
+                .attr("stroke-width", 0.5)
+            // Tooltip-like title
+            seismicG.append("title").text(`M${ev.magnitude} — ${ev.place}\n${ev.data_referencia}`)
+        })
+    }
+
+    // 9. Niño 3.4 region polygon (5N-5S, 120W-170W → lon -170 to -120)
     const nino34 = {
         type: "Feature",
         geometry: {

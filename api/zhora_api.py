@@ -1064,5 +1064,51 @@ def climate_insight_plain():
     return result
 
 
+@app.get("/climate/seismic")
+def climate_seismic(days: int = 30, min_mag: float = 5.5, climate_only: bool = False):
+    """Return recent seismic/volcanic events. days=30, min_mag=5.5 by default."""
+    cache_key = f"seismic_{days}_{min_mag}_{climate_only}"
+    cached = _cache.get(cache_key)
+    if cached:
+        return cached
+    conn = conectar()
+    try:
+        cursor = conn.cursor()
+        where = "data_referencia > NOW() - INTERVAL '%s days' AND magnitude >= %s"
+        params = [days, min_mag]
+        if climate_only:
+            where += " AND climate_relevant = TRUE"
+        cursor.execute(f"""
+            SELECT to_char(data_referencia,'YYYY-MM-DD'), timestamp_utc,
+                   latitude, longitude, depth_km, magnitude, magnitude_type,
+                   event_type, place, title, climate_relevant, alert_level
+            FROM climate.seismic_events
+            WHERE {where}
+            ORDER BY magnitude DESC
+            LIMIT 200
+        """, params)
+        rows = cursor.fetchall()
+        result = [
+            {
+                "data_referencia": r[0], "timestamp_utc": r[1].isoformat() if r[1] else None,
+                "latitude": float(r[2]) if r[2] else None,
+                "longitude": float(r[3]) if r[3] else None,
+                "depth_km": float(r[4]) if r[4] else None,
+                "magnitude": float(r[5]),
+                "magnitude_type": r[6], "event_type": r[7],
+                "place": r[8], "title": r[9],
+                "climate_relevant": r[10], "alert_level": r[11],
+            }
+            for r in rows
+        ]
+        _cache.set(cache_key, result)
+        return result
+    except Exception as e:
+        logger.error("Erro em /climate/seismic: %s", e)
+        raise HTTPException(status_code=500, detail="Erro ao consultar eventos sísmicos")
+    finally:
+        conn.close()
+
+
 # Serve the dashboard — must be mounted last so API routes take precedence
 app.mount("/", StaticFiles(directory="dashboard", html=True), name="dashboard")

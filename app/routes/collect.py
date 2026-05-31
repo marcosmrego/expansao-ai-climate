@@ -279,6 +279,43 @@ def collect_iod(x_api_key: str = Header(default="")):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/seismic")
+def collect_seismic(x_api_key: str = Header(default="")):
+    """Collect seismic/volcanic events from USGS FDSN (last 2 days, incremental)."""
+    _auth(x_api_key)
+    try:
+        from collector.usgs_seismic_collector import baixar_e_parsear, inserir_registros
+        from database.db import conectar
+
+        registros = baixar_e_parsear(days_back=2)
+        conn = conectar()
+        try:
+            total = inserir_registros(conn, registros)
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+        try:
+            import api.zhora_api as _api
+            for key in list(_api._cache._store.keys()):
+                if key.startswith("seismic"):
+                    _api._cache.delete(key)
+        except Exception:
+            pass
+
+        climate_count = sum(1 for r in registros if r["climate_relevant"])
+        return {"status": "ok", "records": total, "climate_relevant": climate_count}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Erro na coleta sísmica: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/mjo")
 def collect_mjo(x_api_key: str = Header(default="")):
     _auth(x_api_key)
