@@ -719,17 +719,23 @@ async function montarMapaClimatico() {
     if (!svgEl || typeof d3 === "undefined" || typeof topojson === "undefined") return
 
     // 1. Fetch data in parallel
-    const [rOni, rArctic, rAntarctic, rIod, rMjo] = await Promise.allSettled([
+    const [rOni, rArctic, rAntarctic, rIod, rMjo, rPdo, rNao, rAmo, rQbo] = await Promise.allSettled([
         fetch(`${API_BASE}/climate/history`),
         fetch(`${API_BASE}/climate/arctic_ice/history`),
         fetch(`${API_BASE}/climate/antarctic_ice/history`),
         fetch(`${API_BASE}/climate/iod/history`),
         fetch(`${API_BASE}/climate/mjo`),
+        fetch(`${API_BASE}/climate/pdo`),
+        fetch(`${API_BASE}/climate/nao`),
+        fetch(`${API_BASE}/climate/amo`),
+        fetch(`${API_BASE}/climate/qbo`),
     ])
-    const jj = async r => r.status === "fulfilled" && r.value.ok ? r.value.json() : []
-    const [oniData, arcticData, antarcticData, iodData, mjoData] = await Promise.all([
-        jj(rOni), jj(rArctic), jj(rAntarctic), jj(rIod), jj(rMjo)
+    const jj = async r => r.status === "fulfilled" && r.value.ok ? r.value.json() : null
+    const [oniData, arcticData, antarcticData, iodData, mjoData, pdoData, naoData, amoData, qboData] = await Promise.all([
+        jj(rOni), jj(rArctic), jj(rAntarctic), jj(rIod), jj(rMjo),
+        jj(rPdo), jj(rNao), jj(rAmo), jj(rQbo)
     ])
+    if (!oniData || !oniData.length) return
     if (!oniData.length) return
 
     // 2. Build monthly ice averages from daily data
@@ -928,7 +934,7 @@ async function montarMapaClimatico() {
         }
     }
 
-    // Badge externo
+    // Badge externo MJO
     const mjoFooter = document.getElementById("mapMjoBadge")
     const mjoSep    = document.getElementById("mapMjoSep")
     if (mjoFooter && mjoPhase) {
@@ -936,6 +942,88 @@ async function montarMapaClimatico() {
         mjoFooter.innerHTML = `<span class="map-mjo-dot ${active ? "active" : ""}"></span> MJO F${mjoPhase} · ${MJO_DESC[mjoPhase] || ""}${active ? ` · ${mjoAmp.toFixed(2)}` : ""}`
         if (mjoSep) mjoSep.style.display = ""
     }
+
+    // 11. Marcadores pulsantes dos índices de modulação — estáticos (valor atual)
+    const INDEX_MARKERS = [
+        // [lon, lat, label, valor, cor+, cor-, limite_positivo, limite_negativo]
+        { lon: -170, lat: 45, label: "PDO",
+          color: pdoData?.value >= 0.5 ? "#FF7043" : pdoData?.value <= -0.5 ? "#42A5F5" : "#78909C",
+          active: pdoData && Math.abs(pdoData.value || 0) >= 0.5 },
+        { lon: -30,  lat: 60, label: "NAO",
+          color: naoData?.value >= 0.5 ? "#42A5F5" : naoData?.value <= -0.5 ? "#EF5350" : "#78909C",
+          active: naoData && Math.abs(naoData.value || 0) >= 0.5 },
+        { lon: -45,  lat: 28, label: "AMO",
+          color: amoData?.value >= 0.1 ? "#EF5350" : amoData?.value <= -0.1 ? "#42A5F5" : "#78909C",
+          active: amoData && Math.abs(amoData.value || 0) >= 0.1 },
+        { lon: 20,   lat:  5, label: "QBO",
+          color: qboData?.classificacao === "LESTE" ? "#FFD740" : qboData?.classificacao === "OESTE" ? "#4DD0E1" : "#78909C",
+          active: qboData && qboData.classificacao !== "NEUTRO" },
+    ]
+
+    function addPulseMarker(lon, lat, label, color, active) {
+        const pos = projection([lon, lat])
+        if (!pos) return
+        const [mx, my] = pos
+        const r = Math.max(5, W * 0.008)
+        const g = svg.append("g").style("pointer-events","none")
+
+        // Círculo base
+        g.append("circle").attr("cx",mx).attr("cy",my)
+            .attr("r",r).attr("fill",color).attr("fill-opacity",0.3)
+            .attr("stroke",color).attr("stroke-width",1.5)
+
+        // Pulso quando ativo
+        if (active) {
+            const pulse = g.append("circle").attr("cx",mx).attr("cy",my)
+                .attr("r",r).attr("fill","none")
+                .attr("stroke",color).attr("stroke-width",1)
+            const anim = () => pulse
+                .transition().duration(1000).attr("r",r*2.2).attr("stroke-opacity",0)
+                .transition().duration(0).attr("r",r).attr("stroke-opacity",1)
+                .on("end", anim)
+            anim()
+        }
+
+        // Label
+        g.append("text").attr("x",mx).attr("y",my - r - 4)
+            .attr("text-anchor","middle")
+            .attr("font-size", Math.max(7, W*0.008))
+            .attr("font-weight","600")
+            .attr("fill", color)
+            .text(label)
+    }
+
+    INDEX_MARKERS.forEach(m => addPulseMarker(m.lon, m.lat, m.label, m.color, m.active))
+
+    // ONI: marcador animado junto com o frame (sobre a região Niño 3.4)
+    const oniMarkerG = svg.append("g").style("pointer-events","none")
+    const oniDot = oniMarkerG.append("circle")
+        .attr("cx", projection([-145,0])?.[0] || W*0.2)
+        .attr("cy", projection([-145,0])?.[1] || H*0.5)
+        .attr("r", Math.max(5, W*0.008))
+        .attr("fill-opacity", 0.35)
+        .attr("stroke-width", 1.5)
+
+    // IOD: marcador animado junto com o frame (sobre a região do Índico)
+    const iodMarkerG = svg.append("g").style("pointer-events","none")
+    const iodDot = iodMarkerG.append("circle")
+        .attr("cx", projection([70,0])?.[0] || W*0.65)
+        .attr("cy", projection([70,0])?.[1] || H*0.5)
+        .attr("r", Math.max(5, W*0.008))
+        .attr("fill-opacity", 0.35)
+        .attr("stroke-width", 1.5)
+
+    // Labels fixos para ONI e IOD
+    ;[{g:oniMarkerG,lon:-145,lat:0,txt:"ONI"},{g:iodMarkerG,lon:70,lat:0,txt:"IOD"}]
+        .forEach(({g,lon,lat,txt}) => {
+            const pos = projection([lon,lat])
+            if (!pos) return
+            g.append("text").attr("x",pos[0]).attr("y",pos[1] - Math.max(5,W*0.008) - 4)
+                .attr("text-anchor","middle")
+                .attr("font-size",Math.max(7,W*0.008)).attr("font-weight","600")
+                .attr("fill","rgba(255,255,255,0.7)")
+                .text(txt)
+        })
 
     // 10. Ice caps
     const arcticPath = svg.append("path")
@@ -961,6 +1049,10 @@ async function montarMapaClimatico() {
 
         // IOD: fill colorido semitransparente + contorno tracejado
         iodPath.attr("fill", icolor).attr("stroke", icolor)
+
+        // Marcadores ONI e IOD animados por frame
+        oniDot.attr("fill", color).attr("stroke", color)
+        iodDot.attr("fill", icolor).attr("stroke", icolor)
 
         // Ice caps
         const arcticR    = extentToRadius(f.arctic)
