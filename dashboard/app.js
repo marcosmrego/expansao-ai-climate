@@ -831,6 +831,18 @@ async function montarMapaClimatico() {
         .attr("class", "map-nino34")
         .attr("d", path)
 
+    // Label "Niño 3.4" sobre o polígono do Pacífico
+    const [lx, ly] = projection([-145, 0]) || [0, 0]
+    svg.append("text")
+        .attr("x", lx).attr("y", ly + 4)
+        .attr("text-anchor", "middle")
+        .attr("font-size", Math.max(8, W * 0.009))
+        .attr("font-weight", "600")
+        .attr("fill", "rgba(255,255,255,0.6)")
+        .attr("letter-spacing", "0.5")
+        .style("pointer-events", "none")
+        .text("Niño 3.4")
+
     // 9. IOD region (Índico: 50-110°E, 10S-10N)
     // IOD: contorno do Oceano Índico (sem fill — evita polígono escuro sobre terra/mar)
     const iodGeo = {
@@ -896,9 +908,15 @@ async function montarMapaClimatico() {
         const oniSign = f.oni >= 0 ? "+" : ""
         const iodSign = f.iod >= 0 ? "+" : ""
         const stateMap = { EL_NINO: "El Niño", LA_NINA: "La Niña", NEUTRO: "Neutro" }
-        const parts = [`${stateMap[f.classificacao] || f.classificacao} ONI ${oniSign}${f.oni.toFixed(2)}`]
-        if (f.iod !== 0) parts.push(`IOD ${iodSign}${f.iod.toFixed(2)}`)
-        document.getElementById("mapOniLabel").textContent = parts.join(" · ")
+
+        // ONI badge
+        document.getElementById("mapOniLabel").textContent =
+            `${stateMap[f.classificacao] || f.classificacao} ONI ${oniSign}${f.oni.toFixed(2)}`
+
+        // IOD badge — classifica por limiar ±0.4
+        const iodClass = f.iod >= 0.4 ? "Positivo" : f.iod <= -0.4 ? "Negativo" : "Neutro"
+        const iodEl = document.getElementById("mapIodLabel")
+        if (iodEl) iodEl.textContent = `IOD ${iodSign}${f.iod.toFixed(2)} · ${iodClass}`
 
         // Timeline fill
         document.getElementById("mapTimelineFill").style.width =
