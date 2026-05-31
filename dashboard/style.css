@@ -990,6 +990,7 @@ details[open] .glossary-summary {
     border: 1px solid var(--border-accent);
     border-radius: var(--radius-sm);
     padding: 20px;
+    align-self: end;
 }
 
 .home-status-label {
