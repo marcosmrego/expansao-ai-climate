@@ -731,7 +731,7 @@ async function montarMapaClimatico() {
         fetch(`${API_BASE}/climate/nao/history`),
         fetch(`${API_BASE}/climate/amo/history`),
         fetch(`${API_BASE}/climate/qbo/history`),
-        fetch(`${API_BASE}/climate/seismic?days=365&min_mag=6.0`),
+        fetch(`${API_BASE}/climate/seismic?days=${new Date().getDate() + 1}&min_mag=5.5`),
     ])
     const jj = async r => r.status === "fulfilled" && r.value.ok ? r.value.json() : null
     const [oniData, arcticData, antarcticData, iodData, mjoData, mjoHist,
@@ -887,29 +887,55 @@ async function montarMapaClimatico() {
         .attr("stroke-width","0.4")
         .attr("d", path)
 
-    // 8. Marcadores sísmicos — triângulos coloridos por magnitude + tooltip HTML
+    // 8. Marcadores sísmicos — só mês corrente, M≥7.5 pulsantes
     const seismicTip = document.getElementById("seismicTooltip")
-    if (seismicData && seismicData.length) {
+    const curMonth = new Date().toISOString().slice(0, 7) // "2026-06"
+    const seismicCurrent = (seismicData || []).filter(ev =>
+        ev.data_referencia && ev.data_referencia.slice(0, 7) === curMonth
+    )
+
+    if (seismicCurrent.length) {
         const seismicG = svg.append("g")
-        seismicData.forEach(ev => {
+
+        seismicCurrent.forEach(ev => {
             const pos = projection([ev.longitude, ev.latitude])
             if (!pos) return
             const [sx, sy] = pos
-            const sz = Math.max(4, (ev.magnitude - 5) * 3)
+            const sz = Math.max(5, (ev.magnitude - 5) * 3.5)
             const triPath = `M ${sx},${sy - sz*1.3} L ${sx + sz},${sy + sz*0.7} L ${sx - sz},${sy + sz*0.7} Z`
             const col = ev.magnitude >= 7.5 ? "#FF1744"
                       : ev.magnitude >= 7.0 ? "#FF5252"
                       : ev.magnitude >= 6.5 ? "#FF7043"
                       : "#FFD740"
 
-            seismicG.append("path")
+            const g = seismicG.append("g").attr("cursor","pointer")
+
+            // Anel pulsante para M≥7.5
+            if (ev.magnitude >= 7.5) {
+                const pulse = g.append("circle")
+                    .attr("cx", sx).attr("cy", sy + sz*0.1)
+                    .attr("r", sz * 1.2)
+                    .attr("fill", "none")
+                    .attr("stroke", col)
+                    .attr("stroke-width", 1.5)
+                    .attr("opacity", 0.8)
+                const animPulse = () => pulse
+                    .transition().duration(900).attr("r", sz * 2.5).attr("opacity", 0)
+                    .transition().duration(0).attr("r", sz * 1.2).attr("opacity", 0.8)
+                    .on("end", animPulse)
+                animPulse()
+            }
+
+            // Triângulo
+            g.append("path")
                 .attr("d", triPath)
                 .attr("fill", col)
-                .attr("fill-opacity", 0.8)
+                .attr("fill-opacity", 0.85)
                 .attr("stroke","rgba(0,0,0,.3)")
                 .attr("stroke-width", 0.5)
-                .attr("cursor","pointer")
-                .on("mouseover", function(event) {
+
+            // Tooltip
+            g.on("mouseover", function(event) {
                     if (!seismicTip) return
                     const etype = ev.event_type?.includes("volcanic") ? "🌋 Vulcânico" : "🔴 Terremoto"
                     seismicTip.innerHTML = `<strong>M${ev.magnitude} — ${etype}</strong><br>${ev.place}<br><span style="color:var(--text-3)">${ev.data_referencia}</span>`
