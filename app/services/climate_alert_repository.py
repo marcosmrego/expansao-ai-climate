@@ -106,6 +106,19 @@ def save_alert(alert):
             alert_id = cursor.fetchone()[0]
 
         conn.commit()
+
+        # Notifica Slack para alertas CRITICAL
+        if alert.get("severity") == "CRITICAL":
+            try:
+                from app.services.slack_service import notify_climate_alert
+                notify_climate_alert(
+                    severity=alert["severity"],
+                    title=alert["title"],
+                    message=alert["message"],
+                )
+            except Exception:
+                pass
+
         return {"id": alert_id}
 
     except Exception as e:

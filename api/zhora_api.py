@@ -415,6 +415,51 @@ def climate_freshness():
         conn.close()
 
 
+@app.post("/api/notify/staleness")
+def notify_staleness_check():
+    """Check if any data source is stale (>36h) and notify Slack."""
+    from datetime import datetime, timezone, timedelta
+    conn = conectar()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT MAX(ts), label FROM (
+                SELECT MAX(criado_em) AS ts, 'CO2/Gelo/MJO' AS label
+                FROM (
+                    SELECT MAX(criado_em) FROM climate.noaa_co2_daily
+                    UNION ALL SELECT MAX(criado_em) FROM climate.nsidc_arctic_ice_daily
+                    UNION ALL SELECT MAX(criado_em) FROM climate.mjo_daily
+                ) x(ts)
+            ) t GROUP BY label
+        """)
+        row = cursor.fetchone()
+        if not row or not row[0]:
+            return {"status": "unknown"}
+
+        last_ts = row[0]
+        now = datetime.now(timezone.utc)
+        hours_ago = (now - last_ts).total_seconds() / 3600
+
+        if hours_ago > 36:
+            try:
+                from app.services.slack_service import notify_staleness
+                notify_staleness(
+                    indicator="Indicadores diários (CO₂/Gelo/MJO)",
+                    last_update=last_ts.strftime("%d/%m/%Y %H:%Mh UTC"),
+                    hours=hours_ago,
+                )
+            except Exception:
+                pass
+            return {"status": "stale", "hours": round(hours_ago, 1), "notified": True}
+
+        return {"status": "ok", "hours": round(hours_ago, 1)}
+    except Exception as e:
+        logger.error("Erro em staleness check: %s", e)
+        return {"status": "error"}
+    finally:
+        conn.close()
+
+
 @app.get("/climate/soi", response_model=SoiStatusResponse)
 def climate_soi():
     cached = _cache.get("soi")

@@ -307,6 +307,16 @@ def collect_seismic(x_api_key: str = Header(default="")):
             pass
 
         climate_count = sum(1 for r in registros if r["climate_relevant"])
+
+        # Slack: alerta para eventos M≥7.5 novos
+        try:
+            from app.services.slack_service import notify_seismic
+            for r in registros:
+                if r["magnitude"] >= 7.5:
+                    notify_seismic(r["magnitude"], r["place"] or "—", str(r["data_referencia"]))
+        except Exception:
+            pass
+
         return {"status": "ok", "records": total, "climate_relevant": climate_count}
 
     except HTTPException:
