@@ -814,7 +814,7 @@ async function montarMapaClimatico() {
         .clamp(true)
     const iodColor = d3.scaleLinear()
         .domain([-1, 0, 1])
-        .range(["#00E676","#546A84","#FFD740"])
+        .range(["#00E676","#546A84","#7E57C2"])
         .clamp(true)
 
     // 6. Setup SVG
@@ -913,19 +913,19 @@ async function montarMapaClimatico() {
     // Marcador MJO animado — criado no mapa, cx/cy atualizado por frame
     const mjoR = Math.max(7, W * 0.011)
     const mjoCircle = svg.append("circle")
-        .attr("r", mjoR).attr("fill","rgba(255,215,0,0.2)")
-        .attr("stroke","rgba(255,215,0,0.9)").attr("stroke-width",1.5)
+        .attr("r", mjoR).attr("fill","rgba(255,152,0,0.2)")
+        .attr("stroke","rgba(255,152,0,0.9)").attr("stroke-width",1.5)
         .attr("cx", -999).attr("cy", -999) // escondido até primeiro frame
         .style("pointer-events","none")
     const mjoPulse = svg.append("circle")
         .attr("r", mjoR).attr("fill","none")
-        .attr("stroke","rgba(255,215,0,0.7)").attr("stroke-width",1)
+        .attr("stroke","rgba(255,152,0,0.7)").attr("stroke-width",1)
         .attr("cx", -999).attr("cy", -999)
         .style("pointer-events","none")
     const mjoLabel = svg.append("text")
         .attr("text-anchor","middle")
         .attr("font-size", Math.max(8, W * 0.009)).attr("font-weight","700")
-        .attr("fill","rgba(255,215,0,0.9)")
+        .attr("fill","rgba(255,152,0,0.9)")
         .style("pointer-events","none").text("")
 
     // Inicia pulso contínuo
@@ -1070,7 +1070,7 @@ async function montarMapaClimatico() {
         const pdoC = modColor(pdoVal,  0.5, -0.5, "#FF7043","#42A5F5")
         const naoC = modColor(naoVal,  0.5, -0.5, "#42A5F5","#EF5350")
         const amoC = modColor(amoVal,  0.1, -0.1, "#EF5350","#42A5F5")
-        const qboC = qboObj?.cls === "LESTE" ? "#FFD740" : qboObj?.cls === "OESTE" ? "#4DD0E1" : "#78909C"
+        const qboC = qboObj?.cls === "LESTE" ? "#7E57C2" : qboObj?.cls === "OESTE" ? "#4DD0E1" : "#78909C"
         updateModMarker(modMarkers.pdo, pdoC, pdoVal !== null && Math.abs(pdoVal||0) >= 0.5)
         updateModMarker(modMarkers.nao, naoC, naoVal !== null && Math.abs(naoVal||0) >= 0.5)
         updateModMarker(modMarkers.amo, amoC, amoVal !== null && Math.abs(amoVal||0) >= 0.1)

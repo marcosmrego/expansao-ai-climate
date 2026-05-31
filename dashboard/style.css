@@ -941,8 +941,8 @@ details[open] .glossary-summary {
 }
 
 .map-mjo-dot.active {
-    background: #FFD700;
-    box-shadow: 0 0 6px 2px rgba(255,215,0,.4);
+    background: #FF9800;
+    box-shadow: 0 0 6px 2px rgba(255,152,0,.4);
     animation: mjo-pulse 1.8s ease-in-out infinite;
 }
 
