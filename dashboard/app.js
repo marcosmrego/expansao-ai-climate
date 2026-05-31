@@ -719,22 +719,23 @@ async function montarMapaClimatico() {
     if (!svgEl || typeof d3 === "undefined" || typeof topojson === "undefined") return
 
     // 1. Fetch data in parallel
-    const [rOni, rArctic, rAntarctic, rIod, rMjo,
+    const [rOni, rArctic, rAntarctic, rIod, rMjo, rMjoH,
            rPdoH, rNaoH, rAmoH, rQboH] = await Promise.allSettled([
         fetch(`${API_BASE}/climate/history`),
         fetch(`${API_BASE}/climate/arctic_ice/history`),
         fetch(`${API_BASE}/climate/antarctic_ice/history`),
         fetch(`${API_BASE}/climate/iod/history`),
         fetch(`${API_BASE}/climate/mjo`),
+        fetch(`${API_BASE}/climate/mjo/history`),
         fetch(`${API_BASE}/climate/pdo/history`),
         fetch(`${API_BASE}/climate/nao/history`),
         fetch(`${API_BASE}/climate/amo/history`),
         fetch(`${API_BASE}/climate/qbo/history`),
     ])
     const jj = async r => r.status === "fulfilled" && r.value.ok ? r.value.json() : null
-    const [oniData, arcticData, antarcticData, iodData, mjoData,
+    const [oniData, arcticData, antarcticData, iodData, mjoData, mjoHist,
            pdoHist, naoHist, amoHist, qboHist] = await Promise.all([
-        jj(rOni), jj(rArctic), jj(rAntarctic), jj(rIod), jj(rMjo),
+        jj(rOni), jj(rArctic), jj(rAntarctic), jj(rIod), jj(rMjo), jj(rMjoH),
         jj(rPdoH), jj(rNaoH), jj(rAmoH), jj(rQboH)
     ])
     if (!oniData || !oniData.length) return
@@ -753,6 +754,27 @@ async function montarMapaClimatico() {
     const arcticByMonth    = monthlyAvg(arcticData)
     const antarcticByMonth = monthlyAvg(antarcticData)
     const iodByMonth = Object.fromEntries((iodData||[]).map(d => [d.data_referencia?.slice(0,7), d.value]))
+
+    // MJO por mês: fase dominante (mais frequente) e amplitude média
+    const mjoByMonth = (() => {
+        const acc = {}
+        ;(mjoHist||[]).forEach(d => {
+            const key = d.data_referencia?.slice(0,7)
+            if (!key) return
+            if (!acc[key]) acc[key] = { phases: [], amps: [] }
+            acc[key].phases.push(d.phase)
+            acc[key].amps.push(d.amplitude)
+        })
+        return Object.fromEntries(Object.entries(acc).map(([k, {phases, amps}]) => {
+            // fase mais frequente do mês
+            const freq = {}
+            phases.forEach(p => { freq[p] = (freq[p]||0) + 1 })
+            const domPhase = +Object.keys(freq).reduce((a,b) => freq[a]>freq[b]?a:b)
+            const avgAmp = amps.reduce((a,b)=>a+b,0)/amps.length
+            return [k, { phase: domPhase, amplitude: avgAmp }]
+        }))
+    })()
+
     const pdoByMonth = Object.fromEntries((pdoHist||[]).map(d => [d.data_referencia?.slice(0,7), d.value]))
     const naoByMonth = Object.fromEntries((naoHist||[]).map(d => [d.data_referencia?.slice(0,7), d.value]))
     const amoByMonth = Object.fromEntries((amoHist||[]).map(d => [d.data_referencia?.slice(0,7), d.value]))
@@ -770,6 +792,7 @@ async function montarMapaClimatico() {
         nao: naoByMonth[o.periodo] ?? null,
         amo: amoByMonth[o.periodo] ?? null,
         qbo: qboByMonth[o.periodo] ?? null,
+        mjoMonth: mjoByMonth[o.periodo] ?? null,
     }))
 
     // MJO phase → equatorial longitude center
@@ -882,44 +905,35 @@ async function montarMapaClimatico() {
         7: "Pacífico L.",     8: "Hemis. Ocidental"
     }
 
-    // Marcador MJO no mapa (visível quando MJO ativo)
-    let mjoMapMarker = null
-    if (mjoPhase && mjoAmp >= 1.0) {
-        const mjoLon = MJO_LON[mjoPhase]
-        const mjoPos = mjoLon !== undefined ? projection([mjoLon, 0]) : null
-        if (mjoPos) {
-            const r = Math.max(7, W * 0.011)
-            // Anel externo pulsante
-            mjoMapMarker = svg.append("circle")
-                .attr("cx", mjoPos[0]).attr("cy", mjoPos[1])
-                .attr("r", r).attr("fill","rgba(255,215,0,0.2)")
-                .attr("stroke","rgba(255,215,0,0.9)").attr("stroke-width",1.5)
-                .style("pointer-events","none")
-            const pulse = () => mjoMapMarker
-                .transition().duration(800).attr("r", r * 1.7).attr("stroke-opacity", 0.2)
-                .transition().duration(800).attr("r", r).attr("stroke-opacity", 0.9)
-                .on("end", pulse)
-            pulse()
-            // Label fase no mapa
-            svg.append("text")
-                .attr("x", mjoPos[0]).attr("y", mjoPos[1] - r - 4)
-                .attr("text-anchor","middle")
-                .attr("font-size", Math.max(8, W * 0.009))
-                .attr("font-weight","700")
-                .attr("fill","rgba(255,215,0,0.9)")
-                .style("pointer-events","none")
-                .text(`MJO F${mjoPhase}`)
-        }
-    }
-
-    // Badge externo MJO
+    // Badge externo MJO (atualizado por frame)
     const mjoFooter = document.getElementById("mapMjoBadge")
     const mjoSep    = document.getElementById("mapMjoSep")
-    if (mjoFooter && mjoPhase) {
-        const active = mjoAmp >= 1.0
-        mjoFooter.innerHTML = `<span class="map-mjo-dot ${active ? "active" : ""}"></span> MJO F${mjoPhase} · ${MJO_DESC[mjoPhase] || ""}${active ? ` · ${mjoAmp.toFixed(2)}` : ""}`
-        if (mjoSep) mjoSep.style.display = ""
-    }
+    if (mjoSep) mjoSep.style.display = ""
+
+    // Marcador MJO animado — criado no mapa, cx/cy atualizado por frame
+    const mjoR = Math.max(7, W * 0.011)
+    const mjoCircle = svg.append("circle")
+        .attr("r", mjoR).attr("fill","rgba(255,215,0,0.2)")
+        .attr("stroke","rgba(255,215,0,0.9)").attr("stroke-width",1.5)
+        .attr("cx", -999).attr("cy", -999) // escondido até primeiro frame
+        .style("pointer-events","none")
+    const mjoPulse = svg.append("circle")
+        .attr("r", mjoR).attr("fill","none")
+        .attr("stroke","rgba(255,215,0,0.7)").attr("stroke-width",1)
+        .attr("cx", -999).attr("cy", -999)
+        .style("pointer-events","none")
+    const mjoLabel = svg.append("text")
+        .attr("text-anchor","middle")
+        .attr("font-size", Math.max(8, W * 0.009)).attr("font-weight","700")
+        .attr("fill","rgba(255,215,0,0.9)")
+        .style("pointer-events","none").text("")
+
+    // Inicia pulso contínuo
+    const mjoPulseAnim = () => mjoPulse
+        .transition().duration(900).attr("r", mjoR * 1.8).attr("stroke-opacity", 0)
+        .transition().duration(0).attr("r", mjoR).attr("stroke-opacity", 0.7)
+        .on("end", mjoPulseAnim)
+    mjoPulseAnim()
 
     // 11. Marcadores pulsantes dos índices de modulação — estáticos (valor atual)
     // Marcadores de modulação — criados com cor neutra, atualizados por frame
@@ -1026,6 +1040,30 @@ async function montarMapaClimatico() {
         // Marcadores ONI e IOD animados por frame
         oniDot.attr("fill", color).attr("stroke", color)
         iodDot.attr("fill", icolor).attr("stroke", icolor)
+
+        // Marcador MJO animado por frame
+        const mjoM = f.mjoMonth
+        if (mjoM && mjoM.amplitude >= 1.0 && MJO_LON[mjoM.phase]) {
+            const mjoPos = projection([MJO_LON[mjoM.phase], 0])
+            if (mjoPos) {
+                mjoCircle.attr("cx", mjoPos[0]).attr("cy", mjoPos[1])
+                mjoPulse.attr("cx", mjoPos[0]).attr("cy", mjoPos[1])
+                mjoLabel.attr("x", mjoPos[0]).attr("y", mjoPos[1] - mjoR - 4).text(`MJO F${mjoM.phase}`)
+            }
+        } else {
+            mjoCircle.attr("cx", -999).attr("cy", -999)
+            mjoPulse.attr("cx", -999).attr("cy", -999)
+            mjoLabel.text("")
+        }
+
+        // Badge MJO
+        if (mjoFooter) {
+            const m = mjoM || { phase: mjoPhase, amplitude: mjoAmp }
+            const active = m && m.amplitude >= 1.0
+            mjoFooter.innerHTML = m && m.phase
+                ? `<span class="map-mjo-dot ${active?"active":""}"></span> MJO F${m.phase} · ${MJO_DESC[m.phase]||""}${active?` · ${m.amplitude.toFixed(2)}`:""}`
+                : ""
+        }
 
         // Marcadores PDO/NAO/AMO/QBO animados por frame
         const pdoVal = f.pdo, naoVal = f.nao, amoVal = f.amo, qboObj = f.qbo
