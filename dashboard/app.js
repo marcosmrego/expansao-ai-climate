@@ -820,13 +820,24 @@ async function montarMapaClimatico() {
         world = await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
     } catch { return }
 
-    // Gelo polar ANTES dos países (visível mas não cobre o mapa)
-    const arcticPath = svg.append("path")
-        .attr("fill","rgba(200,235,255,0.45)")
-        .attr("stroke","none")
-    const antarcticPath = svg.append("path")
-        .attr("fill","rgba(200,235,255,0.4)")
-        .attr("stroke","none")
+    // Gelo polar: SVG circles nas coordenadas projetadas dos polos
+    // (evita problemas de geoCircle com projeção Natural Earth)
+    const refN = projection([0, 70]) // ponto de referência para escalar raio
+    const refS = projection([0,-70])
+    const poleN = projection([0, 85]) || [W/2, 4]
+    const poleS = projection([0,-85]) || [W/2, H-4]
+    const iceScale = refN && poleN ? Math.abs(refN[1] - poleN[1]) / 15 : H * 0.015
+
+    const arcticCircle = svg.append("ellipse")
+        .attr("cx", W/2).attr("cy", poleN[1])
+        .attr("rx", 0).attr("ry", 0)
+        .attr("fill","rgba(220,240,255,0.5)")
+        .attr("stroke","rgba(180,225,255,0.3)").attr("stroke-width","1")
+    const antarcticCircle = svg.append("ellipse")
+        .attr("cx", W/2).attr("cy", poleS[1])
+        .attr("rx", 0).attr("ry", 0)
+        .attr("fill","rgba(220,240,255,0.45)")
+        .attr("stroke","rgba(180,225,255,0.25)").attr("stroke-width","1")
 
     // Countries por cima do gelo
     svg.append("g")
@@ -886,7 +897,7 @@ async function montarMapaClimatico() {
         .attr("stroke-dasharray", "4 3")
         .attr("d", path)
 
-    // (arcticPath e antarcticPath já declarados acima, antes dos países)
+    // (arcticCircle e antarcticCircle já declarados acima, antes dos países)
 
     // 11. MJO badge externo inline com ONI
     const mjoPhase = mjoData?.phase ?? null
@@ -923,16 +934,15 @@ async function montarMapaClimatico() {
         // IOD: contorno colorido (stroke only — sem fill para nao escurecer o mapa)
         iodPath.attr("stroke", icolor)
 
-        // Ice caps
-        const arcticR    = extentToRadius(f.arctic)
-        const antarcticR = extentToRadius(f.antarctic)
-        // Transição suave D3 para o gelo — mostra expansão/contração
-        arcticPath.datum(d3.geoCircle().center([0, 90]).radius(arcticR)())
-            .transition().duration(1000).ease(d3.easeCubicInOut)
-            .attr("d", path)
-        antarcticPath.datum(d3.geoCircle().center([0, -90]).radius(antarcticR)())
-            .transition().duration(1000).ease(d3.easeCubicInOut)
-            .attr("d", path)
+        // Ice caps: elipses SVG simples escaladas pelo extent real
+        const arcticRx  = Math.sqrt(f.arctic)  * iceScale * W * 0.018
+        const arcticRy  = Math.sqrt(f.arctic)  * iceScale * H * 0.022
+        const antarRx   = Math.sqrt(f.antarctic) * iceScale * W * 0.020
+        const antarRy   = Math.sqrt(f.antarctic) * iceScale * H * 0.024
+        arcticCircle.transition().duration(900).ease(d3.easeCubicInOut)
+            .attr("rx", arcticRx).attr("ry", arcticRy)
+        antarcticCircle.transition().duration(900).ease(d3.easeCubicInOut)
+            .attr("rx", antarRx).attr("ry", antarRy)
 
         // UI labels
         const [y, m] = f.period.split("-")
