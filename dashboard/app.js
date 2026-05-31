@@ -778,6 +778,8 @@ async function montarMapaClimatico() {
     const pdoByMonth = Object.fromEntries((pdoHist||[]).map(d => [d.data_referencia?.slice(0,7), d.value]))
     const naoByMonth = Object.fromEntries((naoHist||[]).map(d => [d.data_referencia?.slice(0,7), d.value]))
     const amoByMonth = Object.fromEntries((amoHist||[]).map(d => [d.data_referencia?.slice(0,7), d.value]))
+    // AMO só tem dados até 2023 — usar último valor disponível como fallback
+    const amoLastVal = (amoHist||[]).length ? (amoHist[amoHist.length-1].value) : null
     const qboByMonth = Object.fromEntries((qboHist||[]).map(d => [d.data_referencia?.slice(0,7), {v:d.value, cls:d.classificacao}]))
 
     // 3. Build 12-month dataset
@@ -790,7 +792,7 @@ async function montarMapaClimatico() {
         iod: iodByMonth[o.periodo] ?? 0,
         pdo: pdoByMonth[o.periodo] ?? null,
         nao: naoByMonth[o.periodo] ?? null,
-        amo: amoByMonth[o.periodo] ?? null,
+        amo: amoByMonth[o.periodo] ?? amoLastVal,
         qbo: qboByMonth[o.periodo] ?? null,
         mjoMonth: mjoByMonth[o.periodo] ?? null,
     }))
