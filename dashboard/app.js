@@ -713,6 +713,177 @@ async function carregarInsightPlain() {
     }
 }
 
+// ── Mapa Climático Global Animado ────────────────────────────────────
+async function montarMapaClimatico() {
+    const svgEl = document.getElementById("climateMap")
+    if (!svgEl || typeof d3 === "undefined" || typeof topojson === "undefined") return
+
+    // 1. Fetch data in parallel
+    const [rOni, rArctic, rAntarctic] = await Promise.allSettled([
+        fetch(`${API_BASE}/climate/history`),
+        fetch(`${API_BASE}/climate/arctic_ice/history`),
+        fetch(`${API_BASE}/climate/antarctic_ice/history`),
+    ])
+    const jj = async r => r.status === "fulfilled" && r.value.ok ? r.value.json() : []
+    const [oniData, arcticData, antarcticData] = await Promise.all([jj(rOni), jj(rArctic), jj(rAntarctic)])
+    if (!oniData.length) return
+
+    // 2. Build monthly ice averages from daily data
+    function monthlyAvg(daily) {
+        const acc = {}
+        daily.forEach(d => {
+            const key = d.data_referencia.slice(0, 7)
+            if (!acc[key]) acc[key] = []
+            acc[key].push(d.extent_mkm2)
+        })
+        return Object.fromEntries(Object.entries(acc).map(([k, v]) => [k, v.reduce((a, b) => a + b, 0) / v.length]))
+    }
+    const arcticByMonth    = monthlyAvg(arcticData)
+    const antarcticByMonth = monthlyAvg(antarcticData)
+
+    // 3. Build 12-month dataset (most recent 12 months from ONI)
+    const frames = oniData.slice(-12).map(o => ({
+        period: o.periodo,
+        oni: o.oni,
+        classificacao: o.classificacao,
+        arctic: arcticByMonth[o.periodo] ?? 11.0,
+        antarctic: antarcticByMonth[o.periodo] ?? 10.0,
+    }))
+
+    // 4. Extent → geo radius (spherical cap formula: area = 2πR²(1−sinφ))
+    const R2 = 255.03  // 2πR² in Mkm²
+    function extentToRadius(extMkm2, pole) {
+        const sinPhi = 1 - Math.min(extMkm2, R2 * 0.95) / R2
+        const phiDeg = Math.asin(Math.max(0, Math.min(1, sinPhi))) * 180 / Math.PI
+        return 90 - phiDeg + 2  // +2° buffer for visual clarity
+    }
+
+    // 5. ONI → color
+    const oniColor = d3.scaleLinear()
+        .domain([-2, -1, -0.5, 0, 0.5, 1, 2])
+        .range(["#0D47A1","#1565C0","#90CAF9","#78909C","#EF9A9A","#E53935","#B71C1C"])
+        .clamp(true)
+
+    // 6. Setup SVG
+    const W = svgEl.parentElement.clientWidth || 800
+    const H = Math.round(W * 0.52)
+    svgEl.setAttribute("viewBox", `0 0 ${W} ${H}`)
+
+    const projection = d3.geoNaturalEarth1()
+        .scale(W / 6.28)
+        .translate([W / 2, H / 2])
+    const path = d3.geoPath().projection(projection)
+
+    const svg = d3.select(svgEl)
+    svg.selectAll("*").remove()
+
+    // Sphere (ocean background)
+    svg.append("path")
+        .datum({type: "Sphere"})
+        .attr("class", "map-sphere")
+        .attr("d", path)
+
+    // Graticule grid
+    svg.append("path")
+        .datum(d3.geoGraticule()())
+        .attr("class", "map-graticule")
+        .attr("d", path)
+
+    // 7. Load world topojson
+    let world
+    try {
+        world = await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
+    } catch { return }
+
+    // Countries
+    svg.append("g")
+        .selectAll("path")
+        .data(topojson.feature(world, world.objects.countries).features)
+        .join("path")
+        .attr("class", "map-country")
+        .attr("d", path)
+
+    // 8. Niño 3.4 region polygon (5N-5S, 120W-170W → lon -170 to -120)
+    const nino34 = {
+        type: "Feature",
+        geometry: {
+            type: "Polygon",
+            coordinates: [[
+                [-170, 5], [-120, 5], [-120, -5], [-170, -5], [-170, 5]
+            ]]
+        }
+    }
+    const nino34Path = svg.append("path")
+        .datum(nino34)
+        .attr("class", "map-nino34")
+        .attr("d", path)
+
+    // 9. Ice cap circles
+    const arcticPath    = svg.append("path").attr("class", "map-ice-arctic")
+    const antarcticPath = svg.append("path").attr("class", "map-ice-antarctic")
+
+    // 10. ONI label on map (equatorial Pacific)
+    const [px, py] = projection([-145, 0]) || [W * 0.2, H * 0.5]
+    const oniMapLabel = svg.append("text")
+        .attr("x", px).attr("y", py - 8)
+        .attr("text-anchor", "middle")
+        .attr("font-size", Math.max(9, W * 0.012))
+        .attr("font-weight", "700")
+        .attr("fill", "rgba(255,255,255,0.85)")
+        .style("pointer-events", "none")
+        .style("text-shadow", "0 1px 3px #000")
+
+    // 11. Animation
+    let frameIdx = 0
+    let timer = null
+
+    function renderFrame(i) {
+        const f = frames[i]
+        const color = oniColor(f.oni)
+
+        // Color Niño 3.4 region
+        nino34Path.attr("fill", color)
+
+        // Ice caps
+        const arcticR  = extentToRadius(f.arctic,    "north")
+        const antarcticR = extentToRadius(f.antarctic, "south")
+        arcticPath.datum(d3.geoCircle().center([0, 90]).radius(arcticR)())
+            .attr("d", path)
+        antarcticPath.datum(d3.geoCircle().center([0, -90]).radius(antarcticR)())
+            .attr("d", path)
+
+        // ONI label on map
+        const oniSign = f.oni >= 0 ? "+" : ""
+        oniMapLabel.text(`ONI ${oniSign}${f.oni.toFixed(2)}`)
+            .attr("fill", color === "#78909C" ? "rgba(255,255,255,.6)" : color)
+
+        // UI labels
+        const [y, m] = f.period.split("-")
+        const monthNames = ["","Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"]
+        document.getElementById("mapMonthLabel").textContent = `${monthNames[+m]} ${y}`
+
+        const stateLabel = {
+            EL_NINO: `El Niño · ONI ${oniSign}${f.oni.toFixed(2)}°C`,
+            LA_NINA: `La Niña · ONI ${oniSign}${f.oni.toFixed(2)}°C`,
+            NEUTRO:  `Neutro · ONI ${oniSign}${f.oni.toFixed(2)}°C`,
+        }
+        document.getElementById("mapOniLabel").textContent = stateLabel[f.classificacao] || f.classificacao
+
+        // Timeline fill
+        const pct = ((i + 1) / frames.length * 100).toFixed(1)
+        document.getElementById("mapTimelineFill").style.width = pct + "%"
+    }
+
+    function nextFrame() {
+        renderFrame(frameIdx)
+        frameIdx = (frameIdx + 1) % frames.length
+    }
+
+    nextFrame()
+    timer = setInterval(nextFrame, 1500)
+    window._climateMapTimer = timer
+}
+
 // ── Wheeler-Hendon MJO Phase Diagram ────────────────────────────────
 async function montarWheelerHendon() {
     const canvas = document.getElementById("whChart")
@@ -1191,6 +1362,7 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
 // ── Init ─────────────────────────────────────────────────────────────
 carregarHome()
 carregarFreshness()
+montarMapaClimatico()
 carregarStatus()
 carregarHistorico()
 carregarSOI()

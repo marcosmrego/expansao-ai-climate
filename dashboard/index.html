@@ -31,7 +31,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=12">
+    <link rel="stylesheet" href="style.css?v=14">
     <script defer src="http://umami-qkr89esvo1szlexgp9y67gy8.212.85.22.227.sslip.io/script.js"
             data-website-id="794d96e4-9652-4d3e-8df4-adb3ba9fad61"></script>
 </head>
@@ -92,6 +92,35 @@
                 <div class="home-status-plain" id="home-status-plain">
                     <span class="skeleton skeleton-line"></span>
                     <span class="skeleton skeleton-line short"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mapa Global Animado -->
+        <div class="climate-map-section">
+            <div class="climate-map-header">
+                <div>
+                    <div class="climate-map-title">Condições Climáticas Globais</div>
+                    <div class="climate-map-sub">últimos 12 meses · El Niño · Gelo Polar · animação automática</div>
+                </div>
+                <div class="climate-map-legend">
+                    <span class="map-legend-item"><span class="map-dot" style="background:#B71C1C"></span>El Niño forte</span>
+                    <span class="map-legend-item"><span class="map-dot" style="background:#EF9A9A"></span>El Niño fraco</span>
+                    <span class="map-legend-item"><span class="map-dot" style="background:#78909C"></span>Neutro</span>
+                    <span class="map-legend-item"><span class="map-dot" style="background:#90CAF9"></span>La Niña fraca</span>
+                    <span class="map-legend-item"><span class="map-dot" style="background:#0D47A1"></span>La Niña forte</span>
+                </div>
+            </div>
+            <div class="climate-map-wrap">
+                <svg id="climateMap"></svg>
+                <div class="climate-map-overlay" id="mapOverlay">
+                    <div class="map-month-label" id="mapMonthLabel">—</div>
+                    <div class="map-oni-label" id="mapOniLabel"></div>
+                </div>
+            </div>
+            <div class="climate-map-timeline">
+                <div class="map-timeline-bar" id="mapTimelineBar">
+                    <div class="map-timeline-fill" id="mapTimelineFill"></div>
                 </div>
             </div>
         </div>
@@ -689,9 +718,11 @@
     <span>Informação de apoio — não substitui fontes oficiais</span>
 </footer>
 
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script src="app.js?v=13"></script>
+<script src="app.js?v=14"></script>
 <!-- Cloudflare Web Analytics -->
 <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "0ba9b0dc7997464f8a13b01a7616ed51"}'></script>
 <!-- End Cloudflare Web Analytics -->
