@@ -801,13 +801,40 @@ async function montarMapaClimatico() {
         .attr("fill","#061020")
         .attr("d", path)
 
-    // Graticule grid — ligeiramente mais visível
+    // Graticule grid
     svg.append("path")
         .datum(d3.geoGraticule()())
         .attr("fill","none")
         .attr("stroke","rgba(255,255,255,.07)")
         .attr("stroke-width","0.5")
         .attr("d", path)
+
+    // Gelo polar: gradiente radial com userSpaceOnUse centrado nos polos projetados
+    const [, py_n] = projection([0, 88]) || [W/2, 8]
+    const [, py_s] = projection([0,-88]) || [W/2, H-8]
+    const [, py_70n] = projection([0, 70]) || [W/2, py_n + 60]
+    const [, py_70s] = projection([0,-70]) || [W/2, py_s - 60]
+    const iceNRef = Math.abs(py_70n - py_n)  // pixels de 70°N ao polo
+    const iceSRef = Math.abs(py_70s - py_s)
+
+    const defs = svg.append("defs")
+    const gradN = defs.append("radialGradient")
+        .attr("id","gradN").attr("gradientUnits","userSpaceOnUse")
+        .attr("cx", W/2).attr("cy", py_n).attr("r", iceNRef)
+    gradN.append("stop").attr("offset","0%").attr("stop-color","#FFFFFF").attr("stop-opacity","0.9")
+    gradN.append("stop").attr("offset","55%").attr("stop-color","#B3E5FC").attr("stop-opacity","0.55")
+    gradN.append("stop").attr("offset","100%").attr("stop-color","#4FC3F7").attr("stop-opacity","0")
+
+    const gradS = defs.append("radialGradient")
+        .attr("id","gradS").attr("gradientUnits","userSpaceOnUse")
+        .attr("cx", W/2).attr("cy", py_s).attr("r", iceSRef)
+    gradS.append("stop").attr("offset","0%").attr("stop-color","#FFFFFF").attr("stop-opacity","0.85")
+    gradS.append("stop").attr("offset","55%").attr("stop-color","#B3E5FC").attr("stop-opacity","0.5")
+    gradS.append("stop").attr("offset","100%").attr("stop-color","#4FC3F7").attr("stop-opacity","0")
+
+    // Aplicado à esfera completa — países renderizados por cima naturalizam o efeito
+    const iceN = svg.append("path").datum({type:"Sphere"}).attr("fill","url(#gradN)").attr("d", path)
+    const iceS = svg.append("path").datum({type:"Sphere"}).attr("fill","url(#gradS)").attr("d", path)
 
     // 7. Load world topojson
     let world
