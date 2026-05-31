@@ -838,7 +838,7 @@ async function montarMapaClimatico() {
     // 7. Load world topojson
     let world
     try {
-        world = await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
+        world = await d3.json("/world-110m.json")
     } catch { return }
 
     // Countries
