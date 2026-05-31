@@ -31,7 +31,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=19">
+    <link rel="stylesheet" href="style.css?v=20">
     <script defer src="http://umami-qkr89esvo1szlexgp9y67gy8.212.85.22.227.sslip.io/script.js"
             data-website-id="794d96e4-9652-4d3e-8df4-adb3ba9fad61"></script>
 </head>
@@ -80,11 +80,14 @@
 
         <!-- Hero da home -->
         <div class="home-hero">
-            <div class="home-hero-top">
-                <div class="home-hero-text">
-                    <h2 class="home-title">Inteligência climática global,<br>explicada para todos.</h2>
-                    <p class="home-subtitle">Climate monitora os principais índices climáticos globais em tempo real. Aqui você acompanha fenômenos como El Niño e La Niña, padrões de vento, concentração de CO₂ e extensão do gelo polar — e entende o que isso significa para o clima nos próximos meses.</p>
-                    <!-- Mapa na coluna esquerda, abaixo do texto -->
+            <!-- Título e subtítulo — linha completa -->
+            <div class="home-hero-text">
+                <h2 class="home-title">Inteligência climática global,<br>explicada para todos.</h2>
+                <p class="home-subtitle">Climate monitora os principais índices climáticos globais em tempo real. Aqui você acompanha fenômenos como El Niño e La Niña, padrões de vento, concentração de CO₂ e extensão do gelo polar — e entende o que isso significa para o clima nos próximos meses.</p>
+            </div>
+            <!-- Mapa + Status Card — alinhados pelo topo -->
+            <div class="home-hero-map-row">
+                <div class="home-hero-map-col">
                     <div class="climate-map-wrap">
                         <svg id="climateMap"></svg>
                     </div>
@@ -114,7 +117,7 @@
                     </div>
                 </div>
             </div>
-            <!-- Legenda abaixo dos dois cards -->
+            <!-- Legenda de cores -->
             <div class="climate-map-legend">
                 <span class="map-legend-item"><span class="map-dot" style="background:#B71C1C"></span>El Niño forte</span>
                 <span class="map-legend-item"><span class="map-dot" style="background:#EF9A9A"></span>El Niño fraco</span>

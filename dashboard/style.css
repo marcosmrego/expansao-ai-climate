@@ -828,11 +828,17 @@ details[open] .glossary-summary {
 }
 
 /* ── Climate Map ─────────────────────────────────────────────────────── */
-.home-hero-top {
+.home-hero-map-row {
     display: grid;
-    grid-template-columns: 1fr 280px;
-    gap: 24px;
+    grid-template-columns: 1fr 260px;
+    gap: 20px;
     align-items: start;
+}
+
+.home-hero-map-col {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }
 
 .climate-map-footer {
@@ -990,7 +996,6 @@ details[open] .glossary-summary {
     border: 1px solid var(--border-accent);
     border-radius: var(--radius-sm);
     padding: 20px;
-    align-self: end;
 }
 
 .home-status-label {
@@ -1072,7 +1077,7 @@ details[open] .glossary-summary {
 .home-nav-card:hover .home-nav-arrow { color: var(--accent); }
 
 @media (max-width: 900px) {
-    .home-hero-top { grid-template-columns: 1fr; }
+    .home-hero-map-row { grid-template-columns: 1fr; }
     .home-nav-grid { grid-template-columns: 1fr; }
     .home-title { font-size: 22px; }
 }
