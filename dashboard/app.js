@@ -874,19 +874,19 @@ async function montarMapaClimatico() {
 
     // 9. IOD region (Índico: 50-110°E, 10S-10N)
     // IOD: contorno do Oceano Índico (sem fill — evita polígono escuro sobre terra/mar)
+    // IOD: winding counterclockwise (N→E→S→W) = preenche interior
     const iodGeo = {
         type: "Feature",
         geometry: {
             type: "Polygon",
-            coordinates: [[[50,-8],[90,-8],[90,8],[50,8],[50,-8]]]
+            coordinates: [[[50,-8],[50,8],[90,8],[90,-8],[50,-8]]]
         }
     }
-    // IOD: fill colorido + contorno tracejado para visibilidade
     const iodPath = svg.append("path")
         .datum(iodGeo)
-        .attr("stroke-width", 1)
-        .attr("stroke-dasharray", "3 2")
-        .attr("opacity", 0.75)
+        .attr("stroke-width", 1.5)
+        .attr("stroke-dasharray", "4 3")
+        .attr("opacity", 0.5)
         .attr("d", path)
 
     // MJO: marcador no mapa + badge externo
