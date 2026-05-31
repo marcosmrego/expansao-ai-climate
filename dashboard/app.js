@@ -881,14 +881,63 @@ async function montarMapaClimatico() {
             coordinates: [[[50,-8],[90,-8],[90,8],[50,8],[50,-8]]]
         }
     }
+    // IOD: fill colorido + contorno tracejado para visibilidade
     const iodPath = svg.append("path")
         .datum(iodGeo)
-        .attr("fill", "none")
-        .attr("stroke-width", 1.5)
-        .attr("stroke-dasharray", "4 3")
+        .attr("stroke-width", 1)
+        .attr("stroke-dasharray", "3 2")
+        .attr("opacity", 0.75)
         .attr("d", path)
 
-    // 10. Ice cap circles — gradiente radial + borda brilhante
+    // MJO: marcador no mapa + badge externo
+    const mjoPhase = mjoData?.phase ?? null
+    const mjoAmp   = mjoData?.amplitude ?? 0
+    const MJO_DESC = {
+        1: "África/Índico O.", 2: "Índico O.", 3: "Índico L.",
+        4: "Cont. Marítimo",  5: "Pacífico O.", 6: "Pacífico C.",
+        7: "Pacífico L.",     8: "Hemis. Ocidental"
+    }
+
+    // Marcador MJO no mapa (visível quando MJO ativo)
+    let mjoMapMarker = null
+    if (mjoPhase && mjoAmp >= 1.0) {
+        const mjoLon = MJO_LON[mjoPhase]
+        const mjoPos = mjoLon !== undefined ? projection([mjoLon, 0]) : null
+        if (mjoPos) {
+            const r = Math.max(7, W * 0.011)
+            // Anel externo pulsante
+            mjoMapMarker = svg.append("circle")
+                .attr("cx", mjoPos[0]).attr("cy", mjoPos[1])
+                .attr("r", r).attr("fill","rgba(255,215,0,0.2)")
+                .attr("stroke","rgba(255,215,0,0.9)").attr("stroke-width",1.5)
+                .style("pointer-events","none")
+            const pulse = () => mjoMapMarker
+                .transition().duration(800).attr("r", r * 1.7).attr("stroke-opacity", 0.2)
+                .transition().duration(800).attr("r", r).attr("stroke-opacity", 0.9)
+                .on("end", pulse)
+            pulse()
+            // Label fase no mapa
+            svg.append("text")
+                .attr("x", mjoPos[0]).attr("y", mjoPos[1] - r - 4)
+                .attr("text-anchor","middle")
+                .attr("font-size", Math.max(8, W * 0.009))
+                .attr("font-weight","700")
+                .attr("fill","rgba(255,215,0,0.9)")
+                .style("pointer-events","none")
+                .text(`MJO F${mjoPhase}`)
+        }
+    }
+
+    // Badge externo
+    const mjoFooter = document.getElementById("mapMjoBadge")
+    const mjoSep    = document.getElementById("mapMjoSep")
+    if (mjoFooter && mjoPhase) {
+        const active = mjoAmp >= 1.0
+        mjoFooter.innerHTML = `<span class="map-mjo-dot ${active ? "active" : ""}"></span> MJO F${mjoPhase} · ${MJO_DESC[mjoPhase] || ""}${active ? ` · ${mjoAmp.toFixed(2)}` : ""}`
+        if (mjoSep) mjoSep.style.display = ""
+    }
+
+    // 10. Ice caps
     const arcticPath = svg.append("path")
         .attr("fill","url(#gradArctic)")
         .attr("stroke","none")
@@ -897,22 +946,6 @@ async function montarMapaClimatico() {
         .attr("fill","url(#gradAntarctic)")
         .attr("stroke","none")
         .attr("filter","url(#iceBlur)")
-
-    // 11. MJO badge externo inline com ONI
-    const mjoPhase = mjoData?.phase ?? null
-    const mjoAmp   = mjoData?.amplitude ?? 0
-    const MJO_DESC = {
-        1: "África/Índico O.", 2: "Índico O.", 3: "Índico L.",
-        4: "Cont. Marítimo",  5: "Pacífico O.", 6: "Pacífico C.",
-        7: "Pacífico L.",     8: "Hemis. Ocidental"
-    }
-    const mjoFooter = document.getElementById("mapMjoBadge")
-    const mjoSep    = document.getElementById("mapMjoSep")
-    if (mjoFooter && mjoPhase) {
-        const active = mjoAmp >= 1.0
-        mjoFooter.innerHTML = `<span class="map-mjo-dot ${active ? "active" : ""}"></span> MJO F${mjoPhase} · ${MJO_DESC[mjoPhase] || ""}${active ? ` · ${mjoAmp.toFixed(2)}` : ""}`
-        if (mjoSep) mjoSep.style.display = ""
-    }
 
     // 12. Animation
     let frameIdx = 0
@@ -926,8 +959,8 @@ async function montarMapaClimatico() {
         // Color Niño 3.4 region (Pacific)
         nino34Path.attr("fill", color)
 
-        // IOD: contorno colorido (stroke only — sem fill para nao escurecer o mapa)
-        iodPath.attr("stroke", icolor)
+        // IOD: fill colorido semitransparente + contorno tracejado
+        iodPath.attr("fill", icolor).attr("stroke", icolor)
 
         // Ice caps
         const arcticR    = extentToRadius(f.arctic)
