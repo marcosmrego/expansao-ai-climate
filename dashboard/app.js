@@ -832,11 +832,12 @@ async function montarMapaClimatico() {
         .attr("d", path)
 
     // 9. IOD region (Índico: 50-110°E, 10S-10N)
+    // IOD: apenas o oceano Índico aberto (50-90°E), evitando o Cont. Marítimo
     const iod34 = {
         type: "Feature",
         geometry: {
             type: "Polygon",
-            coordinates: [[[50,-10],[110,-10],[110,10],[50,10],[50,-10]]]
+            coordinates: [[[50,-10],[90,-10],[90,10],[50,10],[50,-10]]]
         }
     }
     const iodPath = svg.append("path")
@@ -848,37 +849,21 @@ async function montarMapaClimatico() {
     const arcticPath    = svg.append("path").attr("class", "map-ice-arctic")
     const antarcticPath = svg.append("path").attr("class", "map-ice-antarctic")
 
-    // 11. MJO marker — círculo pulsante na fase atual (apenas estado mais recente)
-    const mjoPhase   = mjoData?.phase ?? null
-    const mjoAmp     = mjoData?.amplitude ?? 0
-    const mjoLon     = MJO_LON[mjoPhase] ?? null
-    let mjoMarker = null
-    if (mjoLon !== null && mjoAmp >= 1.0) {
-        const [mx, my] = projection([mjoLon, 0]) || [null, null]
-        if (mx) {
-            mjoMarker = svg.append("circle")
-                .attr("cx", mx).attr("cy", my)
-                .attr("r", Math.max(6, W * 0.012))
-                .attr("fill", "rgba(255,215,0,0.25)")
-                .attr("stroke", "rgba(255,215,0,0.8)")
-                .attr("stroke-width", 1.5)
-                .style("pointer-events", "none")
-            // Pulse animation
-            const pulse = () => mjoMarker
-                .transition().duration(900).attr("r", Math.max(6, W * 0.012) * 1.8).attr("opacity", 0.3)
-                .transition().duration(900).attr("r", Math.max(6, W * 0.012)).attr("opacity", 1)
-                .on("end", pulse)
-            pulse()
-            // Label
-            svg.append("text")
-                .attr("x", mx).attr("y", my - Math.max(6, W * 0.012) - 4)
-                .attr("text-anchor", "middle")
-                .attr("font-size", Math.max(8, W * 0.01))
-                .attr("font-weight", "700")
-                .attr("fill", "rgba(255,215,0,0.9)")
-                .style("pointer-events", "none")
-                .text(`MJO F${mjoPhase}`)
-        }
+    // 11. MJO indicator — external badge (outside the SVG, in the footer)
+    const mjoPhase = mjoData?.phase ?? null
+    const mjoAmp   = mjoData?.amplitude ?? 0
+    const MJO_DESC = {
+        1: "África / Índico O.", 2: "Índico Oeste", 3: "Índico Leste",
+        4: "Cont. Marítimo",    5: "Pacífico O.", 6: "Pacífico C.",
+        7: "Pacífico L.",       8: "Hemis. Ocidental"
+    }
+    // Populate external MJO badge (injected in footer via JS)
+    const mjoFooter = document.getElementById("mapMjoBadge")
+    if (mjoFooter && mjoPhase) {
+        const active = mjoAmp >= 1.0
+        mjoFooter.innerHTML = `
+            <span class="map-mjo-dot ${active ? "active" : ""}"></span>
+            <span class="map-mjo-text">MJO F${mjoPhase} · ${MJO_DESC[mjoPhase] || ""}${active ? ` · ${mjoAmp.toFixed(2)}` : " · inativo"}</span>`
     }
 
     // 12. Animation

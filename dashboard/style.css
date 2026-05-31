@@ -914,6 +914,33 @@ details[open] .glossary-summary {
     width: 0%;
 }
 
+.map-mjo-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--text-2);
+}
+
+.map-mjo-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--text-3);
+    flex-shrink: 0;
+}
+
+.map-mjo-dot.active {
+    background: #FFD700;
+    box-shadow: 0 0 6px 2px rgba(255,215,0,.4);
+    animation: mjo-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes mjo-pulse {
+    0%, 100% { box-shadow: 0 0 4px 1px rgba(255,215,0,.4); }
+    50%       { box-shadow: 0 0 10px 4px rgba(255,215,0,.6); }
+}
+
 /* SVG map elements */
 .map-country { fill: #1a2d40; stroke: #0e1e30; stroke-width: 0.4; }
 .map-graticule { fill: none; stroke: rgba(255,255,255,.04); stroke-width: 0.5; }
