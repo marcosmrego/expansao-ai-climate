@@ -914,15 +914,13 @@ async function montarMapaClimatico() {
                     const etype = ev.event_type?.includes("volcanic") ? "🌋 Vulcânico" : "🔴 Terremoto"
                     seismicTip.innerHTML = `<strong>M${ev.magnitude} — ${etype}</strong><br>${ev.place}<br><span style="color:var(--text-3)">${ev.data_referencia}</span>`
                     seismicTip.classList.remove("hidden")
-                    const rect = svgEl.parentElement.getBoundingClientRect()
-                    seismicTip.style.left = (event.clientX - rect.left + 12) + "px"
-                    seismicTip.style.top  = (event.clientY - rect.top  - 10) + "px"
+                    seismicTip.style.left = (event.clientX + 15) + "px"
+                    seismicTip.style.top  = (event.clientY - 10) + "px"
                 })
                 .on("mousemove", function(event) {
                     if (!seismicTip) return
-                    const rect = svgEl.parentElement.getBoundingClientRect()
-                    seismicTip.style.left = (event.clientX - rect.left + 12) + "px"
-                    seismicTip.style.top  = (event.clientY - rect.top  - 10) + "px"
+                    seismicTip.style.left = (event.clientX + 15) + "px"
+                    seismicTip.style.top  = (event.clientY - 10) + "px"
                 })
                 .on("mouseout", function() {
                     if (seismicTip) seismicTip.classList.add("hidden")

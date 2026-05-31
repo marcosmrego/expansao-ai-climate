@@ -929,7 +929,7 @@ details[open] .glossary-summary {
 .seismic-dot { font-size: 10px; line-height: 1; }
 
 .seismic-tooltip {
-    position: absolute;
+    position: fixed;
     background: rgba(12,22,40,.95);
     border: 1px solid rgba(255,255,255,.15);
     border-radius: 6px;
