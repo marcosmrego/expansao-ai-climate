@@ -889,10 +889,15 @@ async function montarMapaClimatico() {
 
     // 8. Marcadores sísmicos — só mês corrente, M≥7.5 pulsantes
     const seismicTip = document.getElementById("seismicTooltip")
-    const curMonth = new Date().toISOString().slice(0, 7) // "2026-06"
-    const seismicCurrent = (seismicData || []).filter(ev =>
-        ev.data_referencia && ev.data_referencia.slice(0, 7) === curMonth
-    )
+    const curMonth = new Date().toISOString().slice(0, 7)
+    const sevenDaysAgo = new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10)
+    const seismicCurrent = (seismicData || []).filter(ev => {
+        if (!ev.data_referencia) return false
+        // M≥7.0: mês inteiro | abaixo: últimos 7 dias
+        return ev.magnitude >= 7.0
+            ? ev.data_referencia.slice(0, 7) === curMonth
+            : ev.data_referencia >= sevenDaysAgo
+    })
 
     if (seismicCurrent.length) {
         const seismicG = svg.append("g")
