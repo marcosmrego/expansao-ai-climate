@@ -800,26 +800,7 @@ async function montarMapaClimatico() {
     const svg = d3.select(svgEl)
     svg.selectAll("*").remove()
 
-    // Definições SVG: gradientes radiais para gelo polar
-    const defs = svg.append("defs")
-
-    // Gradiente ártico: branco → ciano → transparente
-    const gradArctic = defs.append("radialGradient")
-        .attr("id", "gradArctic").attr("cx","50%").attr("cy","20%")
-        .attr("r","70%")
-    gradArctic.append("stop").attr("offset","0%").attr("stop-color","#FFFFFF").attr("stop-opacity","0.95")
-    gradArctic.append("stop").attr("offset","40%").attr("stop-color","#B3E5FC").attr("stop-opacity","0.75")
-    gradArctic.append("stop").attr("offset","100%").attr("stop-color","#4FC3F7").attr("stop-opacity","0.15")
-
-    // Gradiente antártico: branco → azul gelo → transparente
-    const gradAntarctic = defs.append("radialGradient")
-        .attr("id","gradAntarctic").attr("cx","50%").attr("cy","80%")
-        .attr("r","70%")
-    gradAntarctic.append("stop").attr("offset","0%").attr("stop-color","#FFFFFF").attr("stop-opacity","0.9")
-    gradAntarctic.append("stop").attr("offset","40%").attr("stop-color","#E1F5FE").attr("stop-opacity","0.7")
-    gradAntarctic.append("stop").attr("offset","100%").attr("stop-color","#81D4FA").attr("stop-opacity","0.1")
-
-    // Sphere (ocean background) — azul mais profundo
+    // Sphere (ocean background)
     svg.append("path")
         .datum({type: "Sphere"})
         .attr("fill","#061020")
@@ -839,7 +820,15 @@ async function montarMapaClimatico() {
         world = await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
     } catch { return }
 
-    // Countries — cor levemente mais clara para contrastar com o gelo
+    // Gelo polar ANTES dos países (visível mas não cobre o mapa)
+    const arcticPath = svg.append("path")
+        .attr("fill","rgba(200,235,255,0.45)")
+        .attr("stroke","none")
+    const antarcticPath = svg.append("path")
+        .attr("fill","rgba(200,235,255,0.4)")
+        .attr("stroke","none")
+
+    // Countries por cima do gelo
     svg.append("g")
         .selectAll("path")
         .data(topojson.feature(world, world.objects.countries).features)
@@ -897,13 +886,7 @@ async function montarMapaClimatico() {
         .attr("stroke-dasharray", "4 3")
         .attr("d", path)
 
-    // 10. Ice cap circles — gradiente radial, sem borda dura
-    const arcticPath = svg.append("path")
-        .attr("fill","url(#gradArctic)")
-        .attr("stroke","none")
-    const antarcticPath = svg.append("path")
-        .attr("fill","url(#gradAntarctic)")
-        .attr("stroke","none")
+    // (arcticPath e antarcticPath já declarados acima, antes dos países)
 
     // 11. MJO badge externo inline com ONI
     const mjoPhase = mjoData?.phase ?? null
