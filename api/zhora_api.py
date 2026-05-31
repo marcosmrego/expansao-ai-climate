@@ -423,20 +423,20 @@ def notify_staleness_check():
     try:
         cursor = conn.cursor()
         cursor.execute("""
-            SELECT MAX(ts), label FROM (
-                SELECT MAX(criado_em) AS ts, 'CO2/Gelo/MJO' AS label
-                FROM (
-                    SELECT MAX(criado_em) FROM climate.noaa_co2_daily
-                    UNION ALL SELECT MAX(criado_em) FROM climate.nsidc_arctic_ice_daily
-                    UNION ALL SELECT MAX(criado_em) FROM climate.mjo_daily
-                ) x(ts)
-            ) t GROUP BY label
+            SELECT MAX(ts) FROM (
+                SELECT MAX(criado_em) AS ts FROM climate.noaa_co2_daily
+                UNION ALL SELECT MAX(criado_em) FROM climate.nsidc_arctic_ice_daily
+                UNION ALL SELECT MAX(criado_em) FROM climate.mjo_daily
+            ) t
         """)
         row = cursor.fetchone()
         if not row or not row[0]:
             return {"status": "unknown"}
 
         last_ts = row[0]
+        if last_ts.tzinfo is None:
+            from datetime import timezone as _tz
+            last_ts = last_ts.replace(tzinfo=_tz.utc)
         now = datetime.now(timezone.utc)
         hours_ago = (now - last_ts).total_seconds() / 3600
 
