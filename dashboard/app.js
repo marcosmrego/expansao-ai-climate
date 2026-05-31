@@ -719,13 +719,17 @@ async function montarMapaClimatico() {
     if (!svgEl || typeof d3 === "undefined" || typeof topojson === "undefined") return
 
     // 1. Fetch data in parallel
-    const [rOni, rArctic, rAntarctic] = await Promise.allSettled([
+    const [rOni, rArctic, rAntarctic, rIod, rMjo] = await Promise.allSettled([
         fetch(`${API_BASE}/climate/history`),
         fetch(`${API_BASE}/climate/arctic_ice/history`),
         fetch(`${API_BASE}/climate/antarctic_ice/history`),
+        fetch(`${API_BASE}/climate/iod/history`),
+        fetch(`${API_BASE}/climate/mjo`),
     ])
     const jj = async r => r.status === "fulfilled" && r.value.ok ? r.value.json() : []
-    const [oniData, arcticData, antarcticData] = await Promise.all([jj(rOni), jj(rArctic), jj(rAntarctic)])
+    const [oniData, arcticData, antarcticData, iodData, mjoData] = await Promise.all([
+        jj(rOni), jj(rArctic), jj(rAntarctic), jj(rIod), jj(rMjo)
+    ])
     if (!oniData.length) return
 
     // 2. Build monthly ice averages from daily data
@@ -740,6 +744,7 @@ async function montarMapaClimatico() {
     }
     const arcticByMonth    = monthlyAvg(arcticData)
     const antarcticByMonth = monthlyAvg(antarcticData)
+    const iodByMonth       = Object.fromEntries((iodData||[]).map(d => [d.data_referencia?.slice(0,7), d.value]))
 
     // 3. Build 12-month dataset (most recent 12 months from ONI)
     const frames = oniData.slice(-12).map(o => ({
@@ -748,7 +753,11 @@ async function montarMapaClimatico() {
         classificacao: o.classificacao,
         arctic: arcticByMonth[o.periodo] ?? 11.0,
         antarctic: antarcticByMonth[o.periodo] ?? 10.0,
+        iod: iodByMonth[o.periodo] ?? 0,
     }))
+
+    // MJO phase → equatorial longitude center
+    const MJO_LON = { 1: 55, 2: 75, 3: 95, 4: 115, 5: 140, 6: 165, 7: -160, 8: -100 }
 
     // 4. Extent → geo radius (spherical cap formula: area = 2πR²(1−sinφ))
     const R2 = 255.03  // 2πR² in Mkm²
@@ -758,10 +767,14 @@ async function montarMapaClimatico() {
         return 90 - phiDeg + 2  // +2° buffer for visual clarity
     }
 
-    // 5. ONI → color
+    // 5. Color scales
     const oniColor = d3.scaleLinear()
         .domain([-2, -1, -0.5, 0, 0.5, 1, 2])
         .range(["#0D47A1","#1565C0","#90CAF9","#78909C","#EF9A9A","#E53935","#B71C1C"])
+        .clamp(true)
+    const iodColor = d3.scaleLinear()
+        .domain([-1, 0, 1])
+        .range(["#1B5E20","#546A84","#F57F17"])
         .clamp(true)
 
     // 6. Setup SVG
@@ -818,60 +831,92 @@ async function montarMapaClimatico() {
         .attr("class", "map-nino34")
         .attr("d", path)
 
-    // 9. Ice cap circles
+    // 9. IOD region (Índico: 50-110°E, 10S-10N)
+    const iod34 = {
+        type: "Feature",
+        geometry: {
+            type: "Polygon",
+            coordinates: [[[50,-10],[110,-10],[110,10],[50,10],[50,-10]]]
+        }
+    }
+    const iodPath = svg.append("path")
+        .datum(iod34)
+        .attr("class", "map-nino34")
+        .attr("d", path)
+
+    // 10. Ice cap circles
     const arcticPath    = svg.append("path").attr("class", "map-ice-arctic")
     const antarcticPath = svg.append("path").attr("class", "map-ice-antarctic")
 
-    // 10. ONI label on map (equatorial Pacific)
-    const [px, py] = projection([-145, 0]) || [W * 0.2, H * 0.5]
-    const oniMapLabel = svg.append("text")
-        .attr("x", px).attr("y", py - 8)
-        .attr("text-anchor", "middle")
-        .attr("font-size", Math.max(9, W * 0.012))
-        .attr("font-weight", "700")
-        .attr("fill", "rgba(255,255,255,0.85)")
-        .style("pointer-events", "none")
-        .style("text-shadow", "0 1px 3px #000")
+    // 11. MJO marker — círculo pulsante na fase atual (apenas estado mais recente)
+    const mjoPhase   = mjoData?.phase ?? null
+    const mjoAmp     = mjoData?.amplitude ?? 0
+    const mjoLon     = MJO_LON[mjoPhase] ?? null
+    let mjoMarker = null
+    if (mjoLon !== null && mjoAmp >= 1.0) {
+        const [mx, my] = projection([mjoLon, 0]) || [null, null]
+        if (mx) {
+            mjoMarker = svg.append("circle")
+                .attr("cx", mx).attr("cy", my)
+                .attr("r", Math.max(6, W * 0.012))
+                .attr("fill", "rgba(255,215,0,0.25)")
+                .attr("stroke", "rgba(255,215,0,0.8)")
+                .attr("stroke-width", 1.5)
+                .style("pointer-events", "none")
+            // Pulse animation
+            const pulse = () => mjoMarker
+                .transition().duration(900).attr("r", Math.max(6, W * 0.012) * 1.8).attr("opacity", 0.3)
+                .transition().duration(900).attr("r", Math.max(6, W * 0.012)).attr("opacity", 1)
+                .on("end", pulse)
+            pulse()
+            // Label
+            svg.append("text")
+                .attr("x", mx).attr("y", my - Math.max(6, W * 0.012) - 4)
+                .attr("text-anchor", "middle")
+                .attr("font-size", Math.max(8, W * 0.01))
+                .attr("font-weight", "700")
+                .attr("fill", "rgba(255,215,0,0.9)")
+                .style("pointer-events", "none")
+                .text(`MJO F${mjoPhase}`)
+        }
+    }
 
-    // 11. Animation
+    // 12. Animation
     let frameIdx = 0
     let timer = null
 
     function renderFrame(i) {
         const f = frames[i]
         const color = oniColor(f.oni)
+        const icolor = iodColor(f.iod ?? 0)
 
-        // Color Niño 3.4 region
+        // Color Niño 3.4 region (Pacific)
         nino34Path.attr("fill", color)
 
-        // Ice caps
-        const arcticR  = extentToRadius(f.arctic,    "north")
-        const antarcticR = extentToRadius(f.antarctic, "south")
-        arcticPath.datum(d3.geoCircle().center([0, 90]).radius(arcticR)())
-            .attr("d", path)
-        antarcticPath.datum(d3.geoCircle().center([0, -90]).radius(antarcticR)())
-            .attr("d", path)
+        // Color IOD region (Indian Ocean)
+        iodPath.attr("fill", icolor)
 
-        // ONI label on map
-        const oniSign = f.oni >= 0 ? "+" : ""
-        oniMapLabel.text(`ONI ${oniSign}${f.oni.toFixed(2)}`)
-            .attr("fill", color === "#78909C" ? "rgba(255,255,255,.6)" : color)
+        // Ice caps
+        const arcticR    = extentToRadius(f.arctic)
+        const antarcticR = extentToRadius(f.antarctic)
+        arcticPath.datum(d3.geoCircle().center([0, 90]).radius(arcticR)()).attr("d", path)
+        antarcticPath.datum(d3.geoCircle().center([0, -90]).radius(antarcticR)()).attr("d", path)
 
         // UI labels
         const [y, m] = f.period.split("-")
         const monthNames = ["","Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"]
         document.getElementById("mapMonthLabel").textContent = `${monthNames[+m]} ${y}`
 
-        const stateLabel = {
-            EL_NINO: `El Niño · ONI ${oniSign}${f.oni.toFixed(2)}°C`,
-            LA_NINA: `La Niña · ONI ${oniSign}${f.oni.toFixed(2)}°C`,
-            NEUTRO:  `Neutro · ONI ${oniSign}${f.oni.toFixed(2)}°C`,
-        }
-        document.getElementById("mapOniLabel").textContent = stateLabel[f.classificacao] || f.classificacao
+        const oniSign = f.oni >= 0 ? "+" : ""
+        const iodSign = f.iod >= 0 ? "+" : ""
+        const stateMap = { EL_NINO: "El Niño", LA_NINA: "La Niña", NEUTRO: "Neutro" }
+        const parts = [`${stateMap[f.classificacao] || f.classificacao} ONI ${oniSign}${f.oni.toFixed(2)}`]
+        if (f.iod !== 0) parts.push(`IOD ${iodSign}${f.iod.toFixed(2)}`)
+        document.getElementById("mapOniLabel").textContent = parts.join(" · ")
 
         // Timeline fill
-        const pct = ((i + 1) / frames.length * 100).toFixed(1)
-        document.getElementById("mapTimelineFill").style.width = pct + "%"
+        document.getElementById("mapTimelineFill").style.width =
+            ((i + 1) / frames.length * 100).toFixed(1) + "%"
     }
 
     function nextFrame() {

@@ -31,7 +31,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=14">
+    <link rel="stylesheet" href="style.css?v=15">
     <script defer src="http://umami-qkr89esvo1szlexgp9y67gy8.212.85.22.227.sslip.io/script.js"
             data-website-id="794d96e4-9652-4d3e-8df4-adb3ba9fad61"></script>
 </head>
@@ -80,28 +80,30 @@
 
         <!-- Hero da home -->
         <div class="home-hero">
-            <div class="home-hero-text">
-                <h2 class="home-title">Inteligência climática global,<br>explicada para todos.</h2>
-                <p class="home-subtitle">Climate monitora os principais índices climáticos globais em tempo real. Aqui você acompanha fenômenos como El Niño e La Niña, padrões de vento, concentração de CO₂ e extensão do gelo polar — e entende o que isso significa para o clima nos próximos meses.</p>
-            </div>
-            <div class="home-status-card">
-                <div class="home-status-label">Estado climático atual</div>
-                <div class="home-status-value" id="home-status">
-                    <span class="skeleton">--------</span>
+            <div class="home-hero-top">
+                <div class="home-hero-text">
+                    <h2 class="home-title">Inteligência climática global,<br>explicada para todos.</h2>
+                    <p class="home-subtitle">Climate monitora os principais índices climáticos globais em tempo real. Aqui você acompanha fenômenos como El Niño e La Niña, padrões de vento, concentração de CO₂ e extensão do gelo polar — e entende o que isso significa para o clima nos próximos meses.</p>
                 </div>
-                <div class="home-status-plain" id="home-status-plain">
-                    <span class="skeleton skeleton-line"></span>
-                    <span class="skeleton skeleton-line short"></span>
+                <div class="home-status-card">
+                    <div class="home-status-label">Estado climático atual</div>
+                    <div class="home-status-value" id="home-status">
+                        <span class="skeleton">--------</span>
+                    </div>
+                    <div class="home-status-plain" id="home-status-plain">
+                        <span class="skeleton skeleton-line"></span>
+                        <span class="skeleton skeleton-line short"></span>
+                    </div>
                 </div>
             </div>
-        </div>
-
-        <!-- Mapa Global Animado -->
-        <div class="climate-map-section">
-            <div class="climate-map-header">
-                <div>
-                    <div class="climate-map-title">Condições Climáticas Globais</div>
-                    <div class="climate-map-sub">últimos 12 meses · El Niño · Gelo Polar · animação automática</div>
+            <!-- Mapa Global Animado — dentro do card hero -->
+            <div class="climate-map-wrap">
+                <svg id="climateMap"></svg>
+            </div>
+            <div class="climate-map-footer">
+                <div class="climate-map-caption">
+                    <span id="mapMonthLabel" class="map-month-label">—</span>
+                    <span id="mapOniLabel" class="map-oni-label"></span>
                 </div>
                 <div class="climate-map-legend">
                     <span class="map-legend-item"><span class="map-dot" style="background:#B71C1C"></span>El Niño forte</span>
@@ -110,16 +112,7 @@
                     <span class="map-legend-item"><span class="map-dot" style="background:#90CAF9"></span>La Niña fraca</span>
                     <span class="map-legend-item"><span class="map-dot" style="background:#0D47A1"></span>La Niña forte</span>
                 </div>
-            </div>
-            <div class="climate-map-wrap">
-                <svg id="climateMap"></svg>
-                <div class="climate-map-overlay" id="mapOverlay">
-                    <div class="map-month-label" id="mapMonthLabel">—</div>
-                    <div class="map-oni-label" id="mapOniLabel"></div>
-                </div>
-            </div>
-            <div class="climate-map-timeline">
-                <div class="map-timeline-bar" id="mapTimelineBar">
+                <div class="climate-map-timeline">
                     <div class="map-timeline-fill" id="mapTimelineFill"></div>
                 </div>
             </div>
@@ -722,7 +715,7 @@
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script src="app.js?v=14"></script>
+<script src="app.js?v=15"></script>
 <!-- Cloudflare Web Analytics -->
 <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "0ba9b0dc7997464f8a13b01a7616ed51"}'></script>
 <!-- End Cloudflare Web Analytics -->

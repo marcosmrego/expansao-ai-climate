@@ -828,34 +828,26 @@ details[open] .glossary-summary {
 }
 
 /* ── Climate Map ─────────────────────────────────────────────────────── */
-.climate-map-section {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
+.home-hero-top {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 24px;
+    align-items: start;
 }
 
-.climate-map-header {
+.climate-map-footer {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
-    gap: 16px;
+    gap: 12px;
     flex-wrap: wrap;
+    margin-top: 2px;
 }
 
-.climate-map-title {
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--text);
-}
-
-.climate-map-sub {
-    font-size: 11px;
-    color: var(--text-3);
-    margin-top: 3px;
+.climate-map-caption {
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .climate-map-legend {
@@ -894,28 +886,17 @@ details[open] .glossary-summary {
     display: block;
 }
 
-.climate-map-overlay {
-    position: absolute;
-    bottom: 12px;
-    left: 16px;
-    pointer-events: none;
-}
-
 .map-month-label {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 22px;
+    font-size: 15px;
     font-weight: 700;
-    color: rgba(255,255,255,.9);
-    line-height: 1.2;
-    text-shadow: 0 2px 8px rgba(0,0,0,.6);
+    color: var(--text);
 }
 
 .map-oni-label {
     font-size: 12px;
-    font-weight: 600;
-    color: rgba(255,255,255,.7);
-    margin-top: 2px;
-    text-shadow: 0 1px 4px rgba(0,0,0,.6);
+    font-weight: 500;
+    color: var(--text-2);
 }
 
 .climate-map-timeline {
@@ -948,14 +929,13 @@ details[open] .glossary-summary {
 
 /* ── Home / Início ───────────────────────────────────────────────────── */
 .home-hero {
-    display: grid;
-    grid-template-columns: 1fr 380px;
-    gap: 28px;
-    align-items: start;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
     background: linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%);
     border: 1px solid var(--border-accent);
     border-radius: var(--radius);
-    padding: 32px;
+    padding: 28px;
 }
 
 .home-title {
@@ -1060,7 +1040,7 @@ details[open] .glossary-summary {
 .home-nav-card:hover .home-nav-arrow { color: var(--accent); }
 
 @media (max-width: 900px) {
-    .home-hero { grid-template-columns: 1fr; }
+    .home-hero-top { grid-template-columns: 1fr; }
     .home-nav-grid { grid-template-columns: 1fr; }
     .home-title { font-size: 22px; }
 }
