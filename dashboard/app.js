@@ -1070,9 +1070,6 @@ async function montarMapaClimatico() {
         const iodEl = document.getElementById("mapIodLabel")
         if (iodEl) iodEl.textContent = `IOD ${iodSign}${f.iod.toFixed(2)} · ${iodClass}`
 
-        // Timeline fill
-        document.getElementById("mapTimelineFill").style.width =
-            ((i + 1) / frames.length * 100).toFixed(1) + "%"
     }
 
     function nextFrame() {
