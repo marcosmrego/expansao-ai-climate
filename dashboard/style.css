@@ -837,17 +837,21 @@ details[open] .glossary-summary {
 
 .climate-map-footer {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    flex-wrap: wrap;
-    margin-top: 2px;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 6px;
 }
 
-.climate-map-caption {
+.climate-map-badges {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.map-badge-sep {
+    color: var(--text-3);
+    font-size: 11px;
 }
 
 .climate-map-legend {

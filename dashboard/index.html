@@ -31,7 +31,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=16">
+    <link rel="stylesheet" href="style.css?v=17">
     <script defer src="http://umami-qkr89esvo1szlexgp9y67gy8.212.85.22.227.sslip.io/script.js"
             data-website-id="794d96e4-9652-4d3e-8df4-adb3ba9fad61"></script>
 </head>
@@ -84,6 +84,22 @@
                 <div class="home-hero-text">
                     <h2 class="home-title">Inteligência climática global,<br>explicada para todos.</h2>
                     <p class="home-subtitle">Climate monitora os principais índices climáticos globais em tempo real. Aqui você acompanha fenômenos como El Niño e La Niña, padrões de vento, concentração de CO₂ e extensão do gelo polar — e entende o que isso significa para o clima nos próximos meses.</p>
+                    <!-- Mapa na coluna esquerda, abaixo do texto -->
+                    <div class="climate-map-wrap">
+                        <svg id="climateMap"></svg>
+                    </div>
+                    <div class="climate-map-footer">
+                        <div class="climate-map-badges">
+                            <span id="mapMonthLabel" class="map-month-label">—</span>
+                            <span class="map-badge-sep">·</span>
+                            <span id="mapOniLabel" class="map-oni-label"></span>
+                            <span class="map-badge-sep" id="mapMjoSep" style="display:none">·</span>
+                            <span id="mapMjoBadge" class="map-mjo-badge"></span>
+                        </div>
+                        <div class="climate-map-timeline">
+                            <div class="map-timeline-fill" id="mapTimelineFill"></div>
+                        </div>
+                    </div>
                 </div>
                 <div class="home-status-card">
                     <div class="home-status-label">Estado climático atual</div>
@@ -96,26 +112,13 @@
                     </div>
                 </div>
             </div>
-            <!-- Mapa Global Animado — dentro do card hero -->
-            <div class="climate-map-wrap">
-                <svg id="climateMap"></svg>
-            </div>
-            <div class="climate-map-footer">
-                <div class="climate-map-caption">
-                    <span id="mapMonthLabel" class="map-month-label">—</span>
-                    <span id="mapOniLabel" class="map-oni-label"></span>
-                </div>
-                <div id="mapMjoBadge" class="map-mjo-badge"></div>
-                <div class="climate-map-legend">
-                    <span class="map-legend-item"><span class="map-dot" style="background:#B71C1C"></span>El Niño forte</span>
-                    <span class="map-legend-item"><span class="map-dot" style="background:#EF9A9A"></span>El Niño fraco</span>
-                    <span class="map-legend-item"><span class="map-dot" style="background:#78909C"></span>Neutro</span>
-                    <span class="map-legend-item"><span class="map-dot" style="background:#90CAF9"></span>La Niña fraca</span>
-                    <span class="map-legend-item"><span class="map-dot" style="background:#0D47A1"></span>La Niña forte</span>
-                </div>
-                <div class="climate-map-timeline">
-                    <div class="map-timeline-fill" id="mapTimelineFill"></div>
-                </div>
+            <!-- Legenda abaixo dos dois cards -->
+            <div class="climate-map-legend">
+                <span class="map-legend-item"><span class="map-dot" style="background:#B71C1C"></span>El Niño forte</span>
+                <span class="map-legend-item"><span class="map-dot" style="background:#EF9A9A"></span>El Niño fraco</span>
+                <span class="map-legend-item"><span class="map-dot" style="background:#78909C"></span>Neutro</span>
+                <span class="map-legend-item"><span class="map-dot" style="background:#90CAF9"></span>La Niña fraca</span>
+                <span class="map-legend-item"><span class="map-dot" style="background:#0D47A1"></span>La Niña forte</span>
             </div>
         </div>
 
@@ -716,7 +719,7 @@
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script src="app.js?v=16"></script>
+<script src="app.js?v=17"></script>
 <!-- Cloudflare Web Analytics -->
 <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "0ba9b0dc7997464f8a13b01a7616ed51"}'></script>
 <!-- End Cloudflare Web Analytics -->

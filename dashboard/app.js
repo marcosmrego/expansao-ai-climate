@@ -832,38 +832,39 @@ async function montarMapaClimatico() {
         .attr("d", path)
 
     // 9. IOD region (Índico: 50-110°E, 10S-10N)
-    // IOD: apenas o oceano Índico aberto (50-90°E), evitando o Cont. Marítimo
-    const iod34 = {
+    // IOD: contorno do Oceano Índico (sem fill — evita polígono escuro sobre terra/mar)
+    const iodGeo = {
         type: "Feature",
         geometry: {
             type: "Polygon",
-            coordinates: [[[50,-10],[90,-10],[90,10],[50,10],[50,-10]]]
+            coordinates: [[[50,-8],[90,-8],[90,8],[50,8],[50,-8]]]
         }
     }
     const iodPath = svg.append("path")
-        .datum(iod34)
-        .attr("class", "map-nino34")
+        .datum(iodGeo)
+        .attr("fill", "none")
+        .attr("stroke-width", 1.5)
+        .attr("stroke-dasharray", "4 3")
         .attr("d", path)
 
     // 10. Ice cap circles
     const arcticPath    = svg.append("path").attr("class", "map-ice-arctic")
     const antarcticPath = svg.append("path").attr("class", "map-ice-antarctic")
 
-    // 11. MJO indicator — external badge (outside the SVG, in the footer)
+    // 11. MJO badge externo inline com ONI
     const mjoPhase = mjoData?.phase ?? null
     const mjoAmp   = mjoData?.amplitude ?? 0
     const MJO_DESC = {
-        1: "África / Índico O.", 2: "Índico Oeste", 3: "Índico Leste",
-        4: "Cont. Marítimo",    5: "Pacífico O.", 6: "Pacífico C.",
-        7: "Pacífico L.",       8: "Hemis. Ocidental"
+        1: "África/Índico O.", 2: "Índico O.", 3: "Índico L.",
+        4: "Cont. Marítimo",  5: "Pacífico O.", 6: "Pacífico C.",
+        7: "Pacífico L.",     8: "Hemis. Ocidental"
     }
-    // Populate external MJO badge (injected in footer via JS)
     const mjoFooter = document.getElementById("mapMjoBadge")
+    const mjoSep    = document.getElementById("mapMjoSep")
     if (mjoFooter && mjoPhase) {
         const active = mjoAmp >= 1.0
-        mjoFooter.innerHTML = `
-            <span class="map-mjo-dot ${active ? "active" : ""}"></span>
-            <span class="map-mjo-text">MJO F${mjoPhase} · ${MJO_DESC[mjoPhase] || ""}${active ? ` · ${mjoAmp.toFixed(2)}` : " · inativo"}</span>`
+        mjoFooter.innerHTML = `<span class="map-mjo-dot ${active ? "active" : ""}"></span> MJO F${mjoPhase} · ${MJO_DESC[mjoPhase] || ""}${active ? ` · ${mjoAmp.toFixed(2)}` : ""}`
+        if (mjoSep) mjoSep.style.display = ""
     }
 
     // 12. Animation
@@ -878,8 +879,8 @@ async function montarMapaClimatico() {
         // Color Niño 3.4 region (Pacific)
         nino34Path.attr("fill", color)
 
-        // Color IOD region (Indian Ocean)
-        iodPath.attr("fill", icolor)
+        // IOD: contorno colorido (stroke only — sem fill para nao escurecer o mapa)
+        iodPath.attr("stroke", icolor)
 
         // Ice caps
         const arcticR    = extentToRadius(f.arctic)
