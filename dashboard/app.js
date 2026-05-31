@@ -770,11 +770,6 @@ async function montarMapaClimatico() {
 
     // 4. Extent → geo radius (spherical cap formula: area = 2πR²(1−sinφ))
     const R2 = 255.03  // 2πR² in Mkm²
-    function extentToRadius(extMkm2, pole) {
-        const sinPhi = 1 - Math.min(extMkm2, R2 * 0.95) / R2
-        const phiDeg = Math.asin(Math.max(0, Math.min(1, sinPhi))) * 180 / Math.PI
-        return 90 - phiDeg + 2  // +2° buffer for visual clarity
-    }
 
     // 5. Color scales
     // Paleta mais vibrante e saturada
@@ -820,26 +815,7 @@ async function montarMapaClimatico() {
         world = await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
     } catch { return }
 
-    // Gelo polar: SVG circles nas coordenadas projetadas dos polos
-    // (evita problemas de geoCircle com projeção Natural Earth)
-    const refN = projection([0, 70]) // ponto de referência para escalar raio
-    const refS = projection([0,-70])
-    const poleN = projection([0, 85]) || [W/2, 4]
-    const poleS = projection([0,-85]) || [W/2, H-4]
-    const iceScale = refN && poleN ? Math.abs(refN[1] - poleN[1]) / 15 : H * 0.015
-
-    const arcticCircle = svg.append("ellipse")
-        .attr("cx", W/2).attr("cy", poleN[1])
-        .attr("rx", 0).attr("ry", 0)
-        .attr("fill","rgba(220,240,255,0.5)")
-        .attr("stroke","rgba(180,225,255,0.3)").attr("stroke-width","1")
-    const antarcticCircle = svg.append("ellipse")
-        .attr("cx", W/2).attr("cy", poleS[1])
-        .attr("rx", 0).attr("ry", 0)
-        .attr("fill","rgba(220,240,255,0.45)")
-        .attr("stroke","rgba(180,225,255,0.25)").attr("stroke-width","1")
-
-    // Countries por cima do gelo
+    // Countries
     svg.append("g")
         .selectAll("path")
         .data(topojson.feature(world, world.objects.countries).features)
@@ -897,7 +873,6 @@ async function montarMapaClimatico() {
         .attr("stroke-dasharray", "4 3")
         .attr("d", path)
 
-    // (arcticCircle e antarcticCircle já declarados acima, antes dos países)
 
     // 11. MJO badge externo inline com ONI
     const mjoPhase = mjoData?.phase ?? null
@@ -934,15 +909,6 @@ async function montarMapaClimatico() {
         // IOD: contorno colorido (stroke only — sem fill para nao escurecer o mapa)
         iodPath.attr("stroke", icolor)
 
-        // Ice caps: elipses SVG simples escaladas pelo extent real
-        const arcticRx  = Math.sqrt(f.arctic)  * iceScale * W * 0.018
-        const arcticRy  = Math.sqrt(f.arctic)  * iceScale * H * 0.022
-        const antarRx   = Math.sqrt(f.antarctic) * iceScale * W * 0.020
-        const antarRy   = Math.sqrt(f.antarctic) * iceScale * H * 0.024
-        arcticCircle.transition().duration(900).ease(d3.easeCubicInOut)
-            .attr("rx", arcticRx).attr("ry", arcticRy)
-        antarcticCircle.transition().duration(900).ease(d3.easeCubicInOut)
-            .attr("rx", antarRx).attr("ry", antarRy)
 
         // UI labels
         const [y, m] = f.period.split("-")
