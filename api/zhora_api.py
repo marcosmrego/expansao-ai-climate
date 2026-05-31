@@ -640,6 +640,47 @@ def climate_iod():
         conn.close()
 
 
+@app.get("/climate/sst/history")
+def climate_sst_history():
+    """Return last 12 months of SST anomalies for all 4 Niño regions."""
+    cached = _cache.get("sst_history")
+    if cached:
+        return cached
+    conn = conectar()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT to_char(data_referencia, 'YYYY-MM'),
+                   nino_12_anom, nino_3_anom, nino_34_anom, nino_4_anom
+            FROM (
+                SELECT data_referencia, nino_12_anom, nino_3_anom,
+                       nino_34_anom, nino_4_anom
+                FROM climate.noaa_sst_indices
+                WHERE nino_34_anom > -99
+                ORDER BY data_referencia DESC
+                LIMIT 12
+            ) t ORDER BY data_referencia ASC
+        """)
+        rows = cursor.fetchall()
+        result = [
+            {
+                "periodo": r[0],
+                "nino12": float(r[1]) if r[1] else 0.0,
+                "nino3":  float(r[2]) if r[2] else 0.0,
+                "nino34": float(r[3]) if r[3] else 0.0,
+                "nino4":  float(r[4]) if r[4] else 0.0,
+            }
+            for r in rows
+        ]
+        _cache.set("sst_history", result)
+        return result
+    except Exception as e:
+        logger.error("Erro em /climate/sst/history: %s", e)
+        raise HTTPException(status_code=500, detail="Erro ao consultar histórico SST")
+    finally:
+        conn.close()
+
+
 class ModulationHistoryItem(BaseModel):
     data_referencia: str
     value: float

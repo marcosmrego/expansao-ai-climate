@@ -719,16 +719,17 @@ async function montarMapaClimatico() {
     if (!svgEl || typeof d3 === "undefined" || typeof topojson === "undefined") return
 
     // 1. Fetch data in parallel
-    const [rOni, rArctic, rAntarctic, rIod, rMjo] = await Promise.allSettled([
+    const [rOni, rArctic, rAntarctic, rIod, rMjo, rSst] = await Promise.allSettled([
         fetch(`${API_BASE}/climate/history`),
         fetch(`${API_BASE}/climate/arctic_ice/history`),
         fetch(`${API_BASE}/climate/antarctic_ice/history`),
         fetch(`${API_BASE}/climate/iod/history`),
         fetch(`${API_BASE}/climate/mjo`),
+        fetch(`${API_BASE}/climate/sst/history`),
     ])
     const jj = async r => r.status === "fulfilled" && r.value.ok ? r.value.json() : []
-    const [oniData, arcticData, antarcticData, iodData, mjoData] = await Promise.all([
-        jj(rOni), jj(rArctic), jj(rAntarctic), jj(rIod), jj(rMjo)
+    const [oniData, arcticData, antarcticData, iodData, mjoData, sstData] = await Promise.all([
+        jj(rOni), jj(rArctic), jj(rAntarctic), jj(rIod), jj(rMjo), jj(rSst)
     ])
     if (!oniData.length) return
 
@@ -744,17 +745,25 @@ async function montarMapaClimatico() {
     }
     const arcticByMonth    = monthlyAvg(arcticData)
     const antarcticByMonth = monthlyAvg(antarcticData)
-    const iodByMonth       = Object.fromEntries((iodData||[]).map(d => [d.data_referencia?.slice(0,7), d.value]))
+    const iodByMonth = Object.fromEntries((iodData||[]).map(d => [d.data_referencia?.slice(0,7), d.value]))
+    const sstByMonth = Object.fromEntries((sstData||[]).map(d => [d.periodo, d]))
 
-    // 3. Build 12-month dataset (most recent 12 months from ONI)
-    const frames = oniData.slice(-12).map(o => ({
-        period: o.periodo,
-        oni: o.oni,
-        classificacao: o.classificacao,
-        arctic: arcticByMonth[o.periodo] ?? 11.0,
-        antarctic: antarcticByMonth[o.periodo] ?? 10.0,
-        iod: iodByMonth[o.periodo] ?? 0,
-    }))
+    // 3. Build 12-month dataset
+    const frames = oniData.slice(-12).map(o => {
+        const sst = sstByMonth[o.periodo] || {}
+        return {
+            period: o.periodo,
+            oni: o.oni,
+            classificacao: o.classificacao,
+            arctic: arcticByMonth[o.periodo] ?? 11.0,
+            antarctic: antarcticByMonth[o.periodo] ?? 10.0,
+            iod: iodByMonth[o.periodo] ?? 0,
+            nino12: sst.nino12 ?? o.oni,
+            nino3:  sst.nino3  ?? o.oni,
+            nino34: sst.nino34 ?? o.oni,
+            nino4:  sst.nino4  ?? o.oni,
+        }
+    })
 
     // MJO phase → equatorial longitude center
     const MJO_LON = { 1: 55, 2: 75, 3: 95, 4: 115, 5: 140, 6: 165, 7: -160, 8: -100 }
@@ -840,32 +849,37 @@ async function montarMapaClimatico() {
         .attr("stroke-width","0.4")
         .attr("d", path)
 
-    // 8. Niño 3.4 region polygon (5N-5S, 120W-170W → lon -170 to -120)
-    const nino34 = {
-        type: "Feature",
-        geometry: {
-            type: "Polygon",
-            coordinates: [[
-                [-170, 5], [-120, 5], [-120, -5], [-170, -5], [-170, 5]
-            ]]
-        }
-    }
-    const nino34Path = svg.append("path")
-        .datum(nino34)
-        .attr("class", "map-nino34")
-        .attr("d", path)
+    // 8. Regiões SST do Pacífico (4 faixas não sobrepostas, oeste → leste)
+    const sst_regions = [
+        // Niño 4: Pacífico oeste (cruza antimeridiano — dividido em 2 partes)
+        { id: "nino4a", coords: [[[160,-5],[180,-5],[180,5],[160,5],[160,-5]]], label: "Niño 4",  llon: 170 },
+        { id: "nino4b", coords: [[[-180,-5],[-150,-5],[-150,5],[-180,5],[-180,-5]]], label: null,    llon: null },
+        // Niño 3.4: central
+        { id: "nino34", coords: [[[-170,-5],[-120,-5],[-120,5],[-170,5],[-170,-5]]], label: "Niño 3.4", llon: -145 },
+        // Niño 3: centro-leste
+        { id: "nino3",  coords: [[[-120,-5],[-90,-5],[-90,5],[-120,5],[-120,-5]]],  label: "Niño 3",   llon: -105 },
+        // Niño 1+2: extremo leste (0-10°S)
+        { id: "nino12", coords: [[[-90,-10],[-80,-10],[-80,0],[-90,0],[-90,-10]]],   label: "1+2",      llon: -85  },
+    ]
 
-    // Label "Niño 3.4" sobre o polígono do Pacífico
-    const [lx, ly] = projection([-145, 0]) || [0, 0]
-    svg.append("text")
-        .attr("x", lx).attr("y", ly + 4)
-        .attr("text-anchor", "middle")
-        .attr("font-size", Math.max(8, W * 0.009))
-        .attr("font-weight", "600")
-        .attr("fill", "rgba(255,255,255,0.6)")
-        .attr("letter-spacing", "0.5")
-        .style("pointer-events", "none")
-        .text("Niño 3.4")
+    const sstPaths = {}
+    sst_regions.forEach(r => {
+        sstPaths[r.id] = svg.append("path")
+            .datum({ type: "Feature", geometry: { type: "Polygon", coordinates: r.coords }})
+            .attr("class", "map-nino34")
+            .attr("d", path)
+        if (r.label && r.llon) {
+            const [lx, ly] = projection([r.llon, 0]) || [0,0]
+            svg.append("text")
+                .attr("x", lx).attr("y", ly + 4)
+                .attr("text-anchor", "middle")
+                .attr("font-size", Math.max(7, W * 0.008))
+                .attr("font-weight", "600")
+                .attr("fill", "rgba(255,255,255,0.55)")
+                .style("pointer-events", "none")
+                .text(r.label)
+        }
+    })
 
     // 9. IOD region (Índico: 50-110°E, 10S-10N)
     // IOD: contorno do Oceano Índico (sem fill — evita polígono escuro sobre terra/mar)
@@ -883,15 +897,13 @@ async function montarMapaClimatico() {
         .attr("stroke-dasharray", "4 3")
         .attr("d", path)
 
-    // 10. Ice cap circles — gradiente radial + borda brilhante
+    // 10. Ice cap circles — gradiente radial, sem borda dura
     const arcticPath = svg.append("path")
         .attr("fill","url(#gradArctic)")
-        .attr("stroke","rgba(180,230,255,.6)")
-        .attr("stroke-width","1")
+        .attr("stroke","none")
     const antarcticPath = svg.append("path")
         .attr("fill","url(#gradAntarctic)")
-        .attr("stroke","rgba(180,230,255,.5)")
-        .attr("stroke-width","1")
+        .attr("stroke","none")
 
     // 11. MJO badge externo inline com ONI
     const mjoPhase = mjoData?.phase ?? null
@@ -918,8 +930,12 @@ async function montarMapaClimatico() {
         const color = oniColor(f.oni)
         const icolor = iodColor(f.iod ?? 0)
 
-        // Color Niño 3.4 region (Pacific)
-        nino34Path.attr("fill", color)
+        // Colorir cada região SST com sua anomalia real
+        sstPaths.nino4a?.attr("fill", oniColor(f.nino4))
+        sstPaths.nino4b?.attr("fill", oniColor(f.nino4))
+        sstPaths.nino34?.attr("fill", oniColor(f.nino34))
+        sstPaths.nino3?.attr("fill",  oniColor(f.nino3))
+        sstPaths.nino12?.attr("fill", oniColor(f.nino12))
 
         // IOD: contorno colorido (stroke only — sem fill para nao escurecer o mapa)
         iodPath.attr("stroke", icolor)
