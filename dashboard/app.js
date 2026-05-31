@@ -768,13 +768,14 @@ async function montarMapaClimatico() {
     }
 
     // 5. Color scales
+    // Paleta mais vibrante e saturada
     const oniColor = d3.scaleLinear()
         .domain([-2, -1, -0.5, 0, 0.5, 1, 2])
-        .range(["#0D47A1","#1565C0","#90CAF9","#78909C","#EF9A9A","#E53935","#B71C1C"])
+        .range(["#00B0FF","#29B6F6","#B3E5FC","#90A4AE","#FF8A65","#FF3D00","#B71C1C"])
         .clamp(true)
     const iodColor = d3.scaleLinear()
         .domain([-1, 0, 1])
-        .range(["#1B5E20","#546A84","#F57F17"])
+        .range(["#00E676","#546A84","#FFD740"])
         .clamp(true)
 
     // 6. Setup SVG
@@ -790,16 +791,37 @@ async function montarMapaClimatico() {
     const svg = d3.select(svgEl)
     svg.selectAll("*").remove()
 
-    // Sphere (ocean background)
+    // Definições SVG: gradientes radiais para gelo polar
+    const defs = svg.append("defs")
+
+    // Gradiente ártico: branco → ciano → transparente
+    const gradArctic = defs.append("radialGradient")
+        .attr("id", "gradArctic").attr("cx","50%").attr("cy","20%")
+        .attr("r","70%")
+    gradArctic.append("stop").attr("offset","0%").attr("stop-color","#FFFFFF").attr("stop-opacity","0.95")
+    gradArctic.append("stop").attr("offset","40%").attr("stop-color","#B3E5FC").attr("stop-opacity","0.75")
+    gradArctic.append("stop").attr("offset","100%").attr("stop-color","#4FC3F7").attr("stop-opacity","0.15")
+
+    // Gradiente antártico: branco → azul gelo → transparente
+    const gradAntarctic = defs.append("radialGradient")
+        .attr("id","gradAntarctic").attr("cx","50%").attr("cy","80%")
+        .attr("r","70%")
+    gradAntarctic.append("stop").attr("offset","0%").attr("stop-color","#FFFFFF").attr("stop-opacity","0.9")
+    gradAntarctic.append("stop").attr("offset","40%").attr("stop-color","#E1F5FE").attr("stop-opacity","0.7")
+    gradAntarctic.append("stop").attr("offset","100%").attr("stop-color","#81D4FA").attr("stop-opacity","0.1")
+
+    // Sphere (ocean background) — azul mais profundo
     svg.append("path")
         .datum({type: "Sphere"})
-        .attr("class", "map-sphere")
+        .attr("fill","#061020")
         .attr("d", path)
 
-    // Graticule grid
+    // Graticule grid — ligeiramente mais visível
     svg.append("path")
         .datum(d3.geoGraticule()())
-        .attr("class", "map-graticule")
+        .attr("fill","none")
+        .attr("stroke","rgba(255,255,255,.07)")
+        .attr("stroke-width","0.5")
         .attr("d", path)
 
     // 7. Load world topojson
@@ -808,12 +830,14 @@ async function montarMapaClimatico() {
         world = await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
     } catch { return }
 
-    // Countries
+    // Countries — cor levemente mais clara para contrastar com o gelo
     svg.append("g")
         .selectAll("path")
         .data(topojson.feature(world, world.objects.countries).features)
         .join("path")
-        .attr("class", "map-country")
+        .attr("fill","#1e3348")
+        .attr("stroke","#0d1f30")
+        .attr("stroke-width","0.4")
         .attr("d", path)
 
     // 8. Niño 3.4 region polygon (5N-5S, 120W-170W → lon -170 to -120)
@@ -859,9 +883,15 @@ async function montarMapaClimatico() {
         .attr("stroke-dasharray", "4 3")
         .attr("d", path)
 
-    // 10. Ice cap circles
-    const arcticPath    = svg.append("path").attr("class", "map-ice-arctic")
-    const antarcticPath = svg.append("path").attr("class", "map-ice-antarctic")
+    // 10. Ice cap circles — gradiente radial + borda brilhante
+    const arcticPath = svg.append("path")
+        .attr("fill","url(#gradArctic)")
+        .attr("stroke","rgba(180,230,255,.6)")
+        .attr("stroke-width","1")
+    const antarcticPath = svg.append("path")
+        .attr("fill","url(#gradAntarctic)")
+        .attr("stroke","rgba(180,230,255,.5)")
+        .attr("stroke-width","1")
 
     // 11. MJO badge externo inline com ONI
     const mjoPhase = mjoData?.phase ?? null
@@ -897,8 +927,13 @@ async function montarMapaClimatico() {
         // Ice caps
         const arcticR    = extentToRadius(f.arctic)
         const antarcticR = extentToRadius(f.antarctic)
-        arcticPath.datum(d3.geoCircle().center([0, 90]).radius(arcticR)()).attr("d", path)
-        antarcticPath.datum(d3.geoCircle().center([0, -90]).radius(antarcticR)()).attr("d", path)
+        // Transição suave D3 para o gelo — mostra expansão/contração
+        arcticPath.datum(d3.geoCircle().center([0, 90]).radius(arcticR)())
+            .transition().duration(1000).ease(d3.easeCubicInOut)
+            .attr("d", path)
+        antarcticPath.datum(d3.geoCircle().center([0, -90]).radius(antarcticR)())
+            .transition().duration(1000).ease(d3.easeCubicInOut)
+            .attr("d", path)
 
         // UI labels
         const [y, m] = f.period.split("-")

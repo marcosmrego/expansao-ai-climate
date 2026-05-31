@@ -952,12 +952,7 @@ details[open] .glossary-summary {
 }
 
 /* SVG map elements */
-.map-country { fill: #1a2d40; stroke: #0e1e30; stroke-width: 0.4; }
-.map-graticule { fill: none; stroke: rgba(255,255,255,.04); stroke-width: 0.5; }
-.map-sphere { fill: #071118; }
-.map-nino34 { opacity: 0.75; transition: fill 0.8s ease; }
-.map-ice-arctic { fill: rgba(200,230,255,.55); stroke: rgba(200,230,255,.3); stroke-width: 0.8; transition: d 0.8s ease; }
-.map-ice-antarctic { fill: rgba(180,220,255,.45); stroke: rgba(180,220,255,.25); stroke-width: 0.8; transition: d 0.8s ease; }
+.map-nino34 { opacity: 0.82; transition: fill 1s ease; }
 
 @media (max-width: 768px) {
     .climate-map-legend { display: none; }
