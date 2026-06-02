@@ -1,9 +1,11 @@
 import json
 import logging
 import os
+import time
 from typing import Optional
 
 import anthropic
+import httpx
 
 from database.db import conectar
 
@@ -11,6 +13,29 @@ logger = logging.getLogger(__name__)
 
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001")
+_AIOS_API_URL = os.getenv("AIOS_API_URL", "")
+_AIOS_TRACK_KEY = os.getenv("AIOS_TRACK_KEY", "")
+
+
+def _track_usage(agent_name: str, model: str, input_tokens: int, output_tokens: int, duration_ms: int) -> None:
+    if not _AIOS_API_URL:
+        return
+    try:
+        httpx.post(
+            f"{_AIOS_API_URL.rstrip('/')}/track",
+            headers={"X-AIOS-Key": _AIOS_TRACK_KEY} if _AIOS_TRACK_KEY else {},
+            json={
+                "project": "climate",
+                "agent_name": agent_name,
+                "model": model,
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
+                "duration_ms": duration_ms,
+            },
+            timeout=5.0,
+        )
+    except Exception:
+        pass  # tracking must never break production calls
 
 _SYSTEM_PROMPT = (
     "Você é Zhora, assistente de inteligência climática do projeto Expansão AI Climate.\n"
@@ -459,12 +484,14 @@ def _gerar_resumo_simples(technical: str) -> str:
         return ""
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
     try:
+        t0 = time.monotonic()
         msg = client.messages.create(
             model=ANTHROPIC_MODEL,
             max_tokens=300,
             system=_PLAIN_SYSTEM,
             messages=[{"role": "user", "content": _PLAIN_PROMPT + technical}],
         )
+        _track_usage("zhora-plain", ANTHROPIC_MODEL, msg.usage.input_tokens, msg.usage.output_tokens, int((time.monotonic() - t0) * 1000))
         return _strip_headers(msg.content[0].text)
     except Exception:
         return ""
@@ -569,6 +596,7 @@ def ask_claude(question: str, context_text: str) -> str:
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
     try:
+        t0 = time.monotonic()
         message = client.messages.create(
             model=ANTHROPIC_MODEL,
             max_tokens=1024,
@@ -583,6 +611,7 @@ def ask_claude(question: str, context_text: str) -> str:
                 }
             ],
         )
+        _track_usage("zhora", ANTHROPIC_MODEL, message.usage.input_tokens, message.usage.output_tokens, int((time.monotonic() - t0) * 1000))
         return message.content[0].text
     except anthropic.APIStatusError as e:
         raise RuntimeError(f"Anthropic retornou erro {e.status_code}: {e.message}")
