@@ -1065,10 +1065,39 @@ async function montarMapaClimatico() {
 
     // ONI: marcador animado junto com o frame (sobre a região Niño 3.4)
     const oniMarkerG = svg.append("g").style("pointer-events","none")
+    const oniCx = projection([-145,0])?.[0] || W*0.2
+    const oniCy = projection([-145,0])?.[1] || H*0.5
+    const oniR  = Math.max(5, W*0.008)
+
+    // Anel pulsante — visível apenas no limiar El Niño/La Niña
+    const oniPulse = oniMarkerG.append("circle")
+        .attr("cx", oniCx).attr("cy", oniCy)
+        .attr("r", oniR * 1.2)
+        .attr("fill", "none")
+        .attr("stroke", "#FF8A65")
+        .attr("stroke-width", 1.5)
+        .attr("opacity", 0)
+
+    let _oniPulseActive = false
+    function _startOniPulse(color) {
+        if (_oniPulseActive) return
+        _oniPulseActive = true
+        oniPulse.attr("stroke", color).attr("opacity", 0.85)
+        const loop = () => oniPulse
+            .transition().duration(900).attr("r", oniR * 2.8).attr("opacity", 0)
+            .transition().duration(0).attr("r", oniR * 1.2).attr("opacity", 0.85)
+            .on("end", () => { if (_oniPulseActive) loop() })
+        loop()
+    }
+    function _stopOniPulse() {
+        if (!_oniPulseActive) return
+        _oniPulseActive = false
+        oniPulse.transition().duration(300).attr("opacity", 0)
+    }
+
     const oniDot = oniMarkerG.append("circle")
-        .attr("cx", projection([-145,0])?.[0] || W*0.2)
-        .attr("cy", projection([-145,0])?.[1] || H*0.5)
-        .attr("r", Math.max(5, W*0.008))
+        .attr("cx", oniCx).attr("cy", oniCy)
+        .attr("r", oniR)
         .attr("fill-opacity", 0.35)
         .attr("stroke-width", 1.5)
 
@@ -1115,6 +1144,11 @@ async function montarMapaClimatico() {
         // Marcadores ONI e IOD animados por frame
         oniDot.attr("fill", color).attr("stroke", color)
         iodDot.attr("fill", icolor).attr("stroke", icolor)
+
+        // Pulse de limiar ONI
+        if (f.oni >= 0.3 && f.oni < 0.5) _startOniPulse("#FF8A65")       // quase El Niño — âmbar
+        else if (f.oni <= -0.3 && f.oni > -0.5) _startOniPulse("#42A5F5") // quase La Niña — azul
+        else _stopOniPulse()
 
         // Marcador MJO animado por frame
         const mjoM = f.mjoMonth
@@ -1184,9 +1218,18 @@ async function montarMapaClimatico() {
         const iodSign = f.iod >= 0 ? "+" : ""
         const stateMap = { EL_NINO: "El Niño", LA_NINA: "La Niña", NEUTRO: "Neutro" }
 
-        // ONI badge
-        document.getElementById("mapOniLabel").textContent =
-            `${stateMap[f.classificacao] || f.classificacao} ONI ${oniSign}${f.oni.toFixed(2)}`
+        // ONI badge — destaque no limiar
+        const oniEl = document.getElementById("mapOniLabel")
+        if (f.oni >= 0.3 && f.oni < 0.5) {
+            oniEl.textContent = `⚠ Limiar El Niño · ONI ${oniSign}${f.oni.toFixed(2)}`
+            oniEl.style.color = "#FF8A65"
+        } else if (f.oni <= -0.3 && f.oni > -0.5) {
+            oniEl.textContent = `⚠ Limiar La Niña · ONI ${oniSign}${f.oni.toFixed(2)}`
+            oniEl.style.color = "#42A5F5"
+        } else {
+            oniEl.textContent = `${stateMap[f.classificacao] || f.classificacao} ONI ${oniSign}${f.oni.toFixed(2)}`
+            oniEl.style.color = ""
+        }
 
         // IOD badge — classifica por limiar ±0.4
         const iodClass = f.iod >= 0.4 ? "Positivo" : f.iod <= -0.4 ? "Negativo" : "Neutro"
