@@ -1103,8 +1103,8 @@ async function montarMapaClimatico() {
         .attr("stroke","none")
         .attr("filter","url(#iceBlur)")
 
-    // 12. Animation
-    let frameIdx = 0
+    // 12. Animation — start at most recent frame
+    let frameIdx = frames.length - 1
     let timer = null
 
     function renderFrame(i) {
