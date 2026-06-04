@@ -783,8 +783,8 @@ async function montarMapaClimatico() {
     const amoLastVal = (amoHist||[]).length ? (amoHist[amoHist.length-1].value) : null
     const qboByMonth = Object.fromEntries((qboHist||[]).map(d => [d.data_referencia?.slice(0,7), {v:d.value, cls:d.classificacao}]))
 
-    // 3. Build 12-month dataset
-    const frames = oniData.slice(-12).map(o => ({
+    // 3. Build 2-month dataset (last 2 months only)
+    const frames = oniData.slice(-2).map(o => ({
         period: o.periodo,
         oni: o.oni,
         classificacao: o.classificacao,
