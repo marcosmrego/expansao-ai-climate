@@ -896,13 +896,6 @@ details[open] .glossary-summary {
     display: block;
 }
 
-.oni-therm-wrap svg {
-    flex: 1;
-    width: 38px !important;
-    height: auto !important;
-    display: block;
-}
-
 /* ── ONI Thermometer ─────────────────────────────────────────── */
 .climate-map-with-therm {
     display: flex;
@@ -916,31 +909,33 @@ details[open] .glossary-summary {
 }
 
 .oni-therm-wrap {
-    width: 44px;
+    width: 64px;
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 3px;
+    gap: 4px;
     background: #0a1628;
     border: 1px solid rgba(255,255,255,0.09);
     border-radius: var(--radius-sm);
-    padding: 6px 0 5px;
+    padding: 8px 0 6px;
+    overflow: hidden;
+}
+
+.oni-therm-wrap svg {
+    flex: 1;
+    width: 56px;
+    min-height: 0;
+    display: block;
 }
 
 .oni-therm-title {
-    font-size: 7.5px;
+    font-size: 8px;
     font-weight: 700;
     letter-spacing: .04em;
     color: rgba(255,255,255,0.45);
     text-transform: uppercase;
     line-height: 1;
-}
-
-.oni-therm-wrap svg {
-    flex: 1;
-    width: 38px;
-    display: block;
 }
 
 .oni-therm-footer {

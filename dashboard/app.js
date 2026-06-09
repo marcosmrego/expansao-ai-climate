@@ -806,14 +806,14 @@ async function montarMapaClimatico() {
         const svgEl = document.getElementById("oniThermometer")
         if (!svgEl) return
 
-        const W = 38, H = 200  // coordenadas fixas — CSS controla o tamanho real
+        const W = 56, H = 200  // coordenadas fixas — CSS controla o tamanho real
         svgEl.setAttribute("viewBox", `0 0 ${W} ${H}`)
         svgEl.removeAttribute("width")
         svgEl.removeAttribute("height")
 
         const mt = 10, mb = 10
         const scale = d3.scaleLinear().domain([2.5, -2.5]).range([mt, H - mb])
-        const barX = 10, barW = 12, cx = barX + barW / 2
+        const barX = 12, barW = 16, cx = barX + barW / 2
 
         const thColor = v =>
             v >= 1.5 ? "#FF5252" : v >= 0.5 ? "#FF7043" : v >= 0.3 ? "#FFB74D" :
@@ -829,11 +829,11 @@ async function montarMapaClimatico() {
 
         // Linha de zero
         const zy = scale(0)
-        s.append("line").attr("x1", barX).attr("x2", barX + barW)
+        s.append("line").attr("x1", barX - 2).attr("x2", barX + barW + 2)
             .attr("y1", zy).attr("y2", zy)
             .attr("stroke", "rgba(255,255,255,0.25)").attr("stroke-width", 1)
-        s.append("text").attr("x", barX + barW + 2).attr("y", zy + 3)
-            .attr("font-size", 6.5).attr("fill", "rgba(255,255,255,0.3)").text("0")
+        s.append("text").attr("x", barX + barW + 3).attr("y", zy + 3)
+            .attr("font-size", 7).attr("fill", "rgba(255,255,255,0.3)").text("0")
 
         // Linhas de limiar
         ;[{v:1.5,c:"rgba(255,82,82,.55)"},{v:0.5,c:"rgba(255,112,67,.6)"},
@@ -844,7 +844,7 @@ async function montarMapaClimatico() {
                 .attr("y1", y).attr("y2", y)
                 .attr("stroke", c).attr("stroke-width", 1).attr("stroke-dasharray","2,2")
             s.append("text").attr("x", barX + barW + 3).attr("y", y + 3)
-                .attr("font-size", 6).attr("fill", c)
+                .attr("font-size", 7).attr("fill", c)
                 .text(`${v > 0 ? "+" : ""}${v.toFixed(1)}`)
         })
 
