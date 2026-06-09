@@ -806,11 +806,10 @@ async function montarMapaClimatico() {
         const svgEl = document.getElementById("oniThermometer")
         if (!svgEl) return
 
-        const W = 38
-        const H = svgEl.parentElement.clientHeight || 200
+        const W = 38, H = 200  // coordenadas fixas — CSS controla o tamanho real
         svgEl.setAttribute("viewBox", `0 0 ${W} ${H}`)
-        svgEl.setAttribute("width", W)
-        svgEl.setAttribute("height", H)
+        svgEl.removeAttribute("width")
+        svgEl.removeAttribute("height")
 
         const mt = 10, mb = 10
         const scale = d3.scaleLinear().domain([2.5, -2.5]).range([mt, H - mb])
