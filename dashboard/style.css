@@ -890,10 +890,64 @@ details[open] .glossary-summary {
     overflow: hidden;
 }
 
-.climate-map-wrap svg {
+.climate-map-wrap > svg {
     width: 100%;
     height: auto;
     display: block;
+}
+
+/* ── ONI Thermometer ─────────────────────────────────────────── */
+.oni-therm-wrap {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    bottom: 10px;
+    width: 42px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    background: rgba(6,16,32,0.72);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 8px;
+    padding: 6px 0 5px;
+    pointer-events: none;
+    backdrop-filter: blur(4px);
+}
+
+.oni-therm-title {
+    font-size: 7.5px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    color: rgba(255,255,255,0.45);
+    text-transform: uppercase;
+    line-height: 1;
+}
+
+.oni-therm-wrap svg {
+    flex: 1;
+    width: 38px;
+    display: block;
+}
+
+.oni-therm-footer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1.1;
+}
+
+#thermoWeeklyVal {
+    font-size: 10px;
+    font-weight: 700;
+    color: #FF8A65;
+}
+
+.oni-therm-sub {
+    font-size: 7px;
+    color: rgba(255,255,255,0.35);
+    text-transform: uppercase;
+    letter-spacing: .05em;
 }
 
 .map-month-label {

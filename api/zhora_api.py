@@ -7,6 +7,7 @@ from typing import Optional
 import os
 import time
 import logging
+import requests as _requests
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -1153,6 +1154,40 @@ def climate_seismic(days: int = 30, min_mag: float = 5.5, climate_only: bool = F
         raise HTTPException(status_code=500, detail="Erro ao consultar eventos sísmicos")
     finally:
         conn.close()
+
+
+_CPC_WEEKLY_URL = "https://www.cpc.ncep.noaa.gov/data/indices/wksst9120.for"
+
+@app.get("/climate/nino34/weekly")
+def nino34_weekly():
+    cached = _cache.get("nino34_weekly")
+    if cached:
+        return cached
+
+    try:
+        r = _requests.get(_CPC_WEEKLY_URL, timeout=15)
+        r.raise_for_status()
+        result = []
+        for line in r.text.strip().splitlines():
+            parts = line.split()
+            if len(parts) < 8:
+                continue
+            try:
+                result.append({
+                    "date": parts[0],
+                    "nino12_anom": float(parts[2]),
+                    "nino3_anom":  float(parts[4]),
+                    "nino34_anom": float(parts[6]),
+                    "nino4_anom":  float(parts[8]) if len(parts) > 8 else None,
+                })
+            except (ValueError, IndexError):
+                continue
+        data = result[-8:]
+        _cache.set("nino34_weekly", data)
+        return data
+    except Exception as e:
+        logger.error("Erro em /climate/nino34/weekly: %s", e)
+        raise HTTPException(status_code=503, detail="Erro ao buscar dados semanais CPC")
 
 
 # Serve the dashboard — must be mounted last so API routes take precedence

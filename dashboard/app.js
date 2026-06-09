@@ -720,7 +720,7 @@ async function montarMapaClimatico() {
 
     // 1. Fetch data in parallel
     const [rOni, rArctic, rAntarctic, rIod, rMjo, rMjoH,
-           rPdoH, rNaoH, rAmoH, rQboH, rSeismic] = await Promise.allSettled([
+           rPdoH, rNaoH, rAmoH, rQboH, rSeismic, rWeekly] = await Promise.allSettled([
         fetch(`${API_BASE}/climate/history`),
         fetch(`${API_BASE}/climate/arctic_ice/history`),
         fetch(`${API_BASE}/climate/antarctic_ice/history`),
@@ -732,12 +732,13 @@ async function montarMapaClimatico() {
         fetch(`${API_BASE}/climate/amo/history`),
         fetch(`${API_BASE}/climate/qbo/history`),
         fetch(`${API_BASE}/climate/seismic?days=${new Date().getDate() + 1}&min_mag=5.5`),
+        fetch(`${API_BASE}/climate/nino34/weekly`),
     ])
     const jj = async r => r.status === "fulfilled" && r.value.ok ? r.value.json() : null
     const [oniData, arcticData, antarcticData, iodData, mjoData, mjoHist,
-           pdoHist, naoHist, amoHist, qboHist, seismicData] = await Promise.all([
+           pdoHist, naoHist, amoHist, qboHist, seismicData, weeklyData] = await Promise.all([
         jj(rOni), jj(rArctic), jj(rAntarctic), jj(rIod), jj(rMjo), jj(rMjoH),
-        jj(rPdoH), jj(rNaoH), jj(rAmoH), jj(rQboH), jj(rSeismic)
+        jj(rPdoH), jj(rNaoH), jj(rAmoH), jj(rQboH), jj(rSeismic), jj(rWeekly)
     ])
     if (!oniData || !oniData.length) return
     if (!oniData.length) return
@@ -797,6 +798,93 @@ async function montarMapaClimatico() {
         qbo: qboByMonth[o.periodo] ?? null,
         mjoMonth: mjoByMonth[o.periodo] ?? null,
     }))
+
+    // ── Termômetro ONI ────────────────────────────────────────────────
+    const weeklyLatest = weeklyData && weeklyData.length ? weeklyData[weeklyData.length - 1].nino34_anom : null
+
+    function desenharTermometro(oniMensal) {
+        const svgEl = document.getElementById("oniThermometer")
+        if (!svgEl) return
+
+        const W = 38
+        const H = svgEl.parentElement.clientHeight || 200
+        svgEl.setAttribute("viewBox", `0 0 ${W} ${H}`)
+        svgEl.setAttribute("width", W)
+        svgEl.setAttribute("height", H)
+
+        const mt = 10, mb = 10
+        const scale = d3.scaleLinear().domain([2.5, -2.5]).range([mt, H - mb])
+        const barX = 10, barW = 12, cx = barX + barW / 2
+
+        const thColor = v =>
+            v >= 1.5 ? "#FF5252" : v >= 0.5 ? "#FF7043" : v >= 0.3 ? "#FFB74D" :
+            v <= -1.5 ? "#1E88E5" : v <= -0.5 ? "#42A5F5" : v <= -0.3 ? "#80DEEA" : "#78909C"
+
+        const s = d3.select(svgEl)
+        s.selectAll("*").remove()
+
+        // Trilho de fundo
+        s.append("rect")
+            .attr("x", barX).attr("y", mt).attr("width", barW).attr("height", H - mt - mb)
+            .attr("fill", "rgba(255,255,255,0.05)").attr("rx", 4)
+
+        // Linha de zero
+        const zy = scale(0)
+        s.append("line").attr("x1", barX).attr("x2", barX + barW)
+            .attr("y1", zy).attr("y2", zy)
+            .attr("stroke", "rgba(255,255,255,0.25)").attr("stroke-width", 1)
+        s.append("text").attr("x", barX + barW + 2).attr("y", zy + 3)
+            .attr("font-size", 6.5).attr("fill", "rgba(255,255,255,0.3)").text("0")
+
+        // Linhas de limiar
+        ;[{v:1.5,c:"rgba(255,82,82,.55)"},{v:0.5,c:"rgba(255,112,67,.6)"},
+          {v:-0.5,c:"rgba(66,165,245,.6)"},{v:-1.5,c:"rgba(30,136,229,.55)"}]
+          .forEach(({v, c}) => {
+            const y = scale(v)
+            s.append("line").attr("x1", barX - 2).attr("x2", barX + barW + 2)
+                .attr("y1", y).attr("y2", y)
+                .attr("stroke", c).attr("stroke-width", 1).attr("stroke-dasharray","2,2")
+            s.append("text").attr("x", barX + barW + 3).attr("y", y + 3)
+                .attr("font-size", 6).attr("fill", c)
+                .text(`${v > 0 ? "+" : ""}${v.toFixed(1)}`)
+        })
+
+        // Barra semanal (ghost, mais larga)
+        if (weeklyLatest !== null) {
+            const wy1 = scale(Math.max(0, weeklyLatest)), wy2 = scale(Math.min(0, weeklyLatest))
+            s.append("rect")
+                .attr("x", barX - 3).attr("y", Math.min(wy1, wy2))
+                .attr("width", barW + 6).attr("height", Math.max(2, Math.abs(wy2 - wy1)))
+                .attr("fill", thColor(weeklyLatest)).attr("opacity", 0.22).attr("rx", 3)
+        }
+
+        // Barra ONI mensal (sólida)
+        const oy1 = scale(Math.max(0, oniMensal)), oy2 = scale(Math.min(0, oniMensal))
+        const oniBarColor = thColor(oniMensal)
+        s.append("rect")
+            .attr("x", barX).attr("y", Math.min(oy1, oy2))
+            .attr("width", barW).attr("height", Math.max(2, Math.abs(oy2 - oy1)))
+            .attr("fill", oniBarColor).attr("opacity", 0.9).attr("rx", 3)
+
+        // Label valor ONI no topo da barra
+        s.append("text").attr("x", cx).attr("y", Math.min(oy1, oy2) - 3)
+            .attr("text-anchor", "middle").attr("font-size", 7.5).attr("font-weight", "700")
+            .attr("fill", oniBarColor)
+            .text(`${oniMensal >= 0 ? "+" : ""}${oniMensal.toFixed(2)}`)
+
+        // Label semanal no rodapé
+        if (weeklyLatest !== null) {
+            const weeklyEl = document.getElementById("thermoWeeklyVal")
+            if (weeklyEl) {
+                const sign = weeklyLatest >= 0 ? "+" : ""
+                weeklyEl.textContent = `${sign}${weeklyLatest.toFixed(1)}°C`
+                weeklyEl.style.color = thColor(weeklyLatest)
+            }
+        }
+    }
+
+    // Desenha termômetro inicial
+    desenharTermometro(frames[frames.length - 1].oni)
 
     // MJO phase → equatorial longitude center
     const MJO_LON = { 1: 55, 2: 75, 3: 95, 4: 115, 5: 140, 6: 165, 7: -160, 8: -100 }
@@ -1149,6 +1237,9 @@ async function montarMapaClimatico() {
         if (f.oni >= 0.3 && f.oni < 0.5) _startOniPulse("#FF8A65")       // quase El Niño — âmbar
         else if (f.oni <= -0.3 && f.oni > -0.5) _startOniPulse("#42A5F5") // quase La Niña — azul
         else _stopOniPulse()
+
+        // Atualiza termômetro
+        desenharTermometro(f.oni)
 
         // Marcador MJO animado por frame
         const mjoM = f.mjoMonth
