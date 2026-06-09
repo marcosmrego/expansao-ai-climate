@@ -883,9 +883,6 @@ async function montarMapaClimatico() {
         }
     }
 
-    // Desenha termômetro inicial
-    desenharTermometro(frames[frames.length - 1].oni)
-
     // MJO phase → equatorial longitude center
     const MJO_LON = { 1: 55, 2: 75, 3: 95, 4: 115, 5: 140, 6: 165, 7: -160, 8: -100 }
 
@@ -1337,6 +1334,9 @@ async function montarMapaClimatico() {
     nextFrame()
     timer = setInterval(nextFrame, 1500)
     window._climateMapTimer = timer
+
+    // Termômetro inicial após SVG pronto
+    desenharTermometro(frames[frames.length - 1].oni)
 }
 
 // ── Wheeler-Hendon MJO Phase Diagram ────────────────────────────────
