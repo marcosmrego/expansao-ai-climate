@@ -605,6 +605,101 @@ async function carregarHome() {
     }
 }
 
+const _WEATHER_ICON = {
+    ensolarado: "☀️",
+    nublado: "☁️",
+    neblina: "🌫️",
+    chuva: "🌧️",
+    neve: "❄️",
+    tempestade: "⛈️",
+    ventania: "💨",
+}
+
+const _WEATHER_DESC = {
+    ensolarado: "Céu limpo",
+    nublado: "Nublado",
+    neblina: "Neblina",
+    chuva: "Chuva",
+    neve: "Neve",
+    tempestade: "Tempestade",
+    ventania: "Vento forte",
+}
+
+function _getCoordsViaBrowser() {
+    return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) return reject(new Error("sem geolocation"))
+        navigator.geolocation.getCurrentPosition(
+            pos => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude, place: null }),
+            err => reject(err),
+            { timeout: 5000, maximumAge: 600000 }
+        )
+    })
+}
+
+async function _getCoordsViaIp() {
+    const res = await fetch("https://ipapi.co/json/")
+    if (!res.ok) throw new Error("ipapi falhou")
+    const data = await res.json()
+    return { lat: data.latitude, lon: data.longitude, place: data.city || null }
+}
+
+async function carregarClimaLocal() {
+    const body = document.querySelector("#localWeather .local-weather-body")
+    if (!body) return
+
+    let coords
+    try {
+        coords = await _getCoordsViaBrowser()
+    } catch {
+        try {
+            coords = await _getCoordsViaIp()
+        } catch {
+            body.innerHTML = `<span class="local-weather-desc">Indisponível</span>`
+            return
+        }
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/weather/local?lat=${coords.lat}&lon=${coords.lon}`)
+        if (!res.ok) throw new Error("weather/local falhou")
+        const data = await res.json()
+        const icon = _WEATHER_ICON[data.event_type] || "🌡️"
+        const desc = _WEATHER_DESC[data.event_type] || data.event_type
+        const temp = data.current?.temperature
+        body.innerHTML = `
+            <span class="local-weather-icon">${icon}</span>
+            <div class="local-weather-info">
+                <span class="local-weather-temp">${temp != null ? temp.toFixed(1) + "°C" : "—"}</span>
+                <span class="local-weather-desc">${desc}</span>
+                ${coords.place ? `<span class="local-weather-place">${coords.place}</span>` : ""}
+            </div>
+        `
+
+        const forecastEl = document.getElementById("localWeatherForecast")
+        if (forecastEl && Array.isArray(data.forecast)) {
+            const proximos = data.forecast.slice(1, 3) // pula hoje, mostra os 2 próximos dias
+            forecastEl.innerHTML = proximos.map(dia => {
+                const weekday = new Date(dia.data + "T12:00:00")
+                    .toLocaleDateString("pt-BR", { weekday: "short" })
+                    .replace(".", "")
+                const fIcon = _WEATHER_ICON[dia.event_type] || "🌡️"
+                return `
+                    <div class="local-forecast-day">
+                        <span class="local-forecast-weekday">${weekday}</span>
+                        <span class="local-forecast-icon">${fIcon}</span>
+                        <span class="local-forecast-temps">
+                            <span class="local-forecast-max">${Math.round(dia.temp_max)}°</span>
+                            <span class="local-forecast-min">${Math.round(dia.temp_min)}°</span>
+                        </span>
+                    </div>
+                `
+            }).join("")
+        }
+    } catch {
+        body.innerHTML = `<span class="local-weather-desc">Indisponível</span>`
+    }
+}
+
 function abrirZhora() {
     document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"))
     document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"))
@@ -806,12 +901,15 @@ async function montarMapaClimatico() {
         const svgEl = document.getElementById("oniThermometer")
         if (!svgEl) return
 
-        const W = 56, H = 200  // coordenadas fixas — CSS controla o tamanho real
+        // viewBox = tamanho real renderizado (1 unidade = 1px) — evita distorção de texto
+        const rect = svgEl.getBoundingClientRect()
+        const W = rect.width || 56, H = rect.height || 200
         svgEl.setAttribute("viewBox", `0 0 ${W} ${H}`)
+        svgEl.removeAttribute("preserveAspectRatio")
         svgEl.removeAttribute("width")
         svgEl.removeAttribute("height")
 
-        const mt = 10, mb = 10
+        const mt = 14, mb = 10
         const scale = d3.scaleLinear().domain([2.5, -2.5]).range([mt, H - mb])
         const barX = 12, barW = 16, cx = barX + barW / 2
 
@@ -833,7 +931,7 @@ async function montarMapaClimatico() {
             .attr("y1", zy).attr("y2", zy)
             .attr("stroke", "rgba(255,255,255,0.25)").attr("stroke-width", 1)
         s.append("text").attr("x", barX + barW + 3).attr("y", zy + 3)
-            .attr("font-size", 7).attr("fill", "rgba(255,255,255,0.3)").text("0")
+            .attr("font-size", 9).attr("fill", "rgba(255,255,255,0.3)").text("0")
 
         // Linhas de limiar
         ;[{v:1.5,c:"rgba(255,82,82,.55)"},{v:0.5,c:"rgba(255,112,67,.6)"},
@@ -844,7 +942,7 @@ async function montarMapaClimatico() {
                 .attr("y1", y).attr("y2", y)
                 .attr("stroke", c).attr("stroke-width", 1).attr("stroke-dasharray","2,2")
             s.append("text").attr("x", barX + barW + 3).attr("y", y + 3)
-                .attr("font-size", 7).attr("fill", c)
+                .attr("font-size", 9).attr("fill", c)
                 .text(`${v > 0 ? "+" : ""}${v.toFixed(1)}`)
         })
 
@@ -867,7 +965,7 @@ async function montarMapaClimatico() {
 
         // Label valor ONI no topo da barra
         s.append("text").attr("x", cx).attr("y", Math.min(oy1, oy2) - 3)
-            .attr("text-anchor", "middle").attr("font-size", 7.5).attr("font-weight", "700")
+            .attr("text-anchor", "middle").attr("font-size", 9.5).attr("font-weight", "700")
             .attr("fill", oniBarColor)
             .text(`${oniMensal >= 0 ? "+" : ""}${oniMensal.toFixed(2)}`)
 
@@ -1817,6 +1915,7 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
 
 // ── Init ─────────────────────────────────────────────────────────────
 carregarHome()
+carregarClimaLocal()
 carregarFreshness()
 montarMapaClimatico()
 carregarStatus()

@@ -1156,6 +1156,89 @@ def climate_seismic(days: int = 30, min_mag: float = 5.5, climate_only: bool = F
         conn.close()
 
 
+_OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
+_weather_cache = _TTLCache(ttl=600)
+
+
+def _classify_weather_event(weather_code: int, wind_speed: float) -> str:
+    if wind_speed is not None and wind_speed >= 40:
+        return "ventania"
+    if weather_code in (95, 96, 99):
+        return "tempestade"
+    if weather_code in (71, 73, 75, 77, 85, 86):
+        return "neve"
+    if weather_code in (51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82):
+        return "chuva"
+    if weather_code in (45, 48):
+        return "neblina"
+    if weather_code in (2, 3):
+        return "nublado"
+    return "ensolarado"
+
+
+@app.get("/weather/local")
+def weather_local(lat: float, lon: float):
+    cache_key = f"{round(lat, 2)}_{round(lon, 2)}"
+    cached = _weather_cache.get(cache_key)
+    if cached:
+        return cached
+
+    try:
+        r = _requests.get(_OPEN_METEO_URL, params={
+            "latitude": lat,
+            "longitude": lon,
+            "current": "temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m,wind_gusts_10m,is_day",
+            "daily": "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max",
+            "timezone": "auto",
+            "forecast_days": 3,
+        }, timeout=15)
+        r.raise_for_status()
+        data = r.json()
+
+        current = data.get("current", {})
+        event_type = _classify_weather_event(
+            current.get("weather_code", 0),
+            current.get("wind_speed_10m"),
+        )
+
+        daily = data.get("daily", {})
+        dias = daily.get("time", [])
+        forecast = []
+        for i, dia in enumerate(dias):
+            wcode = daily["weather_code"][i]
+            wind_max = daily.get("wind_speed_10m_max", [None] * len(dias))[i]
+            forecast.append({
+                "data": dia,
+                "weather_code": wcode,
+                "event_type": _classify_weather_event(wcode, wind_max),
+                "temp_max": daily["temperature_2m_max"][i],
+                "temp_min": daily["temperature_2m_min"][i],
+                "precipitation_prob": daily.get("precipitation_probability_max", [None] * len(dias))[i],
+            })
+
+        result = {
+            "latitude": data.get("latitude"),
+            "longitude": data.get("longitude"),
+            "timezone": data.get("timezone"),
+            "current": {
+                "temperature": current.get("temperature_2m"),
+                "humidity": current.get("relative_humidity_2m"),
+                "precipitation": current.get("precipitation"),
+                "wind_speed": current.get("wind_speed_10m"),
+                "wind_gusts": current.get("wind_gusts_10m"),
+                "is_day": bool(current.get("is_day")),
+                "weather_code": current.get("weather_code"),
+            },
+            "event_type": event_type,
+            "forecast": forecast,
+        }
+        _weather_cache.set(cache_key, result)
+        return result
+    except Exception as e:
+        logger.error("Erro em /weather/local: %s", e)
+        raise HTTPException(status_code=503, detail="Erro ao buscar dados meteorológicos locais")
+
+
 _CPC_WEEKLY_URL = "https://www.cpc.ncep.noaa.gov/data/indices/wksst9120.for"
 
 @app.get("/climate/nino34/weekly")

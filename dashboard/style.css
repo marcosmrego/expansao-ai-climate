@@ -1053,6 +1053,18 @@ details[open] .glossary-summary {
     padding: 28px;
 }
 
+.home-hero-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.home-hero-text {
+    flex: 1;
+    min-width: 0;
+}
+
 .home-title {
     font-family: 'Space Grotesk', sans-serif;
     font-size: 28px;
@@ -1096,6 +1108,100 @@ details[open] .glossary-summary {
     font-size: 13px;
     line-height: 1.65;
     color: var(--text-2);
+}
+
+.local-weather-card {
+    background: var(--bg2);
+    border: 1px solid var(--border-accent);
+    border-radius: var(--radius-sm);
+    padding: 16px 20px;
+    flex-shrink: 0;
+    width: 260px;
+}
+
+.local-weather-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--text-3);
+    margin-bottom: 8px;
+}
+
+.local-weather-body {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.local-weather-icon {
+    font-size: 28px;
+    line-height: 1;
+}
+
+.local-weather-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.local-weather-temp {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.local-weather-desc {
+    font-size: 12px;
+    color: var(--text-2);
+}
+
+.local-weather-place {
+    font-size: 11px;
+    color: var(--text-3);
+}
+
+.local-weather-forecast {
+    display: flex;
+    gap: 12px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+}
+
+.local-forecast-day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    flex: 1;
+}
+
+.local-forecast-weekday {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--text-3);
+}
+
+.local-forecast-icon {
+    font-size: 18px;
+    line-height: 1;
+}
+
+.local-forecast-temps {
+    font-size: 11px;
+    display: flex;
+    gap: 4px;
+}
+
+.local-forecast-max {
+    color: var(--text);
+    font-weight: 600;
+}
+
+.local-forecast-min {
+    color: var(--text-3);
 }
 
 .home-nav-grid {
@@ -1158,6 +1264,8 @@ details[open] .glossary-summary {
     .home-hero-map-row { grid-template-columns: 1fr; }
     .home-nav-grid { grid-template-columns: 1fr; }
     .home-title { font-size: 22px; }
+    .home-hero-top { flex-direction: column; }
+    .local-weather-card { width: 100%; }
 }
 
 /* ── Regional Consulting CTA ────────────────────────────────────────── */
