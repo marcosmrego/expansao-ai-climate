@@ -6,6 +6,7 @@ from typing import Optional
 
 import anthropic
 import httpx
+import requests
 
 from database.db import conectar
 
@@ -48,6 +49,41 @@ _SYSTEM_PROMPT = (
     "5. Evite listar números brutos sem contexto — traduza-os em impacto real.\n"
     "6. Baseie-se exclusivamente no contexto climático fornecido — não invente dados."
 )
+
+
+_CPC_WEEKLY_URL = "https://www.cpc.ncep.noaa.gov/data/indices/wksst9120.for"
+
+
+def _fetch_nino34_weekly() -> Optional[dict]:
+    """Fetch latest weekly Niño 3.4 SST anomaly from NOAA CPC.
+
+    This is the real-time signal — it can run weeks ahead of the
+    3-month-rolling-average ONI, which is why a fast-developing
+    El Niño/La Niña may not yet show up in the official ONI classification.
+    """
+    try:
+        r = requests.get(_CPC_WEEKLY_URL, timeout=10)
+        r.raise_for_status()
+        rows = []
+        for line in r.text.strip().splitlines():
+            parts = line.split()
+            if len(parts) < 7:
+                continue
+            try:
+                rows.append((parts[0], float(parts[6])))
+            except (ValueError, IndexError):
+                continue
+        if not rows:
+            return None
+        latest_date, latest_val = rows[-1]
+        prev_val = rows[-5][1] if len(rows) >= 5 else None  # ~4 semanas atrás
+        return {
+            "date": latest_date,
+            "nino34_anom": latest_val,
+            "nino34_anom_4w_ago": prev_val,
+        }
+    except Exception:
+        return None
 
 
 def build_climate_context() -> dict:
@@ -165,6 +201,7 @@ def build_climate_context() -> dict:
         "oni": current_oni,
         "classificacao": classificacao,
         "nino34_anom": nino34_anom,
+        "nino34_weekly": _fetch_nino34_weekly(),
         "trend": trend,
         "soi": soi,
         "soi_classificacao": soi_classificacao,
@@ -208,7 +245,23 @@ def context_to_text(ctx: dict) -> str:
         f"- Fase ENSO: {fase}",
     ]
     if ctx["nino34_anom"] is not None:
-        lines.append(f"- Anomalia Niño 3.4: {ctx['nino34_anom']:.2f} °C")
+        lines.append(f"- Anomalia Niño 3.4 (mensal): {ctx['nino34_anom']:.2f} °C")
+
+    weekly = ctx.get("nino34_weekly")
+    if weekly and weekly.get("nino34_anom") is not None:
+        line = f"- Niño 3.4 (semanal, dado mais recente — {weekly['date']}): {weekly['nino34_anom']:+.2f} °C"
+        prev = weekly.get("nino34_anom_4w_ago")
+        if prev is not None:
+            delta = weekly["nino34_anom"] - prev
+            direcao = "subindo" if delta > 0.05 else "caindo" if delta < -0.05 else "estável"
+            line += f" (4 semanas atrás: {prev:+.2f} °C, tendência {direcao})"
+        lines.append(line)
+        lines.append(
+            "  Nota: o ONI oficial é uma média móvel de 3 meses e pode estar até 2 meses "
+            "atrasado em relação ao sinal semanal acima — use o dado semanal para captar "
+            "acelerações ou reversões recentes que o ONI ainda não reflete."
+        )
+
     if ctx["trend"]:
         lines.append(f"- Tendência ONI: {ctx['trend']}")
     if ctx.get("soi") is not None:
@@ -360,6 +413,7 @@ def generate_insight() -> str:
     meta = json.dumps({
         "classificacao": ctx["classificacao"],
         "nino34_anom": ctx.get("nino34_anom"),
+        "nino34_weekly": ctx.get("nino34_weekly"),
         "soi": ctx.get("soi"),
         "pdo": ctx.get("pdo"),
         "nao": ctx.get("nao"),
@@ -441,6 +495,9 @@ _PREDICTION_PROMPT = (
     "para os próximos 1 a 3 meses. "
     "Considere a convergência entre: fase ENSO atual (ONI, SOI), moduladores de baixa frequência "
     "(PDO, AMO, NAO, QBO), oscilação intra-sazonal (MJO), CO₂ atmosférico e extensão do gelo polar. "
+    "Dê peso especial ao dado semanal de Niño 3.4 (mais recente que o ONI mensal): se ele indicar "
+    "uma tendência de aceleração, desaceleração ou reversão diferente da classificação ONI atual, "
+    "destaque essa divergência explicitamente — ela é o sinal mais atual disponível. "
     "Identifique quais sinais reforçam ou contradizem a tendência ENSO atual. "
     "Escreva 4 a 6 frases técnicas em português. "
     "Texto corrido, sem formatação markdown, sem asteriscos, sem títulos, sem bullet points."
@@ -507,6 +564,7 @@ def generate_prediction() -> str:
     meta = json.dumps({
         "classificacao": ctx["classificacao"],
         "nino34_anom": ctx.get("nino34_anom"),
+        "nino34_weekly": ctx.get("nino34_weekly"),
         "soi": ctx.get("soi"),
         "pdo": ctx.get("pdo"),
         "nao": ctx.get("nao"),
