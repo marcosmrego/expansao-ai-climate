@@ -89,6 +89,42 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://climate.expansao-ai.com.br/api/collect/seismic",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "X-Api-Key", "value": "={{ $env.COLLECTOR_SECRET }}" }]
+        },
+        "options": { "timeout": 60000 }
+      },
+      "id": "node-seismic",
+      "name": "Coletar Sísmico",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://climate.expansao-ai.com.br/api/notify/staleness",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "X-Api-Key", "value": "={{ $env.COLLECTOR_SECRET }}" }]
+        },
+        "options": { "timeout": 60000 }
+      },
+      "id": "node-staleness",
+      "name": "Verificar Atualização dos Dados",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1560, 300]
     }
   ],
   "connections": {
@@ -103,6 +139,12 @@
     },
     "Coletar Gelo Ártico": {
       "main": [[{ "node": "Coletar Gelo Antártico", "type": "main", "index": 0 }]]
+    },
+    "Coletar Gelo Antártico": {
+      "main": [[{ "node": "Coletar Sísmico", "type": "main", "index": 0 }]]
+    },
+    "Coletar Sísmico": {
+      "main": [[{ "node": "Verificar Atualização dos Dados", "type": "main", "index": 0 }]]
     }
   },
   "settings": {

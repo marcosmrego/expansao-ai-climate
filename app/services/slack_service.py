@@ -53,8 +53,9 @@ def notify_climate_alert(severity: str, title: str, message: str) -> bool:
     })
 
 
-def notify_staleness(indicator: str, last_update: str, hours: float) -> bool:
+def notify_staleness(indicator: str, last_update: str, hours: float, threshold_hours: float = 36) -> bool:
     """Alert when a data source hasn't been updated."""
+    limite = f"{threshold_hours:.0f}h" if threshold_hours < 48 else f"{threshold_hours / 24:.0f} dias"
     return _post({
         "text": f"⚠️ Dado desatualizado: {indicator}",
         "blocks": [
@@ -65,7 +66,7 @@ def notify_staleness(indicator: str, last_update: str, hours: float) -> bool:
             {
                 "type": "section",
                 "text": {"type": "mrkdwn",
-                    "text": f"Última atualização: *{last_update}*\nSem novos dados há *{hours:.0f} horas* (limite: 36h)"}
+                    "text": f"Última atualização: *{last_update}*\nSem novos dados há *{hours:.0f} horas* (limite: {limite})"}
             },
             {
                 "type": "context",

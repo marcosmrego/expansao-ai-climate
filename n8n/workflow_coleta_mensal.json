@@ -147,6 +147,24 @@
     {
       "parameters": {
         "method": "POST",
+        "url": "https://climate.expansao-ai.com.br/api/collect/iod",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "X-Api-Key", "value": "={{ $env.COLLECTOR_SECRET }}" }]
+        },
+        "options": { "timeout": 60000 }
+      },
+      "id": "node-iod",
+      "name": "Coletar IOD",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1780, 480]
+    },
+    {
+      "parameters": {
+        "method": "POST",
         "url": "https://climate.expansao-ai.com.br/api/collect/insight",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
@@ -204,6 +222,9 @@
       "main": [[{ "node": "Coletar QBO", "type": "main", "index": 0 }]]
     },
     "Coletar QBO": {
+      "main": [[{ "node": "Coletar IOD", "type": "main", "index": 0 }]]
+    },
+    "Coletar IOD": {
       "main": [[{ "node": "Gerar Insight IA", "type": "main", "index": 0 }]]
     },
     "Gerar Insight IA": {

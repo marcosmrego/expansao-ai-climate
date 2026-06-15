@@ -416,44 +416,85 @@ def climate_freshness():
         conn.close()
 
 
-@app.post("/api/notify/staleness")
-def notify_staleness_check():
-    """Check if any data source is stale (>36h) and notify Slack."""
-    from datetime import datetime, timezone, timedelta
-    conn = conectar()
-    try:
-        cursor = conn.cursor()
-        cursor.execute("""
+# Cada entrada verifica a coleta mais recente de um grupo de tabelas e compara
+# com o intervalo de atualização esperado (coleta diária, sísmica incremental
+# ou indicadores mensais ENSO/PDO/NAO/AMO/QBO/IOD).
+_STALENESS_GROUPS = [
+    {
+        "name": "Indicadores diários (CO₂/Gelo/MJO)",
+        "query": """
             SELECT MAX(ts) FROM (
                 SELECT MAX(criado_em) AS ts FROM climate.noaa_co2_daily
                 UNION ALL SELECT MAX(criado_em) FROM climate.nsidc_arctic_ice_daily
                 UNION ALL SELECT MAX(criado_em) FROM climate.mjo_daily
             ) t
-        """)
-        row = cursor.fetchone()
-        if not row or not row[0]:
-            return {"status": "unknown"}
+        """,
+        "threshold_hours": 36,
+    },
+    {
+        "name": "Eventos sísmicos (USGS)",
+        "query": "SELECT MAX(criado_em) FROM climate.seismic_events",
+        "threshold_hours": 36,
+    },
+    {
+        "name": "Índices climáticos mensais (ONI/SST/SOI/PDO/NAO/AMO/QBO/IOD)",
+        "query": """
+            SELECT MAX(ts) FROM (
+                SELECT MAX(criado_em) AS ts FROM climate.noaa_oni
+                UNION ALL SELECT MAX(criado_em) FROM climate.noaa_sst_indices
+                UNION ALL SELECT MAX(criado_em) FROM climate.noaa_soi
+                UNION ALL SELECT MAX(criado_em) FROM climate.noaa_pdo
+                UNION ALL SELECT MAX(criado_em) FROM climate.noaa_nao
+                UNION ALL SELECT MAX(criado_em) FROM climate.noaa_amo
+                UNION ALL SELECT MAX(criado_em) FROM climate.noaa_qbo
+                UNION ALL SELECT MAX(criado_em) FROM climate.noaa_iod
+            ) t
+        """,
+        "threshold_hours": 24 * 40,
+    },
+]
 
-        last_ts = row[0]
-        if last_ts.tzinfo is None:
-            from datetime import timezone as _tz
-            last_ts = last_ts.replace(tzinfo=_tz.utc)
-        now = datetime.now(timezone.utc)
-        hours_ago = (now - last_ts).total_seconds() / 3600
 
-        if hours_ago > 36:
-            try:
-                from app.services.slack_service import notify_staleness
-                notify_staleness(
-                    indicator="Indicadores diários (CO₂/Gelo/MJO)",
-                    last_update=last_ts.strftime("%d/%m/%Y %H:%Mh UTC"),
-                    hours=hours_ago,
-                )
-            except Exception:
-                pass
-            return {"status": "stale", "hours": round(hours_ago, 1), "notified": True}
+@app.post("/api/notify/staleness")
+def notify_staleness_check():
+    """Check each data source group against its expected refresh interval and notify Slack if stale."""
+    from datetime import datetime, timezone
 
-        return {"status": "ok", "hours": round(hours_ago, 1)}
+    conn = conectar()
+    try:
+        cursor = conn.cursor()
+        results = []
+        for group in _STALENESS_GROUPS:
+            cursor.execute(group["query"])
+            row = cursor.fetchone()
+            if not row or not row[0]:
+                results.append({"name": group["name"], "status": "unknown"})
+                continue
+
+            last_ts = row[0]
+            if last_ts.tzinfo is None:
+                last_ts = last_ts.replace(tzinfo=timezone.utc)
+            now = datetime.now(timezone.utc)
+            hours_ago = (now - last_ts).total_seconds() / 3600
+            threshold = group["threshold_hours"]
+
+            if hours_ago > threshold:
+                try:
+                    from app.services.slack_service import notify_staleness
+                    notify_staleness(
+                        indicator=group["name"],
+                        last_update=last_ts.strftime("%d/%m/%Y %H:%Mh UTC"),
+                        hours=hours_ago,
+                        threshold_hours=threshold,
+                    )
+                except Exception:
+                    pass
+                results.append({"name": group["name"], "status": "stale", "hours": round(hours_ago, 1), "notified": True})
+            else:
+                results.append({"name": group["name"], "status": "ok", "hours": round(hours_ago, 1)})
+
+        overall = "stale" if any(r["status"] == "stale" for r in results) else "ok"
+        return {"status": overall, "groups": results}
     except Exception as e:
         logger.error("Erro em staleness check: %s", e)
         return {"status": "error"}
