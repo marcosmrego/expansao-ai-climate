@@ -1,7 +1,15 @@
 {
-  "name": "Expansao AI Climate — Coleta Diária",
+  "name": "Expansao AI Climate - Coleta Diaria",
   "nodes": [
     {
+      "id": "node-schedule-daily",
+      "name": "Todo dia as 07h UTC",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        300
+      ],
       "parameters": {
         "rule": {
           "interval": [
@@ -11,140 +19,183 @@
             }
           ]
         }
-      },
-      "id": "node-schedule-daily",
-      "name": "Todo dia às 07h",
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.2,
-      "position": [240, 300]
+      }
     },
     {
-      "parameters": {
-        "method": "POST",
-        "url": "https://climate.expansao-ai.com.br/api/collect/mjo",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [{ "name": "X-Api-Key", "value": "={{ $env.COLLECTOR_SECRET }}" }]
-        },
-        "options": { "timeout": 60000 }
-      },
       "id": "node-mjo",
       "name": "Coletar MJO",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [460, 300]
+      "position": [
+        460,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://climate.expansao-ai.com.br/api/collect/mjo",
+        "sendHeaders": false,
+        "options": {
+          "timeout": 60000
+        }
+      }
     },
     {
+      "id": "node-co2",
+      "name": "Coletar CO2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        300
+      ],
       "parameters": {
         "method": "POST",
         "url": "https://climate.expansao-ai.com.br/api/collect/co2",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [{ "name": "X-Api-Key", "value": "={{ $env.COLLECTOR_SECRET }}" }]
-        },
-        "options": { "timeout": 60000 }
-      },
-      "id": "node-co2",
-      "name": "Coletar CO₂",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [680, 300]
+        "sendHeaders": false,
+        "options": {
+          "timeout": 60000
+        }
+      }
     },
     {
+      "id": "node-arctic",
+      "name": "Coletar Gelo Artico",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        900,
+        300
+      ],
       "parameters": {
         "method": "POST",
         "url": "https://climate.expansao-ai.com.br/api/collect/arctic_ice",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [{ "name": "X-Api-Key", "value": "={{ $env.COLLECTOR_SECRET }}" }]
-        },
-        "options": { "timeout": 120000 }
-      },
-      "id": "node-arctic",
-      "name": "Coletar Gelo Ártico",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [900, 300]
+        "sendHeaders": false,
+        "options": {
+          "timeout": 120000
+        }
+      }
     },
     {
+      "id": "node-antarctic",
+      "name": "Coletar Gelo Antartico",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        300
+      ],
       "parameters": {
         "method": "POST",
         "url": "https://climate.expansao-ai.com.br/api/collect/antarctic_ice",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [{ "name": "X-Api-Key", "value": "={{ $env.COLLECTOR_SECRET }}" }]
-        },
-        "options": { "timeout": 120000 }
-      },
-      "id": "node-antarctic",
-      "name": "Coletar Gelo Antártico",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [1120, 300]
+        "sendHeaders": false,
+        "options": {
+          "timeout": 120000
+        }
+      }
     },
     {
+      "id": "node-seismic",
+      "name": "Coletar Eventos Sismicos",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1340,
+        300
+      ],
       "parameters": {
         "method": "POST",
         "url": "https://climate.expansao-ai.com.br/api/collect/seismic",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [{ "name": "X-Api-Key", "value": "={{ $env.COLLECTOR_SECRET }}" }]
-        },
-        "options": { "timeout": 60000 }
-      },
-      "id": "node-seismic",
-      "name": "Coletar Sísmico",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [1340, 300]
+        "sendHeaders": false,
+        "options": {
+          "timeout": 30000
+        }
+      }
     },
     {
+      "id": "node-staleness",
+      "name": "Verificar Atualizacao dos Dados",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1560,
+        300
+      ],
       "parameters": {
         "method": "POST",
         "url": "https://climate.expansao-ai.com.br/api/notify/staleness",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [{ "name": "X-Api-Key", "value": "={{ $env.COLLECTOR_SECRET }}" }]
-        },
-        "options": { "timeout": 60000 }
-      },
-      "id": "node-staleness",
-      "name": "Verificar Atualização dos Dados",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [1560, 300]
+        "sendHeaders": false,
+        "options": {
+          "timeout": 15000
+        }
+      }
     }
   ],
   "connections": {
-    "Todo dia às 07h": {
-      "main": [[{ "node": "Coletar MJO", "type": "main", "index": 0 }]]
+    "Todo dia as 07h UTC": {
+      "main": [
+        [
+          {
+            "node": "Coletar MJO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Coletar MJO": {
-      "main": [[{ "node": "Coletar CO₂", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Coletar CO2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
-    "Coletar CO₂": {
-      "main": [[{ "node": "Coletar Gelo Ártico", "type": "main", "index": 0 }]]
+    "Coletar CO2": {
+      "main": [
+        [
+          {
+            "node": "Coletar Gelo Artico",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
-    "Coletar Gelo Ártico": {
-      "main": [[{ "node": "Coletar Gelo Antártico", "type": "main", "index": 0 }]]
+    "Coletar Gelo Artico": {
+      "main": [
+        [
+          {
+            "node": "Coletar Gelo Antartico",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
-    "Coletar Gelo Antártico": {
-      "main": [[{ "node": "Coletar Sísmico", "type": "main", "index": 0 }]]
+    "Coletar Gelo Antartico": {
+      "main": [
+        [
+          {
+            "node": "Coletar Eventos Sismicos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
-    "Coletar Sísmico": {
-      "main": [[{ "node": "Verificar Atualização dos Dados", "type": "main", "index": 0 }]]
+    "Coletar Eventos Sismicos": {
+      "main": [
+        [
+          {
+            "node": "Verificar Atualizacao dos Dados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {

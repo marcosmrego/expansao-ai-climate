@@ -433,8 +433,11 @@ _STALENESS_GROUPS = [
     },
     {
         "name": "Eventos sísmicos (USGS)",
+        # A coleta roda diariamente mas só insere/atualiza linhas quando há
+        # evento M>=5.5 nas últimas 48h — períodos calmos de poucos dias são
+        # normais, então o limiar é maior para não gerar falso alarme.
         "query": "SELECT MAX(criado_em) FROM climate.seismic_events",
-        "threshold_hours": 36,
+        "threshold_hours": 24 * 7,
     },
     {
         "name": "Índices climáticos mensais (ONI/SST/SOI/PDO/NAO/AMO/QBO/IOD)",

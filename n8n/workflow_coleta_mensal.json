@@ -1,7 +1,15 @@
 {
-  "name": "Expansao AI Climate — Coleta Mensal",
+  "name": "Expansao AI Climate - Coleta Mensal",
   "nodes": [
     {
+      "id": "node-schedule",
+      "name": "Dia 15 as 08h UTC",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        300
+      ],
       "parameters": {
         "rule": {
           "interval": [
@@ -11,224 +19,328 @@
             }
           ]
         }
-      },
-      "id": "node-schedule",
-      "name": "Todo dia 15 às 08h",
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.2,
-      "position": [240, 300]
+      }
     },
     {
-      "parameters": {
-        "method": "POST",
-        "url": "https://climate.expansao-ai.com.br/api/collect/oni",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [{ "name": "X-Api-Key", "value": "={{ $env.COLLECTOR_SECRET }}" }]
-        },
-        "options": { "timeout": 60000 }
-      },
       "id": "node-oni",
       "name": "Coletar ONI",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [460, 300]
-    },
-    {
+      "position": [
+        460,
+        300
+      ],
       "parameters": {
         "method": "POST",
-        "url": "https://climate.expansao-ai.com.br/api/collect/sst",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [{ "name": "X-Api-Key", "value": "={{ $env.COLLECTOR_SECRET }}" }]
-        },
-        "options": { "timeout": 60000 }
-      },
+        "url": "https://climate.expansao-ai.com.br/api/collect/oni",
+        "sendHeaders": false,
+        "options": {
+          "timeout": 60000
+        }
+      }
+    },
+    {
       "id": "node-sst",
       "name": "Coletar SST",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [680, 300]
-    },
-    {
+      "position": [
+        680,
+        300
+      ],
       "parameters": {
         "method": "POST",
-        "url": "https://climate.expansao-ai.com.br/api/collect/soi",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [{ "name": "X-Api-Key", "value": "={{ $env.COLLECTOR_SECRET }}" }]
-        },
-        "options": { "timeout": 60000 }
-      },
+        "url": "https://climate.expansao-ai.com.br/api/collect/sst",
+        "sendHeaders": false,
+        "options": {
+          "timeout": 60000
+        }
+      }
+    },
+    {
       "id": "node-soi",
       "name": "Coletar SOI",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [900, 300]
-    },
-    {
+      "position": [
+        900,
+        300
+      ],
       "parameters": {
         "method": "POST",
-        "url": "https://climate.expansao-ai.com.br/api/collect/pdo",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [{ "name": "X-Api-Key", "value": "={{ $env.COLLECTOR_SECRET }}" }]
-        },
-        "options": { "timeout": 60000 }
-      },
+        "url": "https://climate.expansao-ai.com.br/api/collect/soi",
+        "sendHeaders": false,
+        "options": {
+          "timeout": 60000
+        }
+      }
+    },
+    {
       "id": "node-pdo",
       "name": "Coletar PDO",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1120, 300]
-    },
-    {
+      "position": [
+        1120,
+        300
+      ],
       "parameters": {
         "method": "POST",
-        "url": "https://climate.expansao-ai.com.br/api/collect/nao",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [{ "name": "X-Api-Key", "value": "={{ $env.COLLECTOR_SECRET }}" }]
-        },
-        "options": { "timeout": 60000 }
-      },
+        "url": "https://climate.expansao-ai.com.br/api/collect/pdo",
+        "sendHeaders": false,
+        "options": {
+          "timeout": 60000
+        }
+      }
+    },
+    {
       "id": "node-nao",
       "name": "Coletar NAO",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1340, 300]
-    },
-    {
+      "position": [
+        1340,
+        300
+      ],
       "parameters": {
         "method": "POST",
-        "url": "https://climate.expansao-ai.com.br/api/collect/amo",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [{ "name": "X-Api-Key", "value": "={{ $env.COLLECTOR_SECRET }}" }]
-        },
-        "options": { "timeout": 60000 }
-      },
+        "url": "https://climate.expansao-ai.com.br/api/collect/nao",
+        "sendHeaders": false,
+        "options": {
+          "timeout": 60000
+        }
+      }
+    },
+    {
       "id": "node-amo",
       "name": "Coletar AMO",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1560, 300]
-    },
-    {
+      "position": [
+        1560,
+        300
+      ],
       "parameters": {
         "method": "POST",
-        "url": "https://climate.expansao-ai.com.br/api/collect/qbo",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [{ "name": "X-Api-Key", "value": "={{ $env.COLLECTOR_SECRET }}" }]
-        },
-        "options": { "timeout": 60000 }
-      },
+        "url": "https://climate.expansao-ai.com.br/api/collect/amo",
+        "sendHeaders": false,
+        "options": {
+          "timeout": 60000
+        }
+      }
+    },
+    {
       "id": "node-qbo",
       "name": "Coletar QBO",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1780, 300]
-    },
-    {
+      "position": [
+        1780,
+        300
+      ],
       "parameters": {
         "method": "POST",
-        "url": "https://climate.expansao-ai.com.br/api/collect/iod",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [{ "name": "X-Api-Key", "value": "={{ $env.COLLECTOR_SECRET }}" }]
-        },
-        "options": { "timeout": 60000 }
-      },
-      "id": "node-iod",
-      "name": "Coletar IOD",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [1780, 480]
+        "url": "https://climate.expansao-ai.com.br/api/collect/qbo",
+        "sendHeaders": false,
+        "options": {
+          "timeout": 60000
+        }
+      }
     },
     {
-      "parameters": {
-        "method": "POST",
-        "url": "https://climate.expansao-ai.com.br/api/collect/insight",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [{ "name": "X-Api-Key", "value": "={{ $env.COLLECTOR_SECRET }}" }]
-        },
-        "options": { "timeout": 120000 }
-      },
       "id": "node-insight",
       "name": "Gerar Insight IA",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2000, 300]
+      "position": [
+        2000,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://climate.expansao-ai.com.br/api/collect/insight",
+        "sendHeaders": false,
+        "options": {
+          "timeout": 120000
+        }
+      }
     },
     {
+      "id": "node-prediction",
+      "name": "Gerar Analise Preditiva",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2220,
+        300
+      ],
       "parameters": {
         "method": "POST",
         "url": "https://climate.expansao-ai.com.br/api/collect/prediction",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [{ "name": "X-Api-Key", "value": "={{ $env.COLLECTOR_SECRET }}" }]
-        },
-        "options": { "timeout": 120000 }
-      },
-      "id": "node-prediction",
-      "name": "Gerar Análise Preditiva",
+        "sendHeaders": false,
+        "options": {
+          "timeout": 120000
+        }
+      }
+    },
+    {
+      "id": "node-staleness",
+      "name": "Verificar Staleness (Slack)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2220, 300]
+      "position": [
+        2440,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://climate.expansao-ai.com.br/api/notify/staleness",
+        "sendHeaders": false,
+        "options": {
+          "timeout": 15000
+        }
+      }
+    },
+    {
+      "id": "node-iod",
+      "name": "Coletar IOD",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2000,
+        460
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://climate.expansao-ai.com.br/api/collect/iod",
+        "sendHeaders": false,
+        "options": {
+          "timeout": 60000
+        }
+      }
     }
   ],
   "connections": {
-    "Todo dia 15 às 08h": {
-      "main": [[{ "node": "Coletar ONI", "type": "main", "index": 0 }]]
+    "Dia 15 as 08h UTC": {
+      "main": [
+        [
+          {
+            "node": "Coletar ONI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Coletar ONI": {
-      "main": [[{ "node": "Coletar SST", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Coletar SST",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Coletar SST": {
-      "main": [[{ "node": "Coletar SOI", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Coletar SOI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Coletar SOI": {
-      "main": [[{ "node": "Coletar PDO", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Coletar PDO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Coletar PDO": {
-      "main": [[{ "node": "Coletar NAO", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Coletar NAO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Coletar NAO": {
-      "main": [[{ "node": "Coletar AMO", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Coletar AMO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Coletar AMO": {
-      "main": [[{ "node": "Coletar QBO", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Coletar QBO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Coletar QBO": {
-      "main": [[{ "node": "Coletar IOD", "type": "main", "index": 0 }]]
-    },
-    "Coletar IOD": {
-      "main": [[{ "node": "Gerar Insight IA", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Coletar IOD",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Gerar Insight IA": {
-      "main": [[{ "node": "Gerar Análise Preditiva", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Gerar Analise Preditiva",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gerar Analise Preditiva": {
+      "main": [
+        [
+          {
+            "node": "Verificar Staleness (Slack)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Coletar IOD": {
+      "main": [
+        [
+          {
+            "node": "Gerar Insight IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
