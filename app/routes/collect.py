@@ -481,6 +481,19 @@ def collect_prediction(x_api_key: str = Header(default="")):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/knowledge")
+def collect_knowledge(x_api_key: str = Header(default="")):
+    """Collect RSS articles into the knowledge_base."""
+    _auth(x_api_key)
+    try:
+        from collector.knowledge_collector import main as run_knowledge
+        result = run_knowledge()
+        return {"status": "ok", **result}
+    except Exception as e:
+        logger.error("Erro ao coletar knowledge: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/insight")
 def collect_insight(x_api_key: str = Header(default="")):
     """Generate and persist an AI insight from the current climate context."""

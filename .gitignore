@@ -45,3 +45,6 @@ build/
 
 # Pacote instalável (pyproject.toml)
 *.egg-info/
+
+# n8n temp/debug files
+n8n/_*.json

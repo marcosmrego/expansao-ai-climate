@@ -1314,5 +1314,44 @@ def nino34_weekly():
         raise HTTPException(status_code=503, detail="Erro ao buscar dados semanais CPC")
 
 
+@app.get("/api/knowledge/articles")
+def knowledge_articles(days: int = 7, limit: int = 10, source: str = ""):
+    """Retorna artigos recentes da knowledge_base filtrados por janela de dias."""
+    conn = conectar()
+    try:
+        cursor = conn.cursor()
+        filters = ["published_at >= NOW() - INTERVAL '%s days'"]
+        params: list = [days]
+        if source:
+            filters.append("source = %s")
+            params.append(source)
+        where = " AND ".join(filters)
+        cursor.execute(f"""
+            SELECT id, source, title, summary, url, published_at, topics
+            FROM climate.knowledge_base
+            WHERE {where}
+            ORDER BY published_at DESC
+            LIMIT %s
+        """, params + [limit])
+        rows = cursor.fetchall()
+        return [
+            {
+                "id":           r[0],
+                "source":       r[1],
+                "title":        r[2],
+                "summary":      r[3],
+                "url":          r[4],
+                "published_at": r[5].isoformat() if r[5] else None,
+                "topics":       r[6] or [],
+            }
+            for r in rows
+        ]
+    except Exception as e:
+        logger.error("Erro em /api/knowledge/articles: %s", e)
+        raise HTTPException(status_code=500, detail="Erro ao consultar knowledge base")
+    finally:
+        conn.close()
+
+
 # Serve the dashboard — must be mounted last so API routes take precedence
 app.mount("/", StaticFiles(directory="dashboard", html=True), name="dashboard")
