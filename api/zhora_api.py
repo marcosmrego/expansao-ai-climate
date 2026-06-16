@@ -1353,5 +1353,70 @@ def knowledge_articles(days: int = 7, limit: int = 10, source: str = ""):
         conn.close()
 
 
+@app.get("/api/blog/posts")
+def blog_posts(limit: int = 10, offset: int = 0):
+    """Retorna posts do blog ordenados do mais recente ao mais antigo."""
+    conn = conectar()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT slug, titulo, resumo, fase_enso, oni_valor, fontes, publicado_em
+            FROM climate.blog_posts
+            ORDER BY publicado_em DESC
+            LIMIT %s OFFSET %s
+        """, (limit, offset))
+        rows = cursor.fetchall()
+        return [
+            {
+                "slug":         r[0],
+                "titulo":       r[1],
+                "resumo":       r[2],
+                "fase_enso":    r[3],
+                "oni_valor":    float(r[4]) if r[4] is not None else None,
+                "fontes":       r[5] or [],
+                "publicado_em": r[6].isoformat() if r[6] else None,
+            }
+            for r in rows
+        ]
+    except Exception as e:
+        logger.error("Erro em /api/blog/posts: %s", e)
+        raise HTTPException(status_code=500, detail="Erro ao consultar blog posts")
+    finally:
+        conn.close()
+
+
+@app.get("/api/blog/posts/{slug}")
+def blog_post_detail(slug: str):
+    """Retorna o conteúdo completo de um post pelo slug."""
+    conn = conectar()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT slug, titulo, corpo, resumo, fase_enso, oni_valor, fontes, publicado_em
+            FROM climate.blog_posts
+            WHERE slug = %s
+        """, (slug,))
+        row = cursor.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Post não encontrado")
+        return {
+            "slug":         row[0],
+            "titulo":       row[1],
+            "corpo":        row[2],
+            "resumo":       row[3],
+            "fase_enso":    row[4],
+            "oni_valor":    float(row[5]) if row[5] is not None else None,
+            "fontes":       row[6] or [],
+            "publicado_em": row[7].isoformat() if row[7] else None,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Erro em /api/blog/posts/%s: %s", slug, e)
+        raise HTTPException(status_code=500, detail="Erro ao consultar post")
+    finally:
+        conn.close()
+
+
 # Serve the dashboard — must be mounted last so API routes take precedence
 app.mount("/", StaticFiles(directory="dashboard", html=True), name="dashboard")

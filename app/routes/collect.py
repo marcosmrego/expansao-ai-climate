@@ -494,6 +494,19 @@ def collect_knowledge(x_api_key: str = Header(default="")):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/blog")
+def collect_blog(x_api_key: str = Header(default="")):
+    """Generate today's AI blog post using knowledge_base as RAG context."""
+    _auth(x_api_key)
+    try:
+        from collector.blog_generator import gerar_post
+        result = gerar_post()
+        return {"status": "ok", **result}
+    except Exception as e:
+        logger.error("Erro ao gerar post do blog: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/insight")
 def collect_insight(x_api_key: str = Header(default="")):
     """Generate and persist an AI insight from the current climate context."""

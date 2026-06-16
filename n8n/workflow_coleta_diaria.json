@@ -1,5 +1,11 @@
 {
+  "updatedAt": "2026-06-16T21:40:03.444Z",
+  "createdAt": "2026-05-28T23:24:07.416Z",
+  "id": "uwVCwSxcHROcH7ic",
   "name": "Expansao AI Climate - Coleta Diaria",
+  "description": null,
+  "active": true,
+  "isArchived": false,
   "nodes": [
     {
       "id": "node-schedule-daily",
@@ -128,6 +134,51 @@
           "timeout": 15000
         }
       }
+    },
+    {
+      "id": "node-knowledge",
+      "name": "Coletar Knowledge Base",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1780,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://climate.expansao-ai.com.br/api/collect/knowledge",
+        "sendHeaders": false,
+        "options": {
+          "timeout": 120000
+        }
+      }
+    },
+    {
+      "id": "963623a7-81b4-4927-8999-1f3e68966423",
+      "name": "Gerar Blog Post",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2000,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://climate.expansao-ai.com.br/api/collect/blog",
+        "authentication": "none",
+        "options": {
+          "timeout": 120000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": ""
+            }
+          ]
+        }
+      }
     }
   ],
   "connections": {
@@ -196,9 +247,357 @@
           }
         ]
       ]
+    },
+    "Verificar Atualizacao dos Dados": {
+      "main": [
+        [
+          {
+            "node": "Coletar Knowledge Base",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Coletar Knowledge Base": {
+      "main": [
+        [
+          {
+            "node": "Gerar Blog Post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": {
+    "node:Todo dia as 07h UTC": {
+      "recurrenceRules": []
+    }
+  },
+  "meta": null,
+  "pinData": null,
+  "versionId": "37086ac1-588e-4642-9438-f0b8c31f965e",
+  "activeVersionId": "37086ac1-588e-4642-9438-f0b8c31f965e",
+  "versionCounter": 20,
+  "triggerCount": 1,
+  "shared": [
+    {
+      "updatedAt": "2026-05-28T23:24:07.416Z",
+      "createdAt": "2026-05-28T23:24:07.416Z",
+      "role": "workflow:owner",
+      "workflowId": "uwVCwSxcHROcH7ic",
+      "projectId": "4rhPIgPPQRIkdLqm",
+      "project": {
+        "updatedAt": "2026-03-18T12:43:58.876Z",
+        "createdAt": "2026-03-18T12:42:16.756Z",
+        "id": "4rhPIgPPQRIkdLqm",
+        "name": "MARCOS REGO <powerdatadriven@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "e728b339-6772-459c-b04b-1d967e9f6373"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-06-16T21:40:03.452Z",
+    "createdAt": "2026-06-16T21:40:03.452Z",
+    "versionId": "37086ac1-588e-4642-9438-f0b8c31f965e",
+    "workflowId": "uwVCwSxcHROcH7ic",
+    "nodes": [
+      {
+        "id": "node-schedule-daily",
+        "name": "Todo dia as 07h UTC",
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.2,
+        "position": [
+          240,
+          300
+        ],
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "field": "cronExpression",
+                "expression": "0 7 * * *"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "node-mjo",
+        "name": "Coletar MJO",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          460,
+          300
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "https://climate.expansao-ai.com.br/api/collect/mjo",
+          "sendHeaders": false,
+          "options": {
+            "timeout": 60000
+          }
+        }
+      },
+      {
+        "id": "node-co2",
+        "name": "Coletar CO2",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          680,
+          300
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "https://climate.expansao-ai.com.br/api/collect/co2",
+          "sendHeaders": false,
+          "options": {
+            "timeout": 60000
+          }
+        }
+      },
+      {
+        "id": "node-arctic",
+        "name": "Coletar Gelo Artico",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          900,
+          300
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "https://climate.expansao-ai.com.br/api/collect/arctic_ice",
+          "sendHeaders": false,
+          "options": {
+            "timeout": 120000
+          }
+        }
+      },
+      {
+        "id": "node-antarctic",
+        "name": "Coletar Gelo Antartico",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1120,
+          300
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "https://climate.expansao-ai.com.br/api/collect/antarctic_ice",
+          "sendHeaders": false,
+          "options": {
+            "timeout": 120000
+          }
+        }
+      },
+      {
+        "id": "node-seismic",
+        "name": "Coletar Eventos Sismicos",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1340,
+          300
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "https://climate.expansao-ai.com.br/api/collect/seismic",
+          "sendHeaders": false,
+          "options": {
+            "timeout": 30000
+          }
+        }
+      },
+      {
+        "id": "node-staleness",
+        "name": "Verificar Atualizacao dos Dados",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1560,
+          300
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "https://climate.expansao-ai.com.br/api/notify/staleness",
+          "sendHeaders": false,
+          "options": {
+            "timeout": 15000
+          }
+        }
+      },
+      {
+        "id": "node-knowledge",
+        "name": "Coletar Knowledge Base",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1780,
+          300
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "https://climate.expansao-ai.com.br/api/collect/knowledge",
+          "sendHeaders": false,
+          "options": {
+            "timeout": 120000
+          }
+        }
+      },
+      {
+        "id": "963623a7-81b4-4927-8999-1f3e68966423",
+        "name": "Gerar Blog Post",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          2000,
+          300
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "https://climate.expansao-ai.com.br/api/collect/blog",
+          "authentication": "none",
+          "options": {
+            "timeout": 120000
+          },
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "x-api-key",
+                "value": ""
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Todo dia as 07h UTC": {
+        "main": [
+          [
+            {
+              "node": "Coletar MJO",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Coletar MJO": {
+        "main": [
+          [
+            {
+              "node": "Coletar CO2",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Coletar CO2": {
+        "main": [
+          [
+            {
+              "node": "Coletar Gelo Artico",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Coletar Gelo Artico": {
+        "main": [
+          [
+            {
+              "node": "Coletar Gelo Antartico",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Coletar Gelo Antartico": {
+        "main": [
+          [
+            {
+              "node": "Coletar Eventos Sismicos",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Coletar Eventos Sismicos": {
+        "main": [
+          [
+            {
+              "node": "Verificar Atualizacao dos Dados",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Verificar Atualizacao dos Dados": {
+        "main": [
+          [
+            {
+              "node": "Coletar Knowledge Base",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Coletar Knowledge Base": {
+        "main": [
+          [
+            {
+              "node": "Gerar Blog Post",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "MARCOS REGO",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-06-16T21:40:03.660Z",
+        "id": 109,
+        "workflowId": "uwVCwSxcHROcH7ic",
+        "versionId": "37086ac1-588e-4642-9438-f0b8c31f965e",
+        "event": "deactivated",
+        "userId": "e728b339-6772-459c-b04b-1d967e9f6373"
+      },
+      {
+        "createdAt": "2026-06-16T21:40:03.745Z",
+        "id": 110,
+        "workflowId": "uwVCwSxcHROcH7ic",
+        "versionId": "37086ac1-588e-4642-9438-f0b8c31f965e",
+        "event": "activated",
+        "userId": "e728b339-6772-459c-b04b-1d967e9f6373"
+      }
+    ]
   }
 }
