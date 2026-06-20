@@ -24,7 +24,8 @@ def main():
     conn = conectar()
     try:
         texto = baixar_dados(URL)
-        registros = parse_noaa_psl_monthly(texto)
+        # PDO usa -9.9 como sentinela de dado ausente (outros índices PSL usam -99.x)
+        registros = parse_noaa_psl_monthly(texto, missing_threshold=-9.0)
         raw_payload_id = salvar_payload_bruto(conn, texto, ORIGEM, URL)
         total = inserir_registros_mensais(
             conn, registros, raw_payload_id, "noaa_pdo", "pdo", classificar_pdo, ORIGEM
