@@ -880,7 +880,7 @@ async function montarMapaClimatico() {
     const qboByMonth = Object.fromEntries((qboHist||[]).map(d => [d.data_referencia?.slice(0,7), {v:d.value, cls:d.classificacao}]))
 
     // 3. Build 2-month dataset (last 2 months only)
-    const frames = oniData.slice(-2).map(o => ({
+    const monthlyFrames = oniData.slice(-2).map(o => ({
         period: o.periodo,
         oni: o.oni,
         classificacao: o.classificacao,
@@ -892,7 +892,37 @@ async function montarMapaClimatico() {
         amo: amoByMonth[o.periodo] ?? amoLastVal,
         qbo: qboByMonth[o.periodo] ?? null,
         mjoMonth: mjoByMonth[o.periodo] ?? null,
+        isWeekly: false,
     }))
+
+    // 3b. Frames semanais (Niño 3.4 real-time) — cobrem as semanas já passadas do
+    // mês corrente que o ONI oficial (média móvel de 3 meses) ainda não capturou.
+    // Os demais indicadores (gelo, IOD, PDO...) não têm granularidade semanal,
+    // então herdam o último valor mensal conhecido.
+    const _CPC_MONTH_NUM = { JAN:1, FEB:2, MAR:3, APR:4, MAY:5, JUN:6, JUL:7, AUG:8, SEP:9, OCT:10, NOV:11, DEC:12 }
+    function parseCpcDate(s) {
+        return { day: +s.slice(0, 2), month: _CPC_MONTH_NUM[s.slice(2, 5)], year: +s.slice(5) }
+    }
+
+    const lastMonthly = monthlyFrames[monthlyFrames.length - 1]
+    const [lastY, lastM] = lastMonthly.period.split("-").map(Number)
+
+    const weeklyFrames = (weeklyData || [])
+        .map(w => ({ ...w, _d: parseCpcDate(w.date) }))
+        .filter(w => w._d.month && (w._d.year > lastY || (w._d.year === lastY && w._d.month > lastM)))
+        .map(w => {
+            const oni = w.nino34_anom
+            const classificacao = oni >= 0.5 ? "EL_NINO" : oni <= -0.5 ? "LA_NINA" : "NEUTRO"
+            return {
+                ...lastMonthly,
+                period: `${w._d.year}-${String(w._d.month).padStart(2, "0")}-${String(w._d.day).padStart(2, "0")}`,
+                oni,
+                classificacao,
+                isWeekly: true,
+            }
+        })
+
+    const frames = [...monthlyFrames, ...weeklyFrames]
 
     // ── Termômetro ONI ────────────────────────────────────────────────
     const weeklyLatest = weeklyData && weeklyData.length ? weeklyData[weeklyData.length - 1].nino34_anom : null
@@ -1395,24 +1425,28 @@ async function montarMapaClimatico() {
             .attr("d", path)
 
         // UI labels
-        const [y, m] = f.period.split("-")
         const monthNames = ["","Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"]
-        document.getElementById("mapMonthLabel").textContent = `${monthNames[+m]} ${y}`
+        const periodParts = f.period.split("-")
+        const monthLabel = periodParts.length === 3
+            ? `${periodParts[2]} ${monthNames[+periodParts[1]]} ${periodParts[0]} · semanal`
+            : `${monthNames[+periodParts[1]]} ${periodParts[0]}`
+        document.getElementById("mapMonthLabel").textContent = monthLabel
 
         const oniSign = f.oni >= 0 ? "+" : ""
         const iodSign = f.iod >= 0 ? "+" : ""
         const stateMap = { EL_NINO: "El Niño", LA_NINA: "La Niña", NEUTRO: "Neutro" }
+        const indicador = f.isWeekly ? "SST 3.4" : "ONI"
 
         // ONI badge — destaque no limiar
         const oniEl = document.getElementById("mapOniLabel")
         if (f.oni >= 0.3 && f.oni < 0.5) {
-            oniEl.textContent = `⚠ Limiar El Niño · ONI ${oniSign}${f.oni.toFixed(2)}`
+            oniEl.textContent = `⚠ Limiar El Niño · ${indicador} ${oniSign}${f.oni.toFixed(2)}`
             oniEl.style.color = "#FF8A65"
         } else if (f.oni <= -0.3 && f.oni > -0.5) {
-            oniEl.textContent = `⚠ Limiar La Niña · ONI ${oniSign}${f.oni.toFixed(2)}`
+            oniEl.textContent = `⚠ Limiar La Niña · ${indicador} ${oniSign}${f.oni.toFixed(2)}`
             oniEl.style.color = "#42A5F5"
         } else {
-            oniEl.textContent = `${stateMap[f.classificacao] || f.classificacao} ONI ${oniSign}${f.oni.toFixed(2)}`
+            oniEl.textContent = `${stateMap[f.classificacao] || f.classificacao} ${indicador} ${oniSign}${f.oni.toFixed(2)}`
             oniEl.style.color = ""
         }
 
