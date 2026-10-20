@@ -32,7 +32,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css?v=52">
-    <link rel="stylesheet" href="brasil.css?v=3">
+    <link rel="stylesheet" href="brasil.css?v=4">
     <script defer src="http://umami-qkr89esvo1szlexgp9y67gy8.212.85.22.227.sslip.io/script.js"
             data-website-id="794d96e4-9652-4d3e-8df4-adb3ba9fad61"></script>
 </head>
@@ -693,6 +693,7 @@
             <div class="br-seg" role="tablist" aria-label="Módulos da área Brasil">
                 <button class="active" id="br-tab-focos" data-br-modulo="focos" role="tab" aria-selected="true">🔥 Focos de calor</button>
                 <button id="br-tab-reservatorios" data-br-modulo="reservatorios" role="tab" aria-selected="false">💧 Reservatórios</button>
+                <button id="br-tab-desmatamento" data-br-modulo="desmatamento" role="tab" aria-selected="false">🌳 Desmatamento</button>
             </div>
         </div>
 
@@ -835,6 +836,51 @@
             </section>
 
         </div>
+
+        <div class="br-modulo" id="br-mod-desmatamento" hidden>
+
+            <section class="panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">🌳 Brasil · Desmatamento</h2>
+                    <span class="panel-sub">Alertas DETER · INPE</span>
+                </div>
+                <div class="br-toolbar">
+                    <div class="br-seg" role="group" aria-label="Projeto">
+                        <button class="active" data-dm-projeto="deter-amz" aria-pressed="true">Amazônia</button>
+                        <button data-dm-projeto="deter-cerrado" aria-pressed="false">Cerrado</button>
+                    </div>
+                    <div class="br-seg" role="group" aria-label="Período">
+                        <button data-dm-periodo="30d" aria-pressed="false">30 dias</button>
+                        <button class="active" data-dm-periodo="90d" aria-pressed="true">90 dias</button>
+                        <button data-dm-periodo="365d" aria-pressed="false">12 meses</button>
+                    </div>
+                </div>
+                <div class="br-status" id="dm-status">Carregando…</div>
+                <div class="dm-aviso" id="dm-aviso" role="note" hidden></div>
+                <div class="br-cards dm-cards" id="dm-cards"><div class="br-empty">Carregando…</div></div>
+                <p class="br-foot">Alertas DETER detectam mudanças recentes na cobertura e podem ser reclassificados; não são a taxa oficial anual do PRODES. "Desmatamento" soma as classes DESMATAMENTO_* do DETER (corte raso e com vegetação); degradação, corte seletivo, queimada e mineração aparecem à parte. O ano PRODES vai de 1º de agosto a 31 de julho.</p>
+            </section>
+
+            <div class="br-grid">
+                <section class="panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title" id="dm-rank-titulo">Desmatamento por estado</h2>
+                    </div>
+                    <ul class="br-rank" id="dm-rank"></ul>
+                </section>
+                <section class="panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title">Desmatamento por mês</h2>
+                        <span class="panel-sub">últimos 36 meses</span>
+                    </div>
+                    <div class="chart-wrap">
+                        <canvas id="dm-chart" role="img" aria-label="Área de desmatamento detectada por mês nos últimos 36 meses"></canvas>
+                        <div id="dm-chart-msg"></div>
+                    </div>
+                </section>
+            </div>
+
+        </div>
 </div>
 
     <!-- ── Tab: Zhora ───────────────────────────────────────────────────── -->
@@ -915,8 +961,9 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="app.js?v=61"></script>
-<script src="brasil.js?v=3"></script>
+<script src="brasil.js?v=4"></script>
 <script src="brasil-reservatorios.js?v=1"></script>
+<script src="brasil-desmatamento.js?v=1"></script>
 <!-- Cloudflare Web Analytics -->
 <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "0ba9b0dc7997464f8a13b01a7616ed51"}'></script>
 <!-- End Cloudflare Web Analytics -->

@@ -371,7 +371,7 @@
     window.carregarBrasil = carregar
 })()
 
-/* Alternância entre os módulos da aba Brasil (focos / reservatórios). */
+/* Alternância entre os módulos da aba Brasil (focos / reservatórios / desmatamento). */
 ;(function () {
     const botoes = document.querySelectorAll("[data-br-modulo]")
     botoes.forEach(b => b.addEventListener("click", () => {
@@ -381,7 +381,8 @@
             x.setAttribute("aria-selected", String(ativo))
             document.getElementById(`br-mod-${x.dataset.brModulo}`).hidden = !ativo
         })
-        if (b.dataset.brModulo === "reservatorios" && window.carregarReservatorios) window.carregarReservatorios()
-        else if (window.carregarBrasil) window.carregarBrasil()
+        const carregador = { reservatorios: window.carregarReservatorios, desmatamento: window.carregarDesmatamento }[b.dataset.brModulo]
+        if (carregador) carregador()
+        else if (b.dataset.brModulo === "focos" && window.carregarBrasil) window.carregarBrasil()
     }))
 })()

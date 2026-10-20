@@ -1,0 +1,41 @@
+{
+  "name": "Expansao AI Climate - Coleta Desmatamento DETER",
+  "nodes": [
+    {
+      "id": "node-schedule-desmatamento",
+      "name": "Todo dia as 10h UTC",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300],
+      "parameters": {
+        "rule": {
+          "interval": [
+            { "field": "cronExpression", "expression": "0 10 * * *" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "node-deter-desmatamento",
+      "name": "Coletar Alertas DETER",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 300000,
+      "parameters": {
+        "method": "POST",
+        "url": "https://climate.expansao-ai.com.br/api/collect/deter_desmatamento",
+        "sendHeaders": false,
+        "options": { "timeout": 590000 }
+      }
+    }
+  ],
+  "connections": {
+    "Todo dia as 10h UTC": {
+      "main": [[{ "node": "Coletar Alertas DETER", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" }
+}

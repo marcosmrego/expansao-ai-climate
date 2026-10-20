@@ -122,3 +122,80 @@ def test_reservatorio_serie_404_and_validation(client_res):
 def test_reservatorio_serie_default_period_is_five_years(client_res):
     assert client_res.get("/api/brasil/reservatorios/19001/serie").status_code == 200
     assert client_res.chamadas["serie"] == (19001, "5y")
+
+
+@pytest.fixture
+def client_des(monkeypatch):
+    from app.services import brasil_deforestation_service as dsvc
+
+    chamadas = {}
+
+    def fake(nome):
+        def _f(*args, **kwargs):
+            chamadas[nome] = args
+            return {"ok": nome}
+        return _f
+
+    monkeypatch.setattr(dsvc, "resumo", fake("resumo"))
+    monkeypatch.setattr(dsvc, "serie", fake("serie"))
+    monkeypatch.setattr(dsvc, "ultimos_alertas", fake("alertas"))
+    app = FastAPI()
+    app.include_router(brasil.router)
+    c = TestClient(app)
+    c.chamadas = chamadas
+    return c
+
+
+def test_desmatamento_resumo_passes_defaults(client_des):
+    r = client_des.get("/api/brasil/desmatamento/resumo")
+
+    assert r.status_code == 200
+    assert client_des.chamadas["resumo"] == ("deter-amz", "90d")
+
+
+def test_desmatamento_resumo_accepts_cerrado_and_period(client_des):
+    assert client_des.get("/api/brasil/desmatamento/resumo?projeto=deter-cerrado&periodo=365d").status_code == 200
+    assert client_des.chamadas["resumo"] == ("deter-cerrado", "365d")
+
+
+@pytest.mark.parametrize("qs", ["projeto=prodes", "projeto=x", "periodo=7d", "periodo=abc"])
+def test_desmatamento_resumo_rejects_bad_input(client_des, qs):
+    assert client_des.get(f"/api/brasil/desmatamento/resumo?{qs}").status_code == 422
+
+
+def test_desmatamento_serie_validates_months(client_des):
+    assert client_des.get("/api/brasil/desmatamento/serie?meses=36").status_code == 200
+    assert client_des.chamadas["serie"] == ("deter-amz", 36)
+    assert client_des.get("/api/brasil/desmatamento/serie?meses=0").status_code == 422
+    assert client_des.get("/api/brasil/desmatamento/serie?meses=999").status_code == 422
+
+
+def test_desmatamento_alertas_normalizes_uf_and_filters(client_des):
+    r = client_des.get("/api/brasil/desmatamento/alertas?uf=pa&grupo=desmatamento&limite=20")
+
+    assert r.status_code == 200
+    assert client_des.chamadas["alertas"] == ("deter-amz", "30d", "PA", "desmatamento", 20)
+
+
+@pytest.mark.parametrize("qs", ["uf=1", "uf=PAR", "grupo=lixo", "limite=0", "limite=9999"])
+def test_desmatamento_alertas_rejects_bad_input(client_des, qs):
+    assert client_des.get(f"/api/brasil/desmatamento/alertas?{qs}").status_code == 422
+
+
+def test_desmatamento_hides_internal_errors(client_des, monkeypatch):
+    from app.services import brasil_deforestation_service as dsvc
+
+    def boom(*a, **k):
+        raise RuntimeError("senha=segredo host=db")
+
+    monkeypatch.setattr(dsvc, "resumo", boom)
+
+    r = client_des.get("/api/brasil/desmatamento/resumo")
+
+    assert r.status_code == 500
+    assert "segredo" not in r.text
+
+
+def test_desmatamento_alertas_rejects_nonexistent_uf(client_des):
+    assert client_des.get("/api/brasil/desmatamento/alertas?uf=ZZ").status_code == 422
+    assert client_des.get("/api/brasil/desmatamento/alertas?uf=pa").status_code == 200

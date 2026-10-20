@@ -3,6 +3,8 @@ from typing import Literal, Optional
 
 from fastapi import APIRouter, HTTPException, Path, Query
 
+from app.services import brasil_deforestation_calc as dc
+from app.services import brasil_deforestation_service as dsvc
 from app.services import brasil_fire_calc as calc
 from app.services import brasil_fire_service as svc
 from app.services import brasil_reservoir_service as rsvc
@@ -130,3 +132,48 @@ def reservatorio_serie(reservatorio_id: int = Path(ge=1, le=10_000_000), periodo
     if resultado is None:
         raise HTTPException(status_code=404, detail="Reservatório não encontrado")
     return resultado
+
+
+ProjetoDeter = Literal["deter-amz", "deter-cerrado"]
+PeriodoAlertas = Literal["30d", "90d", "365d"]
+GrupoClasse = Literal["desmatamento", "corte_seletivo", "degradacao", "queimada", "mineracao", "outras"]
+
+
+@router.get("/desmatamento/resumo")
+def desmatamento_resumo(projeto: ProjetoDeter = "deter-amz", periodo: PeriodoAlertas = "90d"):
+    """Alertas DETER no período, por grupo e UF, e acumulado do ano PRODES corrente."""
+    try:
+        return dsvc.resumo(projeto, periodo)
+    except Exception:
+        logger.exception("Erro em /api/brasil/desmatamento/resumo")
+        raise HTTPException(status_code=500, detail="Erro ao consultar desmatamento")
+
+
+@router.get("/desmatamento/serie")
+def desmatamento_serie(projeto: ProjetoDeter = "deter-amz", meses: int = Query(36, ge=1, le=dsvc.MESES_SERIE_MAX)):
+    """Área mensal de desmatamento (corte raso) detectada pelo DETER."""
+    try:
+        return dsvc.serie(projeto, meses)
+    except Exception:
+        logger.exception("Erro em /api/brasil/desmatamento/serie")
+        raise HTTPException(status_code=500, detail="Erro ao consultar série de desmatamento")
+
+
+@router.get("/desmatamento/alertas")
+def desmatamento_alertas(
+    projeto: ProjetoDeter = "deter-amz",
+    periodo: PeriodoAlertas = "30d",
+    uf: Optional[str] = Query(None, min_length=2, max_length=2, pattern="^[A-Za-z]{2}$"),
+    grupo: Optional[GrupoClasse] = None,
+    limite: int = Query(50, ge=1, le=dsvc.LIMITE_ALERTAS_MAX),
+):
+    """Alertas mais recentes (maiores primeiro dentro do mesmo dia)."""
+    uf = uf.upper() if uf else None
+    if uf and uf not in dc.UFS:
+        raise HTTPException(status_code=422, detail="UF inválida")
+    try:
+        return dsvc.ultimos_alertas(projeto, periodo, uf, grupo, limite)
+    except Exception:
+        logger.exception("Erro em /api/brasil/desmatamento/alertas")
+        raise HTTPException(status_code=500, detail="Erro ao consultar alertas de desmatamento")
+

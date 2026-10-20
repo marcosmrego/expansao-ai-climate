@@ -277,3 +277,15 @@
     .rs-data { order: 4; grid-column: 1 / -1; flex-direction: row; gap: 8px; }
 }
 @media (max-width: 560px) { .rs-cards { grid-template-columns: 1fr; } }
+
+/* ── Módulo Desmatamento ─────────────────────────────────────────────── */
+.dm-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.dm-cards .card { min-width: 0; }
+.dm-cards .br-value small { font-size: 14px; font-weight: 500; color: var(--text-3); }
+.dm-aviso {
+    margin-bottom: 14px; padding: 10px 14px; border-radius: 8px; font-size: 12px; line-height: 1.5;
+    background: rgba(255,167,38,.12); border: 1px solid rgba(255,167,38,.4); color: var(--warning);
+}
+.dm-aviso[hidden] { display: none; }
+#dm-chart { max-height: 280px; }
+@media (max-width: 900px) { .dm-cards { grid-template-columns: 1fr; } }

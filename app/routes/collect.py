@@ -586,3 +586,33 @@ def collect_sar_reservatorios(x_api_key: str = Header(default="")):
     except Exception as e:
         logger.error("Erro na coleta de reservatórios SAR: %s", e)
         raise HTTPException(status_code=500, detail="Erro na coleta de reservatórios")
+
+
+@router.post("/deter_desmatamento")
+def collect_deter_desmatamento(x_api_key: str = Header(default="")):
+    """Coleta incremental dos alertas DETER (INPE/TerraBrasilis). Histórico completo: CLI do coletor."""
+    _auth(x_api_key)
+    try:
+        from app.services.brasil_deforestation_service import invalidar_cache
+        from app.services.brasil_fire_service import invalidar_cache as invalidar_status
+        from collector.deter_collector import coletar
+        from database.db import conectar
+
+        conn = conectar()
+        try:
+            resultado = coletar(conn)
+        finally:
+            conn.close()
+            invalidar_cache()  # mesmo com falha parcial, janelas já commitadas mudaram os dados
+            invalidar_status()  # o card "Última coleta" lê o status das fontes
+        if resultado["registros"] == 0 and resultado["erros"]:
+            raise HTTPException(status_code=502, detail="Falha em todos os projetos DETER")
+        status = "skipped" if resultado.get("ignorado") else "partial" if resultado["erros"] else "ok"
+        return {"status": status, **resultado}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Erro na coleta DETER: %s", e)
+        raise HTTPException(status_code=500, detail="Erro na coleta de desmatamento")
+
