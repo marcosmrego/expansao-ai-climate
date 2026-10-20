@@ -14,7 +14,7 @@ PROJETOS_DETER = ("deter-amz", "deter-cerrado")
 PROJETOS_EXPERIMENTAIS = frozenset({"deter-pantanal"})
 
 # Só o corte raso entra no "desmatamento"; degradação, queimada e corte seletivo ficam à parte.
-GRUPOS_DESMATAMENTO = {"desmatamento"}
+GRUPOS_DESMATAMENTO = {"desmatamento", "mineracao"}
 GRUPO_NOMES = {
     "desmatamento": "Desmatamento (corte raso)",
     "corte_seletivo": "Corte seletivo",

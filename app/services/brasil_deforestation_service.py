@@ -22,7 +22,7 @@ _AVISO_EXPERIMENTAL = (
 )
 _METODOLOGIA = (
     "Alertas DETER (INPE/TerraBrasilis). 'Desmatamento' soma as classes DESMATAMENTO_* (corte raso e com "
-    "vegetação); degradação, corte seletivo, cicatriz de queimada e mineração aparecem separados. O ano PRODES vai de 1º de agosto "
+    "vegetação) e MINERACAO; degradação, corte seletivo e cicatriz de queimada aparecem separados. O ano PRODES vai de 1º de agosto "
     "a 31 de julho. Alertas não são a taxa oficial anual (PRODES) e podem ser reclassificados."
 )
 _GRUPOS_DESMAT = sorted(dc.GRUPOS_DESMATAMENTO)
@@ -91,6 +91,7 @@ def montar_resumo(projeto: str, periodo: str, hoje: date, ultima_data: Optional[
         "dias_defasagem": max(0, (hoje - ultima_data).days) if ultima_data else None,
         "experimental": experimental, "aviso_experimental": _AVISO_EXPERIMENTAL if experimental else None,
         "desmatamento_km2": _km2(sum(a for g, a, _ in por_grupo if g in dc.GRUPOS_DESMATAMENTO)),
+        "desmatamento_alertas": sum(n for g, _, n in por_grupo if g in dc.GRUPOS_DESMATAMENTO),
         "por_grupo": [{"grupo": g, "nome": dc.GRUPO_NOMES.get(g, g), "area_km2": _km2(a), "alertas": n}
                       for g, a, n in por_grupo],
         "por_uf": [{"uf": uf or SEM_UF, "area_km2": _km2(a), "alertas": n} for uf, a, n in por_uf],

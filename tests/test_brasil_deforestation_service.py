@@ -36,6 +36,13 @@ def test_resumo_deforestation_total_excludes_other_classes():
     assert r["por_grupo"][1]["nome"] == "Degradação"
 
 
+def test_resumo_counts_mining_as_deforestation():
+    r = _resumo(por_grupo=[("desmatamento", 100.0, 40), ("mineracao", 5.5, 4), ("degradacao", 30.0, 10)])
+
+    assert r["desmatamento_km2"] == 105.5
+    assert r["desmatamento_alertas"] == 44
+
+
 def test_resumo_labels_missing_uf():
     r = _resumo()
 

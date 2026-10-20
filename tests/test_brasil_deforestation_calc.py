@@ -38,7 +38,7 @@ def test_grupo_classe(classe, grupo):
 
 
 def test_only_clear_cut_groups_count_as_deforestation():
-    assert dc.GRUPOS_DESMATAMENTO == {"desmatamento"}
+    assert dc.GRUPOS_DESMATAMENTO == {"desmatamento", "mineracao"}
 
 
 @pytest.mark.parametrize("projeto,experimental", [

@@ -6,6 +6,7 @@
     const LIMITE_UF = 10
     const MESES_SERIE = 36
     const DEFASAGEM_ALERTA_DIAS = 15
+    const GRUPOS_DESMAT = ["desmatamento", "mineracao"]  // espelha dc.GRUPOS_DESMATAMENTO
     const ROTULO_PERIODO = { "30d": "30 dias", "90d": "90 dias", "365d": "12 meses" }
 
     const state = { projeto: "deter-amz", periodo: "90d", carregado: false, geracao: 0, chart: null }
@@ -92,12 +93,11 @@
         limpar(box)
         if (!resumo) { mensagem(box, "Dado indisponível no momento."); return }
         const periodo = ROTULO_PERIODO[resumo.periodo]
-        const desmat = resumo.por_grupo.find(g => g.grupo === "desmatamento")
-        const outras = resumo.por_grupo.filter(g => g.grupo !== "desmatamento")
+        const outras = resumo.por_grupo.filter(g => !GRUPOS_DESMAT.includes(g.grupo))
         const km2Outras = outras.reduce((s, g) => s + g.area_km2, 0)
 
         box.appendChild(card(`Desmatamento · ${periodo}`, fmt(resumo.desmatamento_km2, 1), "km²",
-            subTexto(`${fmt(desmat ? desmat.alertas : 0)} alertas de desmatamento, de ${dataBR(resumo.inicio)} a ${dataBR(resumo.fim)}.`)))
+            subTexto(`${fmt(resumo.desmatamento_alertas)} alertas de desmatamento, de ${dataBR(resumo.inicio)} a ${dataBR(resumo.fim)}.`)))
         const prodes = resumo.ano_prodes
         box.appendChild(card(`Ano PRODES ${prodes.ano} (desde ${dataBR(prodes.inicio)})`, fmt(prodes.acumulado_km2, 1), "km²",
             badgeVariacao(prodes)))
