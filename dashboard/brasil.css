@@ -142,3 +142,66 @@
 @media (prefers-reduced-motion: reduce) {
     .br-seg button { transition: none; }
 }
+
+/* ── Ranking completo e balão do mapa ───────────────────────────────── */
+.br-grid { align-items: start; }
+
+.br-more {
+    margin-top: 14px;
+    background: transparent;
+    border: 1px solid var(--border-accent);
+    border-radius: 999px;
+    color: var(--text-2);
+    font: inherit;
+    font-size: 12px;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: background var(--transition), color var(--transition);
+}
+.br-more:hover { background: var(--accent-dim); color: var(--text); }
+.br-more:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.br-more[hidden], .br-tip[hidden] { display: none; }
+
+.br-uf {
+    fill: #132436;
+    stroke: rgba(255,255,255,.18);
+    stroke-width: .6;
+    cursor: pointer;
+    outline: none;
+    transition: fill var(--transition), stroke var(--transition);
+}
+.br-uf:hover, .br-uf.ativo { fill: #1c3a58; stroke: var(--accent); stroke-width: 1.4; }
+.br-uf:focus-visible { stroke: var(--accent); stroke-width: 2; }
+
+.br-tip {
+    position: absolute;
+    z-index: 5;
+    min-width: 220px;
+    max-width: min(300px, calc(100% - 16px));
+    padding: 12px 14px;
+    background: rgba(7,17,29,.96);
+    border: 1px solid var(--border-accent);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 10px 32px rgba(0,0,0,.45);
+    font-size: 12px;
+    color: var(--text-2);
+    pointer-events: none;
+}
+.br-tip-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 8px;
+}
+.br-tip-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    padding: 3px 0;
+}
+.br-tip-row strong { color: var(--text); font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) {
+    .br-uf, .br-more { transition: none; }
+}

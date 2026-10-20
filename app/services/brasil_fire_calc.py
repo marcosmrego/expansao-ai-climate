@@ -33,6 +33,12 @@ def nome_codigo(nivel: str, codigo: str) -> str:
     return (UF_NOMES if nivel == "uf" else BIOMA_NOMES).get(codigo, codigo)
 
 
+def codigos_do_nivel(nivel: str) -> list[str]:
+    if nivel == "brasil":
+        return ["BR"]
+    return list(UF_NOMES if nivel == "uf" else BIOMA_NOMES)
+
+
 def codigo_valido(nivel: str, codigo: str) -> bool:
     if nivel == "brasil":
         return codigo == "BR"

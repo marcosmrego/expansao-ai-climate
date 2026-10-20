@@ -110,3 +110,9 @@ def test_janelas_base_january_period():
 
     # 2024 ficaria com início em dez/2023, antes da série; só 2025 é completo
     assert jan == [(date(2024, 12, 17), date(2025, 1, 15), 2025)]
+
+
+def test_codigos_do_nivel_cover_every_region():
+    assert len(calc.codigos_do_nivel("uf")) == 27
+    assert len(calc.codigos_do_nivel("bioma")) == 6
+    assert calc.codigos_do_nivel("brasil") == ["BR"]

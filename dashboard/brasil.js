@@ -6,7 +6,12 @@
     const MAP_ZOOM = 5
     const MA_DIAS = 7
 
-    const state = { periodo: "30d", nivel: "uf", serieSel: "brasil:BR", serieChart: null, carregado: false }
+    const LIMITE_RANKING_UF = 10
+    const PERIODO_ROTULO = { "7d": "7 dias", "30d": "30 dias", "90d": "90 dias" }
+    const state = {
+        periodo: "30d", nivel: "uf", serieSel: "brasil:BR", serieChart: null, carregado: false,
+        resumoUF: null, resumoBioma: null, expandido: false,
+    }
 
     async function getJSON(url) {
         try {
@@ -89,12 +94,15 @@
     }
 
     // ── Ranking ──────────────────────────────────────────────────────
-    function renderRanking(resumo) {
+    function renderRanking() {
         const box = el("br-rank")
+        const toggle = el("br-rank-toggle")
         limpar(box)
-        if (!resumo || !resumo.itens.length) { mensagem(box, "Sem dados para o período."); return }
-        const itens = resumo.itens.slice(0, state.nivel === "uf" ? 10 : 6)
-        const max = Math.max(...itens.map(i => i.focos), 1)
+        const resumo = state.nivel === "uf" ? state.resumoUF : state.resumoBioma
+        if (!resumo || !resumo.itens.length) { mensagem(box, "Dado indisponível no momento."); toggle.hidden = true; return }
+        const limitado = state.nivel === "uf" && !state.expandido
+        const itens = limitado ? resumo.itens.slice(0, LIMITE_RANKING_UF) : resumo.itens
+        const max = Math.max(...resumo.itens.map(i => i.focos), 1)
         itens.forEach(i => {
             const li = document.createElement("li")
             const nome = document.createElement("span")
@@ -103,7 +111,7 @@
             const bar = document.createElement("span")
             bar.className = "br-rank-bar"
             const fill = document.createElement("span")
-            fill.style.width = `${Math.max(2, (i.focos / max) * 100)}%`
+            fill.style.width = `${i.focos ? Math.max(2, (i.focos / max) * 100) : 0}%`
             bar.appendChild(fill)
             const num = document.createElement("span")
             num.className = "br-rank-num"
@@ -112,14 +120,20 @@
             li.append(nome, bar, num)
             box.appendChild(li)
         })
+        toggle.hidden = !(state.nivel === "uf" && resumo.itens.length > LIMITE_RANKING_UF)
+        toggle.textContent = state.expandido ? "Mostrar menos" : `Ver todos os ${resumo.itens.length} estados`
+        toggle.setAttribute("aria-expanded", String(state.expandido))
     }
 
-    async function carregarRanking() {
-        const box = el("br-rank")
-        mensagem(box, "Carregando…")
-        const r = await getJSON(`${API}/focos/resumo?nivel=${state.nivel}&periodo=${state.periodo}`)
-        if (!r) { mensagem(box, "Dado indisponível no momento."); return }
-        renderRanking(r)
+    async function carregarResumos() {
+        const [uf, bioma] = await Promise.all([
+            getJSON(`${API}/focos/resumo?nivel=uf&periodo=${state.periodo}`),
+            getJSON(`${API}/focos/resumo?nivel=bioma&periodo=${state.periodo}`),
+        ])
+        state.resumoUF = uf
+        state.resumoBioma = bioma
+        renderRanking()
+        return { uf, bioma }
     }
 
     // ── Série ────────────────────────────────────────────────────────
@@ -200,32 +214,102 @@
     }
 
     // ── Mapa ─────────────────────────────────────────────────────────
+    function linhaTip(tip, rotulo, valor) {
+        const row = document.createElement("div")
+        row.className = "br-tip-row"
+        const a = document.createElement("span")
+        a.textContent = rotulo
+        const b = document.createElement("strong")
+        if (valor instanceof Node) b.appendChild(valor)
+        else b.textContent = valor
+        row.append(a, b)
+        tip.appendChild(row)
+    }
+
+    function montarTip(tip, uf) {
+        limpar(tip)
+        const item = state.resumoUF && state.resumoUF.itens.find(i => i.codigo === uf)
+        const titulo = document.createElement("div")
+        titulo.className = "br-tip-title"
+        titulo.textContent = item ? `${item.nome} (${uf})` : uf
+        tip.appendChild(titulo)
+        if (!item) { linhaTip(tip, "Dado", "indisponível"); return }
+        const periodo = PERIODO_ROTULO[state.periodo] || state.periodo
+        linhaTip(tip, `Focos em ${periodo}`, fmt(item.focos))
+        linhaTip(tip, "Contra a média", badge(item))
+        linhaTip(tip, "Posição no ranking", `${item.posicao}º de ${state.resumoUF.itens.length}`)
+        linhaTip(tip, "Últimas 24 h", `${fmt(item.ultimas_24h.total)} (todos os satélites)`)
+        if (item.bioma_predominante) linhaTip(tip, "Bioma predominante", item.bioma_predominante)
+    }
+
+    function posicionarTip(tip, wrap, evento) {
+        const caixa = wrap.getBoundingClientRect()
+        const x = evento.clientX - caixa.left
+        const y = evento.clientY - caixa.top
+        const esquerda = Math.min(Math.max(8, x + 14), Math.max(8, caixa.width - tip.offsetWidth - 8))
+        const abaixoCabe = y + 18 + tip.offsetHeight <= caixa.height
+        tip.style.left = `${esquerda}px`
+        tip.style.top = `${abaixoCabe ? y + 18 : Math.max(8, y - tip.offsetHeight - 14)}px`
+    }
+
+    function ligarTooltipMapa(wrap, tip, paths) {
+        const mostrar = (ev, uf) => {
+            montarTip(tip, uf)
+            tip.hidden = false
+            posicionarTip(tip, wrap, ev)
+            paths.forEach(p => p.classList.toggle("ativo", p.dataset.uf === uf))
+        }
+        const esconder = () => {
+            tip.hidden = true
+            paths.forEach(p => p.classList.remove("ativo"))
+        }
+        paths.forEach(p => {
+            const mouse = ev => ev.pointerType === "mouse"
+            p.addEventListener("pointerenter", ev => { if (mouse(ev)) mostrar(ev, p.dataset.uf) })
+            p.addEventListener("pointermove", ev => { if (mouse(ev) && !tip.hidden) posicionarTip(tip, wrap, ev) })
+            p.addEventListener("pointerleave", ev => { if (mouse(ev)) esconder() })
+            p.addEventListener("click", ev => { ev.stopPropagation(); mostrar(ev, p.dataset.uf) })
+            p.addEventListener("focus", () => {
+                const c = p.getBoundingClientRect()
+                mostrar({ clientX: c.left + c.width / 2, clientY: c.top + c.height / 2 }, p.dataset.uf)
+            })
+            p.addEventListener("blur", esconder)
+            p.addEventListener("keydown", ev => { if (ev.key === "Escape") esconder() })
+        })
+        document.addEventListener("click", esconder)
+    }
+
     async function renderMapa() {
         const box = el("br-map-wrap")
-        const [dados, world] = await Promise.all([
+        const [dados, ufs] = await Promise.all([
             getJSON(`${API}/focos/mapa?periodo=7d&zoom=${MAP_ZOOM}`),
-            d3.json("/world-110m.json").catch(() => null),
+            getJSON("/br-ufs.geojson"),
         ])
-        if (!dados || !world) { mensagem(box, "Mapa indisponível no momento."); return }
+        if (!dados || !ufs) { mensagem(box, "Mapa indisponível no momento."); return }
         limpar(box)
-        const brasil = topojson.feature(world, world.objects.countries).features.find(f => String(f.id) === "076")
         const W = 600, H = 600
         const svg = d3.select(box).append("svg").attr("class", "br-map").attr("viewBox", `0 0 ${W} ${H}`)
-            .attr("role", "img").attr("aria-label", "Mapa de focos de calor no Brasil nos últimos 7 dias")
-        const proj = d3.geoMercator().fitExtent([[10, 10], [W - 10, H - 10]], brasil)
-        svg.append("path").datum(brasil).attr("d", d3.geoPath(proj))
-            .attr("fill", "#132436").attr("stroke", "rgba(255,255,255,.18)")
+            .attr("role", "group").attr("aria-label", "Mapa de focos de calor por estado nos últimos 7 dias")
+        const proj = d3.geoMercator().fitExtent([[10, 10], [W - 10, H - 10]], ufs)
+        svg.append("g").selectAll("path").data(ufs.features).join("path")
+            .attr("class", "br-uf").attr("d", d3.geoPath(proj)).attr("data-uf", d => d.properties.uf)
+            .attr("tabindex", 0).attr("role", "img").attr("aria-label", d => `Estado ${d.properties.uf}`)
         const max = d3.max(dados.itens, d => d.n) || 1
         const raio = d3.scaleSqrt().domain([1, max]).range([1.6, 11])
         const cor = d3.scaleSequentialLog(d3.interpolateYlOrRd).domain([1, max])
-        svg.append("g").selectAll("circle").data([...dados.itens].sort((a, b) => a.n - b.n)).join("circle")
+        svg.append("g").attr("pointer-events", "none").selectAll("circle")
+            .data([...dados.itens].sort((a, b) => a.n - b.n)).join("circle")
             .attr("cx", d => proj([d.lon, d.lat])[0]).attr("cy", d => proj([d.lon, d.lat])[1])
             .attr("r", d => raio(d.n)).attr("fill", d => cor(d.n)).attr("fill-opacity", .72)
-            .append("title").text(d => `${fmt(d.n)} foco(s)${d.frp_max ? ` · FRP máx. ${d.frp_max} MW` : ""}`)
+        const tip = document.createElement("div")
+        tip.className = "br-tip"
+        tip.hidden = true
+        tip.setAttribute("role", "status")
         const lg = document.createElement("div")
         lg.className = "br-legend"
-        lg.textContent = `Últimos 7 dias · todos os satélites · células de ${dados.celula_graus}° · círculo maior = mais focos`
-        box.appendChild(lg)
+        lg.textContent = `Círculos: últimos 7 dias, todos os satélites, células de ${dados.celula_graus}° (maior = mais focos). Passe o mouse ou toque em um estado para ver os números do período escolhido.`
+        box.append(tip, lg)
+        ligarTooltipMapa(box, tip, [...box.querySelectorAll(".br-uf")])
     }
 
     // ── Clima global (lado a lado, sem afirmar relação) ─────────────
@@ -253,13 +337,14 @@
         document.querySelectorAll("[data-br-periodo]").forEach(b => b.addEventListener("click", () => {
             state.periodo = b.dataset.brPeriodo
             document.querySelectorAll("[data-br-periodo]").forEach(x => x.classList.toggle("active", x === b))
-            carregarRanking()
+            carregarResumos()
         }))
         document.querySelectorAll("[data-br-nivel]").forEach(b => b.addEventListener("click", () => {
             state.nivel = b.dataset.brNivel
             document.querySelectorAll("[data-br-nivel]").forEach(x => x.classList.toggle("active", x === b))
-            carregarRanking()
+            renderRanking()
         }))
+        el("br-rank-toggle").addEventListener("click", () => { state.expandido = !state.expandido; renderRanking() })
         el("br-serie-sel").addEventListener("change", e => { state.serieSel = e.target.value; carregarSerie() })
     }
 
@@ -267,17 +352,15 @@
         if (state.carregado) return
         state.carregado = true
         ligarControles()
-        const [status, dia, mes, uf, bioma] = await Promise.all([
+        const [status, dia, mes, { uf, bioma }] = await Promise.all([
             getJSON(`${API}/status`),
             getJSON(`${API}/focos/resumo?nivel=brasil&periodo=24h`),
             getJSON(`${API}/focos/resumo?nivel=brasil&periodo=30d`),
-            getJSON(`${API}/focos/resumo?nivel=uf&periodo=30d`),
-            getJSON(`${API}/focos/resumo?nivel=bioma&periodo=30d`),
+            carregarResumos(),
         ])
         renderStatus(status, mes)
         renderCards(dia, mes, null)
         popularSeletor(uf, bioma)
-        renderRanking(uf)
         carregarSerie()
         renderMapa()
         renderGlobal()

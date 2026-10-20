@@ -106,6 +106,52 @@ def _contagem_24h(cur) -> dict:
     }
 
 
+_COLUNA_NIVEL = {"uf": "uf", "bioma": "bioma"}
+
+
+def _ultimas_24h_por_codigo(cur, nivel: str) -> dict:
+    coluna = _COLUNA_NIVEL.get(nivel)
+    if coluna is None:
+        return {}
+    cur.execute(
+        f"""
+        SELECT {coluna}, COUNT(*), COUNT(*) FILTER (WHERE is_ref)
+          FROM climate.fire_hotspot
+         WHERE detectado_em >= NOW() - INTERVAL '24 hours' AND {coluna} IS NOT NULL
+         GROUP BY 1
+        """
+    )
+    return {cod: {"total": t, "referencia": r} for cod, t, r in cur.fetchall()}
+
+
+def _bioma_predominante_por_uf(cur) -> dict:
+    cur.execute(
+        """
+        SELECT DISTINCT ON (uf) uf, bioma FROM (
+            SELECT uf, bioma, COUNT(*) AS n FROM climate.fire_hotspot
+             WHERE detectado_em >= NOW() - INTERVAL '14 days'
+               AND uf IS NOT NULL AND bioma IS NOT NULL
+             GROUP BY uf, bioma
+        ) t ORDER BY uf, n DESC
+        """
+    )
+    return {uf: calc.nome_codigo("bioma", bioma) for uf, bioma in cur.fetchall()}
+
+
+def _montar_itens(nivel: str, atuais: dict, base: dict, dias: int, extras: dict) -> list[dict]:
+    """Todos os códigos do nível entram, com 0 focos quando não houve detecção."""
+    itens = []
+    for cod in calc.codigos_do_nivel(nivel):
+        focos, frp = atuais.get(cod, (0, 0.0))
+        item = _linha_resumo(nivel, cod, focos, frp, dias, base)
+        item["ultimas_24h"] = extras["24h"].get(cod, {"total": 0, "referencia": 0})
+        if nivel == "uf":
+            item["bioma_predominante"] = extras["bioma"].get(cod)
+        itens.append(item)
+    itens.sort(key=lambda i: (-i["focos"], i["nome"]))
+    return [{**item, "posicao": n} for n, item in enumerate(itens, start=1)]
+
+
 def resumo(nivel: str, periodo: str, agora: Optional[datetime] = None) -> dict:
     dias = calc.parse_periodo(periodo)
     fim = ultimo_dia_completo(agora)
@@ -119,8 +165,11 @@ def resumo(nivel: str, periodo: str, agora: Optional[datetime] = None) -> dict:
             atuais = _somas_atuais(cur, nivel, ini, fim)
             base = _medias_base(cur, nivel, calc.janelas_base(fim, dias), calc.comprimento_base(dias))
             ultimas = _contagem_24h(cur)
-        itens = [_linha_resumo(nivel, c, f, p, dias, base) for c, (f, p) in atuais.items()]
-        itens.sort(key=lambda i: i["focos"], reverse=True)
+            extras = {
+                "24h": _ultimas_24h_por_codigo(cur, nivel),
+                "bioma": _bioma_predominante_por_uf(cur) if nivel == "uf" else {},
+            }
+        itens = _montar_itens(nivel, atuais, base, dias, extras)
         return {
             "nivel": nivel,
             "periodo": periodo,
