@@ -556,3 +556,32 @@ def collect_inpe_focos(x_api_key: str = Header(default="")):
     except Exception as e:
         logger.error("Erro na coleta de focos INPE: %s", e)
         raise HTTPException(status_code=500, detail="Erro na coleta de focos INPE")
+
+
+@router.post("/sar_reservatorios")
+def collect_sar_reservatorios(x_api_key: str = Header(default="")):
+    """Coleta diária da última medição dos reservatórios (ANA/SAR)."""
+    _auth(x_api_key)
+    try:
+        from app.services.brasil_fire_service import invalidar_cache as invalidar_focos
+        from app.services.brasil_reservoir_service import invalidar_cache
+        from collector.sar_reservoir_collector import coletar_atual
+        from database.db import conectar
+
+        conn = conectar()
+        try:
+            resultado = coletar_atual(conn)
+        finally:
+            conn.close()
+            invalidar_cache()  # mesmo com falha parcial, camadas já commitadas mudaram os dados
+            invalidar_focos()
+        if resultado["registros"] == 0 and resultado["erros"]:
+            raise HTTPException(status_code=502, detail="Falha em todas as camadas do SAR")
+        status = "skipped" if resultado.get("ignorado") else "ok"
+        return {"status": status, **resultado}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Erro na coleta de reservatórios SAR: %s", e)
+        raise HTTPException(status_code=500, detail="Erro na coleta de reservatórios")

@@ -72,3 +72,53 @@ def test_service_failure_returns_generic_500(client, monkeypatch):
 
     assert r.status_code == 500
     assert "segredo" not in r.text
+
+
+@pytest.fixture
+def client_res(monkeypatch):
+    from app.services import brasil_reservoir_service as rsvc
+    chamadas = {}
+
+    def fake(nome, retorno=None):
+        def _f(*args, **kwargs):
+            chamadas[nome] = args
+            return {"ok": nome} if retorno is None else retorno
+        return _f
+
+    monkeypatch.setattr(rsvc, "resumo", fake("resumo"))
+    monkeypatch.setattr(rsvc, "listar", fake("listar"))
+    monkeypatch.setattr(rsvc, "serie", fake("serie"))
+    app = FastAPI()
+    app.include_router(brasil.router)
+    c = TestClient(app)
+    c.chamadas = chamadas
+    c.rsvc = rsvc
+    c.monkeypatch = monkeypatch
+    return c
+
+
+def test_reservatorios_lista_normalizes_uf_and_passes_filters(client_res):
+    r = client_res.get("/api/brasil/reservatorios?sistema=SIN&uf=mg&faixa=baixo&q=cam&ordem=nome&offset=10&limite=20")
+
+    assert r.status_code == 200
+    assert client_res.chamadas["listar"] == ("SIN", "MG", "baixo", "cam", "nome", 10, 20)
+
+
+@pytest.mark.parametrize("qs", ["sistema=XX", "uf=123", "uf=1a", "faixa=otimo", "ordem=x", "limite=0", "limite=9999", "offset=-1"])
+def test_reservatorios_lista_rejects_bad_input(client_res, qs):
+    assert client_res.get(f"/api/brasil/reservatorios?{qs}").status_code == 422
+
+
+def test_reservatorio_serie_404_and_validation(client_res):
+    client_res.monkeypatch.setattr(client_res.rsvc, "serie", lambda *a, **k: None)
+
+    assert client_res.get("/api/brasil/reservatorios/19001/serie").status_code == 404
+    assert client_res.get("/api/brasil/reservatorios/19001/serie?periodo=abc").status_code == 422
+    assert client_res.get("/api/brasil/reservatorios/19001/serie?periodo=77d").status_code == 422
+    assert client_res.get("/api/brasil/reservatorios/0/serie").status_code == 422
+    assert client_res.get("/api/brasil/reservatorios/abc/serie").status_code == 422
+
+
+def test_reservatorio_serie_default_period_is_five_years(client_res):
+    assert client_res.get("/api/brasil/reservatorios/19001/serie").status_code == 200
+    assert client_res.chamadas["serie"] == (19001, "5y")

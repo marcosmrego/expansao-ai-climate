@@ -10,7 +10,7 @@ PERIODO_MAX_DIAS = 3650
 LIMIAR_Z = 1.0
 MIN_ANOS_BASE = 3
 
-_PERIODO_RE = re.compile(r"^(\d{1,4})([dh])$")
+_PERIODO_RE = re.compile(r"^(\d{1,4})([dhy])$")
 
 UF_NOMES = {
     "AC": "Acre", "AL": "Alagoas", "AP": "Amapá", "AM": "Amazonas", "BA": "Bahia",
@@ -46,12 +46,12 @@ def codigo_valido(nivel: str, codigo: str) -> bool:
 
 
 def parse_periodo(texto: str) -> int:
-    """'24h' -> 1, '7d' -> 7, '365d' -> 365. Levanta ValueError se inválido."""
+    """'24h' -> 1, '7d' -> 7, '365d' -> 365, '5y' -> 1825. Levanta ValueError se inválido."""
     m = _PERIODO_RE.match((texto or "").strip().lower())
     if not m:
         raise ValueError(f"período inválido: {texto!r}")
     n, unidade = int(m.group(1)), m.group(2)
-    dias = max(1, math.ceil(n / 24)) if unidade == "h" else n
+    dias = {"h": max(1, math.ceil(n / 24)), "d": n, "y": n * 365}[unidade]
     if not 1 <= dias <= PERIODO_MAX_DIAS:
         raise ValueError(f"período fora do intervalo: {texto!r}")
     return dias

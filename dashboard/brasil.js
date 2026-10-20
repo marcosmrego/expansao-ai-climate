@@ -370,3 +370,18 @@
     if (aba) aba.addEventListener("click", carregar)
     window.carregarBrasil = carregar
 })()
+
+/* Alternância entre os módulos da aba Brasil (focos / reservatórios). */
+;(function () {
+    const botoes = document.querySelectorAll("[data-br-modulo]")
+    botoes.forEach(b => b.addEventListener("click", () => {
+        botoes.forEach(x => {
+            const ativo = x === b
+            x.classList.toggle("active", ativo)
+            x.setAttribute("aria-selected", String(ativo))
+            document.getElementById(`br-mod-${x.dataset.brModulo}`).hidden = !ativo
+        })
+        if (b.dataset.brModulo === "reservatorios" && window.carregarReservatorios) window.carregarReservatorios()
+        else if (window.carregarBrasil) window.carregarBrasil()
+    }))
+})()

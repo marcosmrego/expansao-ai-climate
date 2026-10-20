@@ -205,3 +205,75 @@
 @media (prefers-reduced-motion: reduce) {
     .br-uf, .br-more { transition: none; }
 }
+
+/* ── Módulo Reservatórios ───────────────────────────────────────────── */
+.br-modulos { margin-bottom: 16px; }
+.br-modulos .br-seg button { padding: 8px 18px; font-size: 13px; }
+.br-modulo[hidden] { display: none; }
+.br-modulo > .panel + .panel { margin-top: 16px; }
+
+.br-badge.sobe  { background: rgba(102,187,106,.16); color: #66BB6A; }
+.br-badge.desce { background: rgba(255,167,38,.16); color: var(--warning); }
+
+.rs-cards { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+.rs-card {
+    text-align: left; font: inherit; color: inherit; cursor: pointer; width: 100%;
+    display: flex; flex-direction: column;
+}
+.rs-card .br-value { font-size: 30px; }
+.rs-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.rs-card.ativo { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.rs-faixas { display: flex; height: 6px; margin-top: 12px; border-radius: 3px; overflow: hidden; background: rgba(255,255,255,.06); }
+.rs-faixas span { display: block; height: 100%; }
+.rs-legenda { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 14px; font-size: 11px; color: var(--text-3); }
+.rs-leg-item { display: inline-flex; align-items: center; gap: 6px; }
+.rs-leg-item i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+.rs-filtros { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; }
+.rs-busca {
+    background: var(--surface2); color: var(--text); border: 1px solid var(--border-accent);
+    border-radius: var(--radius-sm); font: inherit; font-size: 12px; padding: 7px 10px;
+    min-width: 180px; flex: 1 1 180px;
+}
+.rs-busca:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.rs-contagem { font-size: 12px; color: var(--text-3); margin-left: auto; }
+
+.rs-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.rs-cab, .rs-row {
+    display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 2fr) 120px 130px;
+    gap: 14px; align-items: center;
+}
+.rs-cab { padding: 0 12px 8px; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-3); }
+.rs-row {
+    width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer;
+    background: transparent; border: 1px solid transparent; border-radius: var(--radius-sm); padding: 9px 12px;
+    transition: background var(--transition), border-color var(--transition);
+}
+.rs-row:hover { background: var(--accent-dim); border-color: var(--border-accent); }
+.rs-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.rs-nome { display: flex; flex-direction: column; min-width: 0; }
+.rs-nome strong { color: var(--text); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rs-nome small { color: var(--text-3); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rs-vol { display: flex; align-items: center; gap: 10px; }
+.rs-vol b { min-width: 52px; text-align: right; font-variant-numeric: tabular-nums; color: var(--text); font-size: 13px; }
+.rs-trilho { flex: 1; height: 8px; border-radius: 4px; background: rgba(255,255,255,.06); overflow: hidden; }
+.rs-trilho span { display: block; height: 100%; border-radius: 4px; }
+.rs-data { font-size: 12px; color: var(--text-2); display: flex; flex-direction: column; }
+.rs-data.defasado { color: var(--warning); }
+.rs-data small { font-size: 10px; }
+.rs-mais { margin: 14px auto 0; display: block; }
+
+.rs-detalhe .chart-wrap { height: 300px; }
+.rs-detalhe-cab { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+.rs-detalhe-cab p { margin: 4px 0 0; font-size: 12px; color: var(--text-3); line-height: 1.5; }
+.rs-detalhe[hidden], .rs-mais[hidden] { display: none; }
+
+@media (max-width: 1100px) { .rs-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 900px) {
+    .rs-cab { display: none; }
+    .rs-row { grid-template-columns: minmax(0, 1fr) auto; row-gap: 6px; }
+    .rs-vol { grid-column: 1 / -1; order: 3; }
+    .rs-var { order: 2; }
+    .rs-data { order: 4; grid-column: 1 / -1; flex-direction: row; gap: 8px; }
+}
+@media (max-width: 560px) { .rs-cards { grid-template-columns: 1fr; } }

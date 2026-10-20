@@ -1,10 +1,11 @@
 import logging
 from typing import Literal, Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Path, Query
 
 from app.services import brasil_fire_calc as calc
 from app.services import brasil_fire_service as svc
+from app.services import brasil_reservoir_service as rsvc
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/brasil", tags=["Brasil"])
@@ -84,3 +85,48 @@ def brasil_status():
     except Exception as e:
         logger.exception("Erro em /api/brasil/status")
         raise HTTPException(status_code=500, detail="Erro ao consultar status das fontes")
+
+
+SistemaReservatorio = Literal["SIN", "NORDESTE", "CANTAREIRA", "DF", "RMBH"]
+FaixaReservatorio = Literal["critico", "baixo", "medio", "bom", "alto"]
+OrdemReservatorio = Literal["volume", "-volume", "nome", "variacao", "-variacao"]
+
+
+@router.get("/reservatorios/resumo")
+def reservatorios_resumo():
+    try:
+        return rsvc.resumo()
+    except Exception:
+        logger.exception("Erro em /api/brasil/reservatorios/resumo")
+        raise HTTPException(status_code=500, detail="Erro ao consultar reservatórios")
+
+
+@router.get("/reservatorios")
+def reservatorios_lista(
+    sistema: Optional[SistemaReservatorio] = None,
+    uf: Optional[str] = Query(None, min_length=2, max_length=2, pattern="^[A-Za-z]{2}$"),
+    faixa: Optional[FaixaReservatorio] = None,
+    q: Optional[str] = Query(None, max_length=60),
+    ordem: OrdemReservatorio = "-volume",
+    offset: int = Query(0, ge=0, le=10000),
+    limite: int = Query(50, ge=1, le=rsvc.LIMITE_LISTA_MAX),
+):
+    try:
+        return rsvc.listar(sistema, uf.upper() if uf else None, faixa, q, ordem, offset, limite)
+    except Exception:
+        logger.exception("Erro em /api/brasil/reservatorios")
+        raise HTTPException(status_code=500, detail="Erro ao consultar reservatórios")
+
+
+@router.get("/reservatorios/{reservatorio_id}/serie")
+def reservatorio_serie(reservatorio_id: int = Path(ge=1, le=10_000_000), periodo: str = Query("5y", max_length=8)):
+    if periodo not in rsvc.PERIODOS_SERIE:
+        raise HTTPException(status_code=422, detail=f"período deve ser um de {', '.join(rsvc.PERIODOS_SERIE)}")
+    try:
+        resultado = rsvc.serie(reservatorio_id, periodo)
+    except Exception:
+        logger.exception("Erro em /api/brasil/reservatorios/{id}/serie")
+        raise HTTPException(status_code=500, detail="Erro ao consultar série do reservatório")
+    if resultado is None:
+        raise HTTPException(status_code=404, detail="Reservatório não encontrado")
+    return resultado
