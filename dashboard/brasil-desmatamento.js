@@ -9,7 +9,7 @@
     const GRUPOS_DESMAT = ["desmatamento", "mineracao"]  // espelha dc.GRUPOS_DESMATAMENTO
     const ROTULO_PERIODO = { "30d": "30 dias", "90d": "90 dias", "365d": "12 meses" }
 
-    const state = { projeto: "deter-amz", periodo: "90d", carregado: false, geracao: 0, chart: null }
+    const state = { projeto: "deter-amz", periodo: "90d", carregado: false, geracao: 0, chart: null, chartAnual: null, geracaoAnual: 0 }
 
     async function getJSON(url) {
         try {
@@ -156,6 +156,47 @@
         })
     }
 
+    // ── Série anual (PRODES) ─────────────────────────────────────────
+    function desenharAnual(taxa) {
+        const canvas = el("dm-anual-chart")
+        const msg = el("dm-anual-msg")
+        if (state.chartAnual) { state.chartAnual.destroy(); state.chartAnual = null }
+        el("dm-anual-foot").textContent = taxa ? taxa.metodologia : ""
+        el("dm-anual-sub").textContent = taxa ? taxa.fonte : "soma dos polígonos publicados"
+        if (!taxa || !taxa.anos.length) {
+            mensagem(msg, taxa ? "Série anual ainda não coletada para este projeto." : "Dado indisponível no momento.")
+            canvas.style.display = "none"
+            return
+        }
+        limpar(msg)
+        canvas.style.display = ""
+        const v = taxa.variacao_pct
+        el("dm-anual-sub").textContent = v == null ? taxa.fonte
+            : `${taxa.fonte} · ${taxa.ultimo_ano}: ${v > 0 ? "+" : ""}${fmt(v, 1)}% vs ${taxa.ultimo_ano - 1}`
+        state.chartAnual = new Chart(canvas, {
+            type: "bar",
+            data: {
+                labels: taxa.anos.map(a => String(a.ano)),
+                datasets: [{ label: "Desmatamento (km²)", data: taxa.anos.map(a => a.area_km2),
+                             backgroundColor: "rgba(239,108,0,.75)", borderRadius: 3 }],
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false, interaction: { mode: "index", intersect: false },
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { ticks: { color: "#546A84" }, grid: { display: false } },
+                    y: { beginAtZero: true, ticks: { color: "#546A84", callback: x => `${fmt(x)} km²` }, grid: { color: "rgba(255,255,255,.05)" } },
+                },
+            },
+        })
+    }
+
+    async function atualizarAnual() {
+        const geracao = ++state.geracaoAnual
+        const taxa = await getJSON(`${API}/desmatamento/taxa?projeto=${encodeURIComponent(state.projeto)}`)
+        if (geracao === state.geracaoAnual) desenharAnual(taxa)
+    }
+
     // ── Carga e controles ────────────────────────────────────────────
     async function atualizar() {
         const geracao = ++state.geracao  // descarta respostas de seleções já substituídas
@@ -178,6 +219,7 @@
         const botoes = document.querySelectorAll(`[${atributo}]`)
         botoes.forEach(b => b.addEventListener("click", () => {
             state[chave] = b.getAttribute(atributo)
+            if (chave === "projeto") atualizarAnual()
             botoes.forEach(x => {
                 const ativo = x === b
                 x.classList.toggle("active", ativo)
@@ -193,6 +235,7 @@
         ligarSeletor("data-dm-projeto", "projeto")
         ligarSeletor("data-dm-periodo", "periodo")
         atualizar()
+        atualizarAnual()
     }
 
     window.carregarDesmatamento = carregar

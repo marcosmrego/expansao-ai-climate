@@ -26,6 +26,11 @@ _METODOLOGIA = (
     "a 31 de julho. Alertas não são a taxa oficial anual (PRODES) e podem ser reclassificados."
 )
 _GRUPOS_DESMAT = sorted(dc.GRUPOS_DESMATAMENTO)
+_PRODES_DE = {"deter-amz": "prodes-amazonia", "deter-cerrado": "prodes-cerrado"}
+_METODOLOGIA_PRODES = (
+    "Soma anual dos polígonos de desmatamento publicados pelo PRODES (INPE/TerraBrasilis), sem estimativa para "
+    "áreas com nuvem. Pode diferir da taxa oficial divulgada pelo INPE, e o último ano pode estar parcial. O ano PRODES vai de 1º de agosto a 31 de julho."
+)
 
 
 def _hoje(agora: Optional[datetime] = None) -> date:
@@ -188,6 +193,37 @@ def serie(projeto: str, meses: int, agora: Optional[datetime] = None) -> dict:
 def _recuar_meses(dia: date, meses: int) -> date:
     total = dia.year * 12 + dia.month - 1 - meses
     return date(total // 12, total % 12 + 1, 1)
+
+
+def montar_taxas(projeto: str, linhas: list) -> dict:
+    """linhas: (ano_prodes, recorte, area_km2); recorte é TOTAL ou a sigla da UF."""
+    totais = sorted((a, v) for a, r, v in linhas if r == "TOTAL")
+    ultimo = totais[-1][0] if totais else None
+    ranking = sorted(((r, v) for a, r, v in linhas if a == ultimo and r != "TOTAL"), key=lambda x: -x[1])
+    variacao = None
+    if len(totais) >= 2 and totais[-2][0] == ultimo - 1 and totais[-2][1] > 0:
+        variacao = round((totais[-1][1] - totais[-2][1]) / totais[-2][1] * 100, 1)
+    return {"projeto": projeto, "fonte": dc.PROJETO_NOMES[_PRODES_DE[projeto]],
+            "anos": [{"ano": a, "area_km2": _km2(v)} for a, v in totais], "ultimo_ano": ultimo,
+            "por_uf": [{"uf": r, "area_km2": _km2(v)} for r, v in ranking], "variacao_pct": variacao,
+            "metodologia": _METODOLOGIA_PRODES}
+
+
+def taxas(projeto: str) -> dict:
+    _validar_projeto(projeto)
+    chave = f"taxas:{projeto}"
+    if (hit := cache.get(chave)) is not None:
+        return hit
+
+    def _run(conn):
+        with conn.cursor() as cur:
+            cur.execute("""SELECT ano_prodes, recorte, area_km2 FROM climate.deforestation_rate
+                            WHERE projeto = %s""", (_PRODES_DE[projeto],))
+            return cur.fetchall()
+
+    resultado = montar_taxas(projeto, _com_conexao(_run))
+    cache.set(chave, resultado)
+    return resultado
 
 
 def ultimos_alertas(projeto: str, periodo: str, uf: Optional[str], grupo: Optional[str],

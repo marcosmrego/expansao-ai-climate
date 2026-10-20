@@ -139,6 +139,7 @@ def client_des(monkeypatch):
     monkeypatch.setattr(dsvc, "resumo", fake("resumo"))
     monkeypatch.setattr(dsvc, "serie", fake("serie"))
     monkeypatch.setattr(dsvc, "ultimos_alertas", fake("alertas"))
+    monkeypatch.setattr(dsvc, "taxas", fake("taxas"))
     app = FastAPI()
     app.include_router(brasil.router)
     c = TestClient(app)
@@ -199,3 +200,11 @@ def test_desmatamento_hides_internal_errors(client_des, monkeypatch):
 def test_desmatamento_alertas_rejects_nonexistent_uf(client_des):
     assert client_des.get("/api/brasil/desmatamento/alertas?uf=ZZ").status_code == 422
     assert client_des.get("/api/brasil/desmatamento/alertas?uf=pa").status_code == 200
+
+
+def test_desmatamento_taxa_passes_project(client_des):
+    assert client_des.get("/api/brasil/desmatamento/taxa").status_code == 200
+    assert client_des.chamadas["taxas"] == ("deter-amz",)
+    assert client_des.get("/api/brasil/desmatamento/taxa?projeto=deter-cerrado").status_code == 200
+    assert client_des.chamadas["taxas"] == ("deter-cerrado",)
+    assert client_des.get("/api/brasil/desmatamento/taxa?projeto=xx").status_code == 422

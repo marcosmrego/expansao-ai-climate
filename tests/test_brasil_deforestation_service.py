@@ -190,3 +190,39 @@ def test_invalidar_cache_clears_alert_cache(banco):
 def test_inicio_periodo_counts_today_as_part_of_the_window():
     assert svc.inicio_periodo(HOJE, "30d") == date(2026, 9, 21)
     assert (HOJE - svc.inicio_periodo(HOJE, "365d")).days == 364
+
+
+# ── Soma anual dos polígonos PRODES ───────────────────────────────────────────
+
+_LINHAS_TAXA = [(2022, "TOTAL", 12689.0), (2023, "TOTAL", 8020.4), (2023, "PA", 4000.0),
+                (2023, "MT", 2000.2), (2022, "PA", 6000.0)]
+
+
+def test_montar_taxas_serie_anual_e_ranking_do_ultimo_ano():
+    r = svc.montar_taxas("deter-amz", _LINHAS_TAXA)
+
+    assert r["projeto"] == "deter-amz"
+    assert r["fonte"] == "PRODES Amazônia Legal"
+    assert r["anos"] == [{"ano": 2022, "area_km2": 12689.0}, {"ano": 2023, "area_km2": 8020.4}]
+    assert r["ultimo_ano"] == 2023
+    assert r["por_uf"] == [{"uf": "PA", "area_km2": 4000.0}, {"uf": "MT", "area_km2": 2000.2}]
+    assert r["variacao_pct"] == pytest.approx(-36.8, abs=0.1)
+
+
+def test_montar_taxas_sem_dados():
+    r = svc.montar_taxas("deter-cerrado", [])
+
+    assert r["anos"] == [] and r["ultimo_ano"] is None and r["por_uf"] == [] and r["variacao_pct"] is None
+
+
+def test_taxas_consulta_o_projeto_prodes_correspondente(monkeypatch):
+    svc.invalidar_cache()
+    conn = _FakeConn(_LINHAS_TAXA)
+    monkeypatch.setattr(svc, "conectar", lambda: conn)
+
+    r = svc.taxas("deter-cerrado")
+
+    assert conn.consultas[-1][1] == ("prodes-cerrado",)
+    assert r["fonte"] == "PRODES Cerrado"
+    svc.taxas("deter-cerrado")
+    assert len(conn.consultas) == 2  # statement_timeout + 1 consulta; o 2º uso vem do cache

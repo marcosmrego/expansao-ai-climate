@@ -159,6 +159,16 @@ def desmatamento_serie(projeto: ProjetoDeter = "deter-amz", meses: int = Query(3
         raise HTTPException(status_code=500, detail="Erro ao consultar série de desmatamento")
 
 
+@router.get("/desmatamento/taxa")
+def desmatamento_taxa(projeto: ProjetoDeter = "deter-amz"):
+    """Soma anual dos polígonos PRODES por ano e, no último ano, por UF."""
+    try:
+        return dsvc.taxas(projeto)
+    except Exception:
+        logger.exception("Erro em /api/brasil/desmatamento/taxa")
+        raise HTTPException(status_code=500, detail="Erro ao consultar a série anual do PRODES")
+
+
 @router.get("/desmatamento/alertas")
 def desmatamento_alertas(
     projeto: ProjetoDeter = "deter-amz",
