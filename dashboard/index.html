@@ -32,6 +32,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css?v=52">
+    <link rel="stylesheet" href="brasil.css?v=1">
     <script defer src="http://umami-qkr89esvo1szlexgp9y67gy8.212.85.22.227.sslip.io/script.js"
             data-website-id="794d96e4-9652-4d3e-8df4-adb3ba9fad61"></script>
 </head>
@@ -74,6 +75,7 @@
         <button class="tab-btn" data-tab="enso" role="tab">ENSO</button>
         <button class="tab-btn" data-tab="modulacao" role="tab">Modulação</button>
         <button class="tab-btn" data-tab="diarios" role="tab">Diários</button>
+        <button class="tab-btn" data-tab="brasil" role="tab">🇧🇷 Brasil</button>
         <button class="tab-btn" data-tab="analise" role="tab">Análise</button>
         <button class="tab-btn tab-btn-zhora" data-tab="zhora" role="tab">🤖 Zhora</button>
     </nav>
@@ -684,6 +686,91 @@
 
     </div><!-- /tab-analise -->
 
+    <!-- ── Tab: Brasil ──────────────────────────────────────────────────── -->
+    <div class="tab-panel" id="tab-brasil" role="tabpanel">
+
+        <section class="panel">
+            <div class="panel-header">
+                <h2 class="panel-title">🔥 Brasil · Focos de calor</h2>
+                <span class="panel-sub">Detecção por satélite · dados do INPE</span>
+            </div>
+            <div class="br-status" id="br-status">Carregando…</div>
+            <div class="br-cards">
+                <div class="card card-hero-fire">
+                    <div class="card-label">Focos no último dia completo
+                        <span class="tooltip-icon" title="Contagem do satélite de referência (AQUA_M-T), a única série comparável desde 2003. A média histórica usa o mesmo período nos anos anteriores.">ℹ</span>
+                    </div>
+                    <div class="br-value" id="br-c1-valor"><span class="skeleton">-----</span></div>
+                    <div class="br-card-sub" id="br-c1-sub"></div>
+                </div>
+                <div class="card">
+                    <div class="card-label">Últimos 30 dias</div>
+                    <div class="br-value" id="br-c2-valor"><span class="skeleton">-----</span></div>
+                    <div class="br-card-sub" id="br-c2-sub"></div>
+                </div>
+                <div class="card">
+                    <div class="card-label">Últimas 24 horas
+                        <span class="tooltip-icon" title="Detecções de todos os satélites. Não é comparável com a média histórica, que usa só o satélite de referência.">ℹ</span>
+                    </div>
+                    <div class="br-value" id="br-c3-valor"><span class="skeleton">-----</span></div>
+                    <div class="br-card-sub" id="br-c3-sub"></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="panel-header">
+                <h2 class="panel-title">Série dos últimos 12 meses</h2>
+                <select class="br-select" id="br-serie-sel" aria-label="Região da série"><option value="brasil:BR">Brasil</option></select>
+            </div>
+            <div class="chart-wrap">
+                <canvas id="br-serie-chart" role="img" aria-label="Focos diários nos últimos 12 meses contra a média histórica"></canvas>
+                <div id="br-serie-msg"></div>
+            </div>
+            <p class="br-foot">Faixa cinza: média histórica ±1 desvio-padrão (2003 até o ano anterior). Fonte: INPE, satélite de referência AQUA_M-T.</p>
+        </section>
+
+        <div class="br-grid">
+            <section class="panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">Ranking</h2>
+                    <div class="br-toolbar">
+                        <div class="br-seg" role="group" aria-label="Nível">
+                            <button class="active" data-br-nivel="uf">Estados</button>
+                            <button data-br-nivel="bioma">Biomas</button>
+                        </div>
+                        <div class="br-seg" role="group" aria-label="Período">
+                            <button data-br-periodo="7d">7 d</button>
+                            <button class="active" data-br-periodo="30d">30 d</button>
+                            <button data-br-periodo="90d">90 d</button>
+                        </div>
+                    </div>
+                </div>
+                <ol class="br-rank" id="br-rank"></ol>
+            </section>
+            <section class="panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">Mapa dos últimos 7 dias</h2>
+                </div>
+                <div class="br-map-wrap" id="br-map-wrap"><div class="br-empty">Carregando…</div></div>
+            </section>
+        </div>
+
+        <section class="panel">
+            <div class="panel-header">
+                <h2 class="panel-title">Clima global e Brasil</h2>
+                <span class="panel-sub">Lado a lado, sem afirmar relação entre eles</span>
+            </div>
+            <div class="br-global">
+                <div class="card"><div class="card-label">ENSO</div><div id="br-g-enso"></div></div>
+                <div class="card"><div class="card-label">Dipolo do Índico (IOD)</div><div id="br-g-iod"></div></div>
+                <div class="card"><div class="card-label">MJO</div><div id="br-g-mjo"></div></div>
+            </div>
+            <p class="br-foot">Os índices ao lado descrevem o estado atual do clima global. Qualquer associação com o número de focos exige análise estatística do histórico e não implica causa.</p>
+        </section>
+
+    </div>
+
     <!-- ── Tab: Zhora ───────────────────────────────────────────────────── -->
     <div class="tab-panel" id="tab-zhora" role="tabpanel">
 
@@ -761,7 +848,8 @@
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script src="app.js?v=60"></script>
+<script src="app.js?v=61"></script>
+<script src="brasil.js?v=1"></script>
 <!-- Cloudflare Web Analytics -->
 <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "0ba9b0dc7997464f8a13b01a7616ed51"}'></script>
 <!-- End Cloudflare Web Analytics -->

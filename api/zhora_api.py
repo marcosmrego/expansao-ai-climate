@@ -16,25 +16,8 @@ from database.db import conectar
 from app.routes.climate_alerts import router as climate_alert_router
 from app.routes.zhora import router as zhora_router
 from app.routes.collect import router as collect_router
-
-
-class _TTLCache:
-    def __init__(self, ttl: int = 3600):
-        self._store: dict = {}
-        self._ttl = ttl
-
-    def get(self, key: str):
-        entry = self._store.get(key)
-        if entry and time.monotonic() < entry[1]:
-            return entry[0]
-        self._store.pop(key, None)
-        return None
-
-    def set(self, key: str, value) -> None:
-        self._store[key] = (value, time.monotonic() + self._ttl)
-
-    def delete(self, key: str) -> None:
-        self._store.pop(key, None)
+from app.routes.brasil import router as brasil_router
+from app.core.cache import TTLCache as _TTLCache
 
 
 _cache = _TTLCache(ttl=3600)
@@ -142,6 +125,7 @@ app.add_middleware(
 app.include_router(climate_alert_router)
 app.include_router(zhora_router)
 app.include_router(collect_router)
+app.include_router(brasil_router)
 
 
 @app.get("/health")

@@ -1,0 +1,41 @@
+{
+  "name": "Expansao AI Climate - Coleta Focos de Calor",
+  "nodes": [
+    {
+      "id": "node-schedule-focos",
+      "name": "A cada 3h (minuto 10)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300],
+      "parameters": {
+        "rule": {
+          "interval": [
+            { "field": "cronExpression", "expression": "10 */3 * * *" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "node-inpe-focos",
+      "name": "Coletar Focos INPE",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 60000,
+      "parameters": {
+        "method": "POST",
+        "url": "https://climate.expansao-ai.com.br/api/collect/inpe_focos",
+        "sendHeaders": false,
+        "options": { "timeout": 180000 }
+      }
+    }
+  ],
+  "connections": {
+    "A cada 3h (minuto 10)": {
+      "main": [[{ "node": "Coletar Focos INPE", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" }
+}

@@ -1,0 +1,86 @@
+import logging
+from typing import Literal, Optional
+
+from fastapi import APIRouter, HTTPException, Query
+
+from app.services import brasil_fire_calc as calc
+from app.services import brasil_fire_service as svc
+
+logger = logging.getLogger(__name__)
+router = APIRouter(prefix="/api/brasil", tags=["Brasil"])
+
+Nivel = Literal["brasil", "uf", "bioma"]
+_BBOX_LIMITES = (-180.0, -90.0, 180.0, 90.0)
+
+
+def _periodo_ou_422(periodo: str) -> str:
+    try:
+        calc.parse_periodo(periodo)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    return periodo
+
+
+def _bbox_ou_422(bbox: Optional[str]) -> Optional[tuple]:
+    if not bbox:
+        return None
+    try:
+        oeste, sul, leste, norte = (float(v) for v in bbox.split(","))
+    except ValueError:
+        raise HTTPException(status_code=422, detail="bbox deve ser oeste,sul,leste,norte")
+    dentro = (-180 <= oeste <= leste <= 180) and (-90 <= sul <= norte <= 90)
+    if not dentro:
+        raise HTTPException(status_code=422, detail="bbox fora dos limites")
+    return (oeste, sul, leste, norte)
+
+
+@router.get("/focos/resumo")
+def focos_resumo(nivel: Nivel = "uf", periodo: str = Query("30d", max_length=8)):
+    _periodo_ou_422(periodo)
+    try:
+        return svc.resumo(nivel, periodo)
+    except Exception as e:
+        logger.exception("Erro em /api/brasil/focos/resumo")
+        raise HTTPException(status_code=500, detail="Erro ao consultar focos")
+
+
+@router.get("/focos/serie")
+def focos_serie(
+    nivel: Nivel = "brasil",
+    codigo: str = Query("BR", max_length=20),
+    periodo: str = Query("365d", max_length=8),
+):
+    _periodo_ou_422(periodo)
+    if not calc.codigo_valido(nivel, codigo):
+        raise HTTPException(status_code=422, detail="código inválido para o nível")
+    try:
+        return svc.serie(nivel, codigo, periodo)
+    except Exception as e:
+        logger.exception("Erro em /api/brasil/focos/serie")
+        raise HTTPException(status_code=500, detail="Erro ao consultar série de focos")
+
+
+@router.get("/focos/mapa")
+def focos_mapa(
+    periodo: str = Query("7d", max_length=8),
+    bbox: Optional[str] = Query(None, max_length=60),
+    zoom: int = Query(4, ge=0, le=18),
+    limite: int = Query(svc.LIMITE_PONTOS_PADRAO, ge=1, le=svc.LIMITE_PONTOS_MAX),
+    somente_ref: bool = False,
+):
+    _periodo_ou_422(periodo)
+    caixa = _bbox_ou_422(bbox)
+    try:
+        return svc.mapa(periodo, caixa, zoom, limite, somente_ref)
+    except Exception as e:
+        logger.exception("Erro em /api/brasil/focos/mapa")
+        raise HTTPException(status_code=500, detail="Erro ao consultar mapa de focos")
+
+
+@router.get("/status")
+def brasil_status():
+    try:
+        return svc.status()
+    except Exception as e:
+        logger.exception("Erro em /api/brasil/status")
+        raise HTTPException(status_code=500, detail="Erro ao consultar status das fontes")

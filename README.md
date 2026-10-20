@@ -32,7 +32,10 @@ psql -U postgres -d climate -f database/sql/001_schema.sql
 # 4. Rodar a API
 uvicorn api.zhora_api:app --reload
 
-# 5. Coletar dados NOAA
+# 5. Carga histórica de focos de calor (INPE), uma vez
+PYTHONPATH=. python scripts/backfill_inpe_fire.py
+
+# 6. Coletar dados NOAA
 python collector/noaa_oni_collector.py
 python collector/noaa_sst_collector.py
 ```
@@ -55,6 +58,11 @@ docker run -p 8000:8000 --env-file .env climate
 | GET | `/climate/trend` | Tendência ONI (SUBINDO / CAINDO / ESTAVEL) |
 | GET | `/climate/update` | Data da última atualização NOAA |
 | GET | `/api/climate/alerts` | Alertas operacionais ativos |
+| GET | `/api/brasil/focos/resumo` | Focos de calor por Brasil/UF/bioma com anomalia vs. média histórica (`nivel`, `periodo`) |
+| GET | `/api/brasil/focos/serie` | Série diária (`nivel`, `codigo`, `periodo`) com média histórica e desvio |
+| GET | `/api/brasil/focos/mapa` | Pontos ou células de focos (`periodo`, `bbox`, `zoom`) |
+| GET | `/api/brasil/status` | Última coleta bem-sucedida de cada fonte da área Brasil |
+| POST | `/api/collect/inpe_focos` | Coleta incremental de focos (INPE), chamada pelo n8n a cada 3 h |
 
 Documentação interativa disponível em `/docs` quando a API estiver rodando.
 

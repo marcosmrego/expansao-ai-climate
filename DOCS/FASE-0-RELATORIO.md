@@ -110,3 +110,9 @@ Consulta somente leitura em 2026-10-19: PostgreSQL 17.9 (Alpine), 298 MB, usuár
 3. `fire_hotspot` ganha `risco_fogo`, `dias_sem_chuva` e `precipitacao`, que o INPE entrega.
 4. Fase 2 coleta a API do SAR todo dia e guarda o histórico, sem esperar pelo backfill.
 5. Retenção: pontos brutos por 24 meses e agregados para sempre (aprovado).
+
+## 6. Limitações conhecidas da série de referência (Fase 1)
+
+- O satélite AQUA_M-T é o de referência do INPE, mas a órbita do Aqua deriva desde 2022 e o horário de passagem muda. A contagem diária do satélite de referência tem variação própria (ex.: dias com 150 e outros com 2.000 focos no Brasil), então a comparação usa média de períodos e a faixa de ±1 desvio. A interface não deve dar leitura de tendência a um único dia.
+- Pontos de todos os satélites ficam 14 dias; os do satélite de referência, 24 meses. A série diária agregada é permanente.
+- Os endpoints públicos não têm rate limit e o `COLLECTOR_SECRET` está vazio em produção (os workflows do n8n não enviam chave). Registrado como pendência de segurança, anterior a esta fase.

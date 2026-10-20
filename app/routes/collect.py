@@ -532,3 +532,27 @@ def collect_insight(x_api_key: str = Header(default="")):
     except Exception as e:
         logger.error("Erro ao gerar insight: %s", e)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/inpe_focos")
+def collect_inpe_focos(x_api_key: str = Header(default="")):
+    """Coleta incremental de focos de calor (INPE): ontem e hoje (UTC)."""
+    _auth(x_api_key)
+    try:
+        from app.services.brasil_fire_service import invalidar_cache
+        from collector.inpe_fire_collector import coletar_recente
+        from database.db import conectar
+
+        conn = conectar()
+        try:
+            resultado = coletar_recente(conn)
+        finally:
+            conn.close()
+        invalidar_cache()
+        return {"status": "ok", **resultado}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Erro na coleta de focos INPE: %s", e)
+        raise HTTPException(status_code=500, detail="Erro na coleta de focos INPE")
