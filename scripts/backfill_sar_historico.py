@@ -42,7 +42,7 @@ def main(desde: date, refazer: bool) -> None:
     hoje = sar.hoje_local()
     conn = conectar()
     run_id = iniciar_execucao(conn, RUN_FONTE, desde, hoje)
-    total, falhas = 0, []
+    total, falhas, sem_leituras = 0, [], []
     abortado = None
     try:
         alvos = _reservatorios(conn, refazer)
@@ -52,6 +52,8 @@ def main(desde: date, refazer: bool) -> None:
         for n, (rid, sistema, nome) in enumerate(alvos, start=1):
             try:
                 leituras = [x for x in sar.baixar_historico(rid, sistema, desde, hoje, nome) if x.data <= hoje]
+                if not leituras:
+                    sem_leituras.append(rid)
                 total += sar.gravar_leituras(conn, leituras)
                 conn.commit()
                 logger.info("[%s/%s] %s %s: %s leituras", n, len(alvos), sistema, nome.strip(), len(leituras))
@@ -64,10 +66,15 @@ def main(desde: date, refazer: bool) -> None:
         abortado = f"abortado: {type(e).__name__}"
         raise
     finally:
-        erro = abortado or (f"{len(falhas)} reservatórios com falha: {falhas[:20]}" if falhas else None)
+        avisos = []
+        if falhas:
+            avisos.append(f"{len(falhas)} reservatórios com falha: {falhas[:20]}")
+        if sem_leituras:
+            avisos.append(f"{len(sem_leituras)} sem leituras na página: {sem_leituras[:20]}")
+        erro = abortado or "; ".join(avisos) or None
         finalizar_execucao(conn, run_id, registros=total, erro=erro)
         conn.close()
-    logger.info("Backfill concluído: %s leituras, %s falhas", total, len(falhas))
+    logger.info("Backfill concluído: %s leituras, %s falhas, %s sem leituras", total, len(falhas), len(sem_leituras))
 
 
 if __name__ == "__main__":

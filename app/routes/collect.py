@@ -1,3 +1,4 @@
+import hmac
 import logging
 import os
 
@@ -10,7 +11,7 @@ _COLLECTOR_SECRET = os.getenv("COLLECTOR_SECRET", "")
 
 
 def _auth(x_api_key: str):
-    if _COLLECTOR_SECRET and x_api_key != _COLLECTOR_SECRET:
+    if _COLLECTOR_SECRET and not hmac.compare_digest(x_api_key.encode(), _COLLECTOR_SECRET.encode()):
         raise HTTPException(status_code=401, detail="Unauthorized")
 
 
