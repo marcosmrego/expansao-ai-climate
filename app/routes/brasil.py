@@ -3,6 +3,7 @@ from typing import Literal, Optional
 
 from fastapi import APIRouter, HTTPException, Path, Query
 
+from app.services import brasil_collector_status_service as csvc
 from app.services import brasil_deforestation_calc as dc
 from app.services import brasil_deforestation_service as dsvc
 from app.services import brasil_fire_calc as calc
@@ -147,6 +148,16 @@ def desmatamento_resumo(projeto: ProjetoDeter = "deter-amz", periodo: PeriodoAle
     except Exception:
         logger.exception("Erro em /api/brasil/desmatamento/resumo")
         raise HTTPException(status_code=500, detail="Erro ao consultar desmatamento")
+
+
+@router.get("/coleta/execucoes")
+def coleta_execucoes():
+    """Últimas execuções dos coletores, com o progresso das cargas em andamento."""
+    try:
+        return csvc.execucoes()
+    except Exception:
+        logger.exception("Erro em /api/brasil/coleta/execucoes")
+        raise HTTPException(status_code=500, detail="Erro ao consultar as execuções de coleta")
 
 
 @router.get("/desmatamento/serie")

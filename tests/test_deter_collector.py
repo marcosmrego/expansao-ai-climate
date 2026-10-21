@@ -285,6 +285,8 @@ def processamento(monkeypatch):
     monkeypatch.setattr(d, "baixar_janela", baixar)
     monkeypatch.setattr(d, "gravar_alertas", lambda conn, alertas: estado["gravados"].append(list(alertas)) or len(estado["gravados"][-1]))
     monkeypatch.setattr(d, "remover_ausentes", lambda *a: estado["removidos"].append(a) or 0)
+    estado["progresso"] = []
+    monkeypatch.setattr(d, "registrar_progresso", lambda conn, fonte, etapa, feitas, total: estado["progresso"].append((fonte, etapa, feitas, total)))
     monkeypatch.setattr(d, "contar_na_fonte", lambda *a: estado.get("na_fonte", len(estado.get("brutos", [FEATURE]))))
     monkeypatch.setattr(d, "contar_no_banco", lambda *a: estado.get("no_banco", len({f["id"] for f in estado.get("brutos", [FEATURE])})))
     return estado
@@ -376,3 +378,13 @@ def test_contar_na_fonte_rejects_missing_or_invalid_count(monkeypatch, payload):
 
     with pytest.raises(RuntimeError):
         d.contar_na_fonte("deter-amz", date(2016, 8, 1), date(2016, 9, 1))
+
+
+def test_processar_projeto_reports_progress_per_window(processamento):
+    d._processar_projeto(_ConnSQL(), "deter-amz", date(2026, 12, 20), date(2026, 10, 1))
+
+    assert processamento["progresso"] == [
+        ("deter_desmatamento", "deter-amz · 2026-10", 1, 3),
+        ("deter_desmatamento", "deter-amz · 2026-11", 2, 3),
+        ("deter_desmatamento", "deter-amz · 2026-12", 3, 3),
+    ]

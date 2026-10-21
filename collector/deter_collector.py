@@ -16,7 +16,7 @@ import requests
 from psycopg2.extras import execute_values
 
 from app.services import brasil_deforestation_calc as dc
-from collector.run_log import finalizar_execucao, iniciar_execucao
+from collector.run_log import finalizar_execucao, iniciar_execucao, registrar_progresso
 
 logger = logging.getLogger(__name__)
 
@@ -320,7 +320,8 @@ def _processar_projeto(conn, projeto: str, hoje: date, desde: Optional[date]) ->
     if desde is None:
         desde = inicio_incremental(ultima) if ultima else hoje - timedelta(days=DIAS_PRIMEIRA_COLETA)
     total, divergentes = 0, []
-    for inicio, fim_exclusivo in janelas_mensais(desde, hoje):
+    janelas = list(janelas_mensais(desde, hoje))
+    for feitas, (inicio, fim_exclusivo) in enumerate(janelas, start=1):
         brutos = baixar_janela(projeto, inicio, fim_exclusivo)
         alertas = [a for a in (normalizar_feature(f, projeto, hoje) for f in brutos) if a]
         _exigir_aproveitamento(projeto, inicio, len(brutos), len(alertas))
@@ -330,6 +331,7 @@ def _processar_projeto(conn, projeto: str, hoje: date, desde: Optional[date]) ->
         conn.commit()  # cada janela fica salva; uma falha adiante não perde o já coletado
         if not _conferir_janela(conn, projeto, inicio, fim_exclusivo, len(brutos), len({a.fonte_id for a in alertas})):
             divergentes.append(inicio)
+        registrar_progresso(conn, RUN_FONTE, f"{projeto} · {inicio:%Y-%m}", feitas, len(janelas))
         logger.info("%s %s a %s: %s alertas", projeto, inicio, fim_exclusivo, len(alertas))
         time.sleep(_PAUSA_ENTRE_REQUISICOES_S)
     if divergentes:  # as demais janelas já foram salvas; a execução fica marcada com erro

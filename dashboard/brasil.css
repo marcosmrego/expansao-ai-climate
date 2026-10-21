@@ -289,3 +289,18 @@
 .dm-aviso[hidden] { display: none; }
 #dm-chart { max-height: 280px; }
 @media (max-width: 900px) { .dm-cards { grid-template-columns: 1fr; } }
+
+/* ── Monitor de coletas ──────────────────────────────────────────────── */
+#co-lista { display: grid; gap: 12px; }
+.co-item { padding: 14px 16px; border: 1px solid rgba(255,255,255,.08); border-left-width: 3px; border-radius: 8px; background: rgba(255,255,255,.02); }
+.co-item.co-running { border-left-color: var(--info); }
+.co-item.co-ok { border-left-color: #66BB6A; }
+.co-item.co-erro, .co-item.co-parado { border-left-color: var(--warning); }
+.co-topo { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.co-nome { font-size: 14px; color: var(--text); }
+.co-progresso { margin-top: 10px; }
+.co-barra { height: 8px; border-radius: 4px; overflow: hidden; background: rgba(255,255,255,.08); }
+.co-barra span { display: block; height: 100%; background: var(--info); transition: width .6s ease; }
+.co-detalhe { margin-top: 8px; font-size: 12px; color: var(--text-2); line-height: 1.5; font-variant-numeric: tabular-nums; }
+.co-erro { margin-top: 8px; font-size: 12px; color: var(--warning); word-break: break-word; }
+@media (prefers-reduced-motion: reduce) { .co-barra span { transition: none; } }

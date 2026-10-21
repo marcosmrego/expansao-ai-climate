@@ -208,3 +208,24 @@ def test_desmatamento_taxa_passes_project(client_des):
     assert client_des.get("/api/brasil/desmatamento/taxa?projeto=deter-cerrado").status_code == 200
     assert client_des.chamadas["taxas"] == ("deter-cerrado",)
     assert client_des.get("/api/brasil/desmatamento/taxa?projeto=xx").status_code == 422
+
+
+def test_coleta_execucoes_returns_service_payload(client, monkeypatch):
+    from app.services import brasil_collector_status_service as csvc
+    monkeypatch.setattr(csvc, "execucoes", lambda: {"execucoes": [], "em_andamento": False})
+
+    r = client.get("/api/brasil/coleta/execucoes")
+
+    assert r.status_code == 200 and r.json() == {"execucoes": [], "em_andamento": False}
+
+
+def test_coleta_execucoes_hides_internal_error(client, monkeypatch):
+    from app.services import brasil_collector_status_service as csvc
+
+    def falha():
+        raise RuntimeError("senha do banco")
+    monkeypatch.setattr(csvc, "execucoes", falha)
+
+    r = client.get("/api/brasil/coleta/execucoes")
+
+    assert r.status_code == 500 and "senha" not in r.text

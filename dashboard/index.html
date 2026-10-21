@@ -32,7 +32,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css?v=52">
-    <link rel="stylesheet" href="brasil.css?v=4">
+    <link rel="stylesheet" href="brasil.css?v=5">
     <script defer src="http://umami-qkr89esvo1szlexgp9y67gy8.212.85.22.227.sslip.io/script.js"
             data-website-id="794d96e4-9652-4d3e-8df4-adb3ba9fad61"></script>
 </head>
@@ -694,6 +694,7 @@
                 <button class="active" id="br-tab-focos" data-br-modulo="focos" role="tab" aria-selected="true">🔥 Focos de calor</button>
                 <button id="br-tab-reservatorios" data-br-modulo="reservatorios" role="tab" aria-selected="false">💧 Reservatórios</button>
                 <button id="br-tab-desmatamento" data-br-modulo="desmatamento" role="tab" aria-selected="false">🌳 Desmatamento</button>
+                <button id="br-tab-coletas" data-br-modulo="coletas" role="tab" aria-selected="false">⚙️ Coletas</button>
             </div>
         </div>
 
@@ -893,6 +894,17 @@
             </section>
 
         </div>
+
+        <div class="br-modulo" id="br-mod-coletas" hidden>
+            <section class="panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">⚙️ Brasil · Coletas</h2>
+                    <span class="panel-sub" id="co-sub">execuções dos coletores</span>
+                </div>
+                <div id="co-lista" aria-live="polite"></div>
+                <p class="br-foot">Mostra as últimas execuções dos coletores. Uma carga que não dá sinal por 15 minutos aparece como "Sem sinal".</p>
+            </section>
+        </div>
 </div>
 
     <!-- ── Tab: Zhora ───────────────────────────────────────────────────── -->
@@ -973,9 +985,10 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="app.js?v=61"></script>
-<script src="brasil.js?v=4"></script>
+<script src="brasil.js?v=5"></script>
 <script src="brasil-reservatorios.js?v=1"></script>
 <script src="brasil-desmatamento.js?v=3"></script>
+<script src="brasil-coletas.js?v=1"></script>
 <!-- Cloudflare Web Analytics -->
 <script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "0ba9b0dc7997464f8a13b01a7616ed51"}'></script>
 <!-- End Cloudflare Web Analytics -->
