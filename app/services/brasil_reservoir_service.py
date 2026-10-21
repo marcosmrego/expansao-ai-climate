@@ -20,6 +20,7 @@ ORDENS = ("volume", "-volume", "nome", "variacao", "-variacao")
 cache = TTLCache(ttl=CACHE_TTL_S)
 _SERIES_MAX_ENTRIES = 64
 cache_series = TTLCache(ttl=CACHE_TTL_S, max_entries=_SERIES_MAX_ENTRIES)  # separado: séries não expulsam o snapshot
+cache_mapa = TTLCache(ttl=CACHE_TTL_S, max_entries=4)
 _FUSO = ZoneInfo("America/Sao_Paulo")
 
 _SQL_SNAPSHOT = """
@@ -39,9 +40,22 @@ SELECT r.id, r.nome, r.sistema, r.uf, r.municipio, r.capacidade_hm3,
 """
 
 
+_SQL_MAPA = """
+SELECT r.id, r.nome, r.sistema, r.uf, r.latitude, r.longitude, cur.data, cur.volume_pct
+  FROM climate.reservoir r
+  JOIN LATERAL (
+        SELECT data, volume_pct FROM climate.reservoir_reading
+         WHERE reservoir_id = r.id AND volume_pct IS NOT NULL AND data <= %(hoje)s
+         ORDER BY data DESC LIMIT 1) cur ON TRUE
+ WHERE r.latitude IS NOT NULL AND r.longitude IS NOT NULL
+ ORDER BY r.id
+"""
+
+
 def invalidar_cache() -> None:
     cache.clear()
     cache_series.clear()
+    cache_mapa.clear()
 
 
 def _hoje(agora: Optional[datetime] = None) -> date:
@@ -228,4 +242,34 @@ def serie(reservatorio_id: int, periodo: str, agora: Optional[datetime] = None) 
         "metodologia": _METODOLOGIA,
     }
     cache_series.set(chave, resultado)
+    return resultado
+
+
+# ── Pontos para o mapa do painel ──────────────────────────────────────────────
+
+def _ponto_mapa(linha: tuple, hoje: date) -> dict:
+    rid, nome, sistema, uf, lat, lon, data, pct = linha
+    pct = _float(pct)
+    return {
+        "id": rid, "nome": nome.strip(), "sistema": sistema, "uf": uf,
+        "lat": float(lat), "lon": float(lon), "volume_pct": pct,
+        "faixa": rc.faixa_de(pct), "recente": rc.recente(sistema, data, hoje),
+    }
+
+
+def mapa(agora: Optional[datetime] = None) -> dict:
+    """Reservatórios com coordenadas e medição recente, em formato enxuto para o mapa."""
+    hoje = _hoje(agora)
+    chave = f"mapa:{hoje}"
+    if (hit := cache_mapa.get(chave)) is not None:
+        return hit
+
+    def _run(conn):
+        with conn.cursor() as cur:
+            cur.execute(_SQL_MAPA, {"hoje": hoje})
+            return cur.fetchall()
+
+    pontos = [p for p in (_ponto_mapa(l, hoje) for l in _com_conexao(_run)) if p["recente"]]
+    resultado = {"total": len(pontos), "itens": pontos}
+    cache_mapa.set(chave, resultado)
     return resultado

@@ -166,7 +166,7 @@
                     { label: "Faixa ±1 desvio", data: sup, borderWidth: 0, pointRadius: 0, fill: "+1", backgroundColor: "rgba(142,162,190,.12)" },
                     { label: "_inf", data: inf, borderWidth: 0, pointRadius: 0, fill: false },
                     { label: "Média histórica (2003–ano anterior)", data: media, borderColor: "#8EA2BE", borderDash: [5, 4], borderWidth: 1.5, pointRadius: 0, fill: false },
-                    { label: "Últimos 12 meses", data: atual, borderColor: "#FFA726", borderWidth: 2, pointRadius: 0, tension: .25, fill: false },
+                    { label: "Últimos 12 meses", data: atual, borderColor: "#FFB02E", borderWidth: 2, pointRadius: 0, tension: .25, fill: false },
                 ],
             },
             options: {

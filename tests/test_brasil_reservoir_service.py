@@ -92,3 +92,68 @@ def test_ordenar_is_stable_and_accent_insensitive():
 
     assert [i["nome"] for i in svc._ordenar(itens, "nome")] == ["Água Clara", "BETA", "ZULU"]
     assert [i["id"] for i in svc._ordenar(itens, "volume")] == [2, 3, 1]  # empate: por nome, depois id
+
+
+# ── mapa do painel ────────────────────────────────────────────────────────────
+
+class _CurMapa:
+    def __init__(self, linhas):
+        self.linhas, self.sql = linhas, []
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
+
+    def execute(self, sql, params=None):
+        self.sql.append(sql)
+
+    def fetchall(self):
+        return self.linhas
+
+
+class _ConnMapa:
+    def __init__(self, linhas):
+        self.cur = _CurMapa(linhas)
+
+    def cursor(self):
+        return self.cur
+
+    def close(self):
+        pass
+
+
+def test_mapa_keeps_only_recent_readings_with_compact_fields(monkeypatch):
+    from datetime import date, datetime
+    from decimal import Decimal
+    from app.services import brasil_reservoir_service as rs
+
+    linhas = [
+        (1, "Furnas ", "sin", "MG", Decimal("-20.67"), Decimal("-46.31"), date(2026, 10, 20), Decimal("55.5")),
+        (2, "Antigo", "sin", "SP", Decimal("-23.0"), Decimal("-47.0"), date(2020, 1, 1), Decimal("10")),
+    ]
+    rs.cache_mapa.clear()
+    monkeypatch.setattr(rs, "conectar", lambda: _ConnMapa(linhas))
+
+    r = rs.mapa(agora=datetime(2026, 10, 21, 12, 0))
+
+    assert r["total"] == 1
+    assert r["itens"][0] == {"id": 1, "nome": "Furnas", "sistema": "sin", "uf": "MG", "lat": -20.67,
+                             "lon": -46.31, "volume_pct": 55.5, "faixa": rs.rc.faixa_de(55.5), "recente": True}
+    rs.cache_mapa.clear()
+
+
+def test_mapa_is_cached_per_day(monkeypatch):
+    from datetime import datetime
+    from app.services import brasil_reservoir_service as rs
+
+    chamadas = []
+    rs.cache_mapa.clear()
+    monkeypatch.setattr(rs, "conectar", lambda: chamadas.append(1) or _ConnMapa([]))
+
+    rs.mapa(agora=datetime(2026, 10, 21, 12, 0))
+    rs.mapa(agora=datetime(2026, 10, 21, 18, 0))
+
+    assert len(chamadas) == 1
+    rs.cache_mapa.clear()

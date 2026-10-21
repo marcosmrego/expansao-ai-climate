@@ -1,35 +1,42 @@
 /* ── Variables ─────────────────────────────────────────────────────── */
 :root {
-    --bg:           #07111D;
-    --bg2:          #0C1628;
-    --surface:      #0E1E30;
-    --surface2:     #132436;
-    --border:       rgba(255,255,255,.07);
-    --border-accent:rgba(255,255,255,.14);
-    --text:         #E8EEF5;
-    --text-2:       #8EA2BE;
-    --text-3:       #546A84;
-    --accent:       #5EC8F8;
-    --accent-dim:   rgba(94,200,248,.12);
-    --accent-glow:  rgba(94,200,248,.22);
-    --info:         #5EC8F8;
-    --warning:      #FFA726;
-    --critical:     #EF5350;
+    /* Base: quase preto com fundo esverdeado */
+    --bg:           #050B08;
+    --bg2:          #09110D;
+    --surface:      #0C1712;
+    --surface2:     #12211A;
+    --border:       rgba(180,255,215,.08);
+    --border-accent:rgba(180,255,215,.16);
+    --text:         #E7F0EA;
+    --text-2:       #93AA9C;
+    --text-3:       #5C7568;
+    /* Marca (neutra) */
+    --accent:       #7CE3B5;
+    --accent-dim:   rgba(124,227,181,.12);
+    --accent-glow:  rgba(124,227,181,.24);
+    /* Cada cor significa um fenômeno */
+    --fire:         #FFB02E;   /* fogo: focos de calor */
+    --water:        #35D4E8;   /* água: reservatórios e chuva */
+    --land:         #E0603F;   /* terra: desmatamento */
+    --info:         var(--water);
+    --warning:      var(--fire);
+    --critical:     var(--land);
     --radius:       16px;
     --radius-sm:    10px;
     --transition:   .22s ease;
+    --font-data:    'JetBrains Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
 }
 
 body.el-nino {
-    --accent:       #FF7043;
-    --accent-dim:   rgba(255,112,67,.12);
-    --accent-glow:  rgba(255,112,67,.22);
+    --accent:       #FF7A90;   /* rosa: fora das cores de fogo, água e terra */
+    --accent-dim:   rgba(255,122,144,.12);
+    --accent-glow:  rgba(255,122,144,.24);
 }
 
 body.la-nina {
-    --accent:       #42A5F5;
-    --accent-dim:   rgba(66,165,245,.12);
-    --accent-glow:  rgba(66,165,245,.22);
+    --accent:       #8A94FF;   /* índigo: distinto da água (ciano) */
+    --accent-dim:   rgba(138,148,255,.12);
+    --accent-glow:  rgba(138,148,255,.24);
 }
 
 /* ── Reset & Base ───────────────────────────────────────────────────── */
@@ -59,7 +66,7 @@ body {
 
 /* ── Header ─────────────────────────────────────────────────────────── */
 header {
-    padding: 28px 40px 24px;
+    padding: 16px 40px 14px;
     border-bottom: 1px solid var(--border);
 }
 
@@ -127,8 +134,8 @@ h1 {
     display: flex;
     align-items: center;
     gap: 6px;
-    background: rgba(94,200,248,.10);
-    border: 1px solid rgba(94,200,248,.30);
+    background: rgba(124,227,181,.10);
+    border: 1px solid rgba(124,227,181,.30);
     border-radius: 100px;
     padding: 7px 16px;
     font-size: 13px;
@@ -140,8 +147,8 @@ h1 {
     font-family: inherit;
 }
 .zhora-header-btn:hover {
-    background: rgba(94,200,248,.20);
-    border-color: rgba(94,200,248,.55);
+    background: rgba(124,227,181,.20);
+    border-color: rgba(124,227,181,.55);
     transform: scale(1.03);
 }
 .zhora-header-label { letter-spacing: .02em; }
@@ -185,16 +192,16 @@ h1 {
 main {
     max-width: 1280px;
     margin: 0 auto;
-    padding: 32px 40px 40px;
+    padding: 14px 40px 40px;
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 14px;
 }
 
 /* ── Error bar ──────────────────────────────────────────────────────── */
 .error-bar {
-    background: rgba(239,83,80,.12);
-    border: 1px solid rgba(239,83,80,.3);
+    background: rgba(224,96,63,.12);
+    border: 1px solid rgba(224,96,63,.3);
     border-radius: var(--radius-sm);
     color: #EF9A9A;
     padding: 12px 18px;
@@ -453,17 +460,17 @@ main {
     transform: translateX(3px);
 }
 
-.alert-card.info  { border-left-color: var(--info);     background: rgba(94,200,248,.05); }
-.alert-card.warning { border-left-color: var(--warning); background: rgba(255,167,38,.06); }
+.alert-card.info  { border-left-color: var(--info);     background: rgba(124,227,181,.05); }
+.alert-card.warning { border-left-color: var(--warning); background: rgba(255,176,46,.06); }
 .alert-card.critical {
     border-left-color: var(--critical);
-    background: rgba(239,83,80,.06);
+    background: rgba(224,96,63,.06);
     animation: critical-pulse 2.5s ease-in-out infinite;
 }
 
 @keyframes critical-pulse {
     0%, 100% { box-shadow: none; }
-    50%       { box-shadow: 0 0 0 2px rgba(239,83,80,.18); }
+    50%       { box-shadow: 0 0 0 2px rgba(224,96,63,.18); }
 }
 
 .alert-header {
@@ -738,7 +745,7 @@ details[open] .glossary-summary {
 
 .zhora-btn {
     background: var(--accent);
-    color: #07111D;
+    color: #050B08;
     border: none;
     border-radius: var(--radius-sm);
     padding: 10px 20px;
@@ -885,7 +892,7 @@ details[open] .glossary-summary {
 .climate-map-wrap {
     position: relative;
     width: 100%;
-    background: #0a1628;
+    background: #09110D;
     border-radius: var(--radius-sm);
     overflow: hidden;
 }
@@ -915,7 +922,7 @@ details[open] .glossary-summary {
     flex-direction: column;
     align-items: center;
     gap: 4px;
-    background: #0a1628;
+    background: #09110D;
     border: 1px solid rgba(255,255,255,0.09);
     border-radius: var(--radius-sm);
     padding: 8px 0 6px;
@@ -992,7 +999,7 @@ details[open] .glossary-summary {
 
 .seismic-tooltip {
     position: fixed;
-    background: rgba(12,22,40,.95);
+    background: rgba(9,17,13,.95);
     border: 1px solid rgba(255,255,255,.15);
     border-radius: 6px;
     padding: 8px 12px;
@@ -1274,7 +1281,7 @@ details[open] .glossary-summary {
     grid-template-columns: auto 1fr auto;
     align-items: center;
     gap: 20px;
-    background: linear-gradient(135deg, rgba(38,166,154,.12) 0%, rgba(94,200,248,.08) 100%);
+    background: linear-gradient(135deg, rgba(38,166,154,.12) 0%, rgba(124,227,181,.08) 100%);
     border: 1px solid rgba(38,166,154,.30);
     border-left: 4px solid rgba(38,166,154,.8);
     border-radius: var(--radius);
@@ -1283,7 +1290,7 @@ details[open] .glossary-summary {
     transition: all var(--transition);
 }
 .regional-cta:hover {
-    background: linear-gradient(135deg, rgba(38,166,154,.18) 0%, rgba(94,200,248,.12) 100%);
+    background: linear-gradient(135deg, rgba(38,166,154,.18) 0%, rgba(124,227,181,.12) 100%);
     border-color: rgba(38,166,154,.5);
     transform: translateY(-1px);
     box-shadow: 0 4px 20px rgba(38,166,154,.12);

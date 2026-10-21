@@ -295,9 +295,9 @@ function montarGrafico(dados, dadosSOI = []) {
     const soiValores = labels.map(l => soiMap[l] ?? null)
 
     const gradient = ctx.getContext("2d").createLinearGradient(0, 0, 0, 280)
-    gradient.addColorStop(0,   "rgba(94,200,248,.25)")
-    gradient.addColorStop(0.6, "rgba(94,200,248,.05)")
-    gradient.addColorStop(1,   "rgba(94,200,248,0)")
+    gradient.addColorStop(0,   "rgba(124,227,181,.25)")
+    gradient.addColorStop(0.6, "rgba(124,227,181,.05)")
+    gradient.addColorStop(1,   "rgba(124,227,181,0)")
 
     if (window._oniChart) window._oniChart.destroy()
     window._oniChart = new Chart(ctx, {
@@ -308,7 +308,7 @@ function montarGrafico(dados, dadosSOI = []) {
                 {
                     label: "ONI",
                     data: valores,
-                    borderColor: "#5EC8F8",
+                    borderColor: "#7CE3B5",
                     borderWidth: 2.5,
                     backgroundColor: gradient,
                     fill: true,
@@ -410,7 +410,7 @@ function montarGrafico(dados, dadosSOI = []) {
                     }
                 },
                 tooltip: {
-                    backgroundColor: "#0E1E30",
+                    backgroundColor: "#0C1712",
                     borderColor: "rgba(255,255,255,.1)",
                     borderWidth: 1,
                     titleColor: "#E8EEF5",
@@ -1071,7 +1071,7 @@ async function montarMapaClimatico() {
     // Sphere (ocean background) — azul mais profundo
     svg.append("path")
         .datum({type: "Sphere"})
-        .attr("fill","#061020")
+        .attr("fill","#07100B")
         .attr("d", path)
 
     // Graticule grid — ligeiramente mais visível
@@ -1093,8 +1093,8 @@ async function montarMapaClimatico() {
         .selectAll("path")
         .data(topojson.feature(world, world.objects.countries).features)
         .join("path")
-        .attr("fill","#1e3348")
-        .attr("stroke","#0d1f30")
+        .attr("fill","#17291F")
+        .attr("stroke","#0B1711")
         .attr("stroke-width","0.4")
         .attr("d", path)
 
@@ -1391,8 +1391,8 @@ async function montarMapaClimatico() {
         // Marcadores PDO/NAO/AMO/QBO animados por frame
         const pdoVal = f.pdo, naoVal = f.nao, amoVal = f.amo, qboObj = f.qbo
         const pdoC = modColor(pdoVal,  0.5, -0.5, "#FF7043","#42A5F5")
-        const naoC = modColor(naoVal,  0.5, -0.5, "#42A5F5","#EF5350")
-        const amoC = modColor(amoVal,  0.1, -0.1, "#EF5350","#42A5F5")
+        const naoC = modColor(naoVal,  0.5, -0.5, "#42A5F5","#E0603F")
+        const amoC = modColor(amoVal,  0.1, -0.1, "#E0603F","#42A5F5")
         const qboC = qboObj?.cls === "LESTE" ? "#7E57C2" : qboObj?.cls === "OESTE" ? "#4DD0E1" : "#78909C"
         updateModMarker(modMarkers.pdo, pdoC, pdoVal !== null && Math.abs(pdoVal||0) >= 0.5)
         updateModMarker(modMarkers.nao, naoC, naoVal !== null && Math.abs(naoVal||0) >= 0.5)
@@ -1485,7 +1485,7 @@ async function montarWheelerHendon() {
         const COR = {
             FAVORAVEL_LANINA: "#42A5F5",
             FAVORAVEL_ELNINO: "#FF7043",
-            ATIVO:            "#FFA726",
+            ATIVO:            "#FFB02E",
             FRACO:            "#546A84",
         }
 
@@ -1617,7 +1617,7 @@ async function montarWheelerHendon() {
                                 return [`${d.data_referencia}`, `RMM1: ${d.rmm1.toFixed(3)}  RMM2: ${d.rmm2.toFixed(3)}`, `Fase ${d.phase} · ${d.amplitude.toFixed(3)}`]
                             }
                         },
-                        backgroundColor: "rgba(12,22,40,.92)",
+                        backgroundColor: "rgba(9,17,13,.92)",
                         borderColor: "rgba(255,255,255,.12)",
                         borderWidth: 1,
                         titleColor: "#E8EEF5",
@@ -1645,8 +1645,8 @@ async function montarCO2Chart() {
 
         const ctx2 = canvas.getContext("2d")
         const grad = ctx2.createLinearGradient(0, 0, 0, 280)
-        grad.addColorStop(0, "rgba(255,167,38,.22)")
-        grad.addColorStop(1, "rgba(255,167,38,.01)")
+        grad.addColorStop(0, "rgba(255,176,46,.22)")
+        grad.addColorStop(1, "rgba(255,176,46,.01)")
 
         // Tick every Jan or Jul for readability
         const labels = dados.map(d => d.data_referencia)
@@ -1664,7 +1664,7 @@ async function montarCO2Chart() {
                 datasets: [{
                     label: "CO₂ (ppm)",
                     data: dados.map(d => d.co2_ppm),
-                    borderColor: "#FFA726",
+                    borderColor: "#FFB02E",
                     backgroundColor: grad,
                     borderWidth: 1.5,
                     pointRadius: 0,
@@ -1697,11 +1697,11 @@ async function montarCO2Chart() {
                     legend: { display: false },
                     tooltip: {
                         callbacks: { label: ctx => `${ctx.parsed.y.toFixed(2)} ppm` },
-                        backgroundColor: "rgba(12,22,40,.92)",
+                        backgroundColor: "rgba(9,17,13,.92)",
                         borderColor: "rgba(255,255,255,.12)",
                         borderWidth: 1,
                         titleColor: "#E8EEF5",
-                        bodyColor: "#FFA726",
+                        bodyColor: "#FFB02E",
                         padding: 10,
                     }
                 }
@@ -1801,7 +1801,7 @@ async function montarGeloChart() {
                         callbacks: {
                             label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y?.toFixed(3) ?? "—"} Mkm²`
                         },
-                        backgroundColor: "rgba(12,22,40,.92)",
+                        backgroundColor: "rgba(9,17,13,.92)",
                         borderColor: "rgba(255,255,255,.12)",
                         borderWidth: 1,
                         titleColor: "#E8EEF5",
@@ -1878,7 +1878,7 @@ async function montarModulacaoChart(canvasId, endpoint, cor, label, unidade) {
                     legend: { display: false },
                     tooltip: {
                         callbacks: { label: ctx => `${ctx.parsed.y.toFixed(2)}${unidade ? " " + unidade : ""}` },
-                        backgroundColor: "rgba(12,22,40,.92)",
+                        backgroundColor: "rgba(9,17,13,.92)",
                         borderColor: "rgba(255,255,255,.12)",
                         borderWidth: 1,
                         titleColor: "#E8EEF5",
@@ -1894,11 +1894,11 @@ async function montarModulacaoChart(canvasId, endpoint, cor, label, unidade) {
 }
 
 const _MOD_COLORS = {
-    pdo: { pos: "rgba(66,165,245,.75)",  neg: "rgba(239,83,80,.65)",  gradTop: "rgba(66,165,245,.2)",  gradBot: "transparent" },
+    pdo: { pos: "rgba(66,165,245,.75)",  neg: "rgba(224,96,63,.65)",  gradTop: "rgba(66,165,245,.2)",  gradBot: "transparent" },
     nao: { pos: "rgba(171,71,188,.75)",  neg: "rgba(38,198,218,.65)", gradTop: "rgba(171,71,188,.2)",  gradBot: "transparent" },
     amo: { pos: "rgba(255,112,67,.75)",  neg: "rgba(66,165,245,.65)", gradTop: "rgba(255,112,67,.2)",  gradBot: "transparent" },
     qbo: { pos: "rgba(38,198,218,.75)",  neg: "rgba(212,225,87,.65)", gradTop: "rgba(38,198,218,.2)",  gradBot: "transparent" },
-    iod: { pos: "rgba(255,167,38,.75)",  neg: "rgba(66,165,245,.65)", gradTop: "rgba(255,167,38,.2)",  gradBot: "transparent" },
+    iod: { pos: "rgba(255,176,46,.75)",  neg: "rgba(66,165,245,.65)", gradTop: "rgba(255,176,46,.2)",  gradBot: "transparent" },
 }
 
 async function montarGraficosPDO()  { await montarModulacaoChart("pdoChart",  "/climate/pdo/history", _MOD_COLORS.pdo, "PDO", null) }

@@ -44,7 +44,7 @@
     background: rgba(255,255,255,.06);
     color: var(--text-2);
 }
-.br-badge.acima  { background: rgba(255,167,38,.16); color: var(--warning); }
+.br-badge.acima  { background: rgba(255,176,46,.16); color: var(--warning); }
 .br-badge.abaixo { background: rgba(94,200,248,.14); color: var(--info); }
 
 .br-grid {
@@ -104,7 +104,7 @@
     display: block;
     height: 100%;
     border-radius: 4px;
-    background: linear-gradient(90deg, #FF7043, #FFA726);
+    background: linear-gradient(90deg, #FF7043, #FFB02E);
 }
 .br-rank-num { font-variant-numeric: tabular-nums; color: var(--text-2); min-width: 120px; text-align: right; }
 
@@ -163,14 +163,14 @@
 .br-more[hidden], .br-tip[hidden] { display: none; }
 
 .br-uf {
-    fill: #132436;
+    fill: #12211A;
     stroke: rgba(255,255,255,.18);
     stroke-width: .6;
     cursor: pointer;
     outline: none;
     transition: fill var(--transition), stroke var(--transition);
 }
-.br-uf:hover, .br-uf.ativo { fill: #1c3a58; stroke: var(--accent); stroke-width: 1.4; }
+.br-uf:hover, .br-uf.ativo { fill: #1B3A2C; stroke: var(--accent); stroke-width: 1.4; }
 .br-uf:focus-visible { stroke: var(--accent); stroke-width: 2; }
 
 .br-tip {
@@ -179,7 +179,7 @@
     min-width: 220px;
     max-width: min(300px, calc(100% - 16px));
     padding: 12px 14px;
-    background: rgba(7,17,29,.96);
+    background: rgba(5,11,8,.96);
     border: 1px solid var(--border-accent);
     border-radius: var(--radius-sm);
     box-shadow: 0 10px 32px rgba(0,0,0,.45);
@@ -213,7 +213,7 @@
 .br-modulo > .panel + .panel { margin-top: 16px; }
 
 .br-badge.sobe  { background: rgba(102,187,106,.16); color: #66BB6A; }
-.br-badge.desce { background: rgba(255,167,38,.16); color: var(--warning); }
+.br-badge.desce { background: rgba(255,176,46,.16); color: var(--warning); }
 
 .rs-cards { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
 .rs-card {
@@ -284,7 +284,7 @@
 .dm-cards .br-value small { font-size: 14px; font-weight: 500; color: var(--text-3); }
 .dm-aviso {
     margin-bottom: 14px; padding: 10px 14px; border-radius: 8px; font-size: 12px; line-height: 1.5;
-    background: rgba(255,167,38,.12); border: 1px solid rgba(255,167,38,.4); color: var(--warning);
+    background: rgba(255,176,46,.12); border: 1px solid rgba(255,176,46,.4); color: var(--warning);
 }
 .dm-aviso[hidden] { display: none; }
 #dm-chart { max-height: 280px; }

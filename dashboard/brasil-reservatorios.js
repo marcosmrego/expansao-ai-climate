@@ -5,8 +5,8 @@
     const el = id => document.getElementById(id)
     const PAGINA = 50
     const FAIXAS = [
-        ["critico", "Abaixo de 20%", "#EF5350"], ["baixo", "20% a 40%", "#FFA726"],
-        ["medio", "40% a 60%", "#FFD54F"], ["bom", "60% a 80%", "#66BB6A"], ["alto", "Acima de 80%", "#5EC8F8"],
+        ["critico", "Abaixo de 20%", "#E0603F"], ["baixo", "20% a 40%", "#FFB02E"],
+        ["medio", "40% a 60%", "#FFD54F"], ["bom", "60% a 80%", "#66BB6A"], ["alto", "Acima de 80%", "#35D4E8"],
     ]
     const COR_FAIXA = Object.fromEntries(FAIXAS.map(([k, , c]) => [k, c]))
     const UFS = ["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"]
@@ -196,8 +196,8 @@
             type: "line",
             data: {
                 labels: s.pontos.map(p => dataBR(p.data)),
-                datasets: [{ label: "Volume (%)", data: s.pontos.map(p => p.volume_pct), borderColor: "#5EC8F8",
-                             backgroundColor: "rgba(94,200,248,.12)", borderWidth: 1.6, pointRadius: 0, fill: true, tension: .2 }],
+                datasets: [{ label: "Volume (%)", data: s.pontos.map(p => p.volume_pct), borderColor: "#35D4E8",
+                             backgroundColor: "rgba(53,212,232,.12)", borderWidth: 1.6, pointRadius: 0, fill: true, tension: .2 }],
             },
             options: {
                 responsive: true, maintainAspectRatio: false, interaction: { mode: "index", intersect: false },

@@ -104,6 +104,16 @@ def reservatorios_resumo():
         raise HTTPException(status_code=500, detail="Erro ao consultar reservatórios")
 
 
+@router.get("/reservatorios/mapa")
+def reservatorios_mapa():
+    """Reservatórios com medição recente e coordenadas (camada do mapa do painel)."""
+    try:
+        return rsvc.mapa()
+    except Exception:
+        logger.exception("Erro em /api/brasil/reservatorios/mapa")
+        raise HTTPException(status_code=500, detail="Erro ao consultar o mapa de reservatórios")
+
+
 @router.get("/reservatorios")
 def reservatorios_lista(
     sistema: Optional[SistemaReservatorio] = None,

@@ -229,3 +229,12 @@ def test_coleta_execucoes_hides_internal_error(client, monkeypatch):
     r = client.get("/api/brasil/coleta/execucoes")
 
     assert r.status_code == 500 and "senha" not in r.text
+
+
+def test_reservatorios_mapa_returns_service_payload(client, monkeypatch):
+    from app.services import brasil_reservoir_service as rsvc
+    monkeypatch.setattr(rsvc, "mapa", lambda: {"total": 0, "itens": []})
+
+    r = client.get("/api/brasil/reservatorios/mapa")
+
+    assert r.status_code == 200 and r.json() == {"total": 0, "itens": []}
