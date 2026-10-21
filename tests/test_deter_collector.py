@@ -285,6 +285,8 @@ def processamento(monkeypatch):
     monkeypatch.setattr(d, "baixar_janela", baixar)
     monkeypatch.setattr(d, "gravar_alertas", lambda conn, alertas: estado["gravados"].append(list(alertas)) or len(estado["gravados"][-1]))
     monkeypatch.setattr(d, "remover_ausentes", lambda *a: estado["removidos"].append(a) or 0)
+    monkeypatch.setattr(d, "contar_na_fonte", lambda *a: estado.get("na_fonte", len(estado.get("brutos", [FEATURE]))))
+    monkeypatch.setattr(d, "contar_no_banco", lambda *a: estado.get("no_banco", len({f["id"] for f in estado.get("brutos", [FEATURE])})))
     return estado
 
 
@@ -319,3 +321,58 @@ def test_processar_projeto_keeps_existing_rows_when_source_window_is_empty(proce
     d._processar_projeto(_ConnSQL(), "deter-amz", date(2026, 10, 20), date(2026, 10, 1))
 
     assert processamento["removidos"] == []
+
+
+def test_processar_projeto_raises_when_source_has_more_features_than_downloaded(processamento):
+    processamento["na_fonte"] = 500
+
+    with pytest.raises(d.ContagemDivergente):
+        d._processar_projeto(_ConnSQL(), "deter-amz", date(2026, 10, 20), date(2026, 10, 1))
+
+
+def test_processar_projeto_raises_when_database_lacks_what_was_written(processamento):
+    processamento["no_banco"] = 0
+
+    with pytest.raises(d.ContagemDivergente):
+        d._processar_projeto(_ConnSQL(), "deter-amz", date(2026, 10, 20), date(2026, 10, 1))
+
+
+def test_processar_projeto_keeps_going_through_all_windows_before_raising(processamento):
+    processamento["na_fonte"] = 500
+    conn = _ConnSQL()
+
+    with pytest.raises(d.ContagemDivergente):
+        d._processar_projeto(conn, "deter-amz", date(2026, 12, 20), date(2026, 10, 1))
+
+    assert len(processamento["janelas"]) == 3
+    assert conn.commits == 3
+
+
+def test_processar_projeto_accepts_empty_source_window_even_if_database_has_rows(processamento):
+    processamento["brutos"] = []
+    processamento["no_banco"] = 40
+
+    d._processar_projeto(_ConnSQL(), "deter-amz", date(2026, 10, 20), date(2026, 10, 1))
+
+
+def test_contagem_diverge_tolerates_small_drift_only():
+    assert not d.contagem_diverge(8000, 7995)
+    assert d.contagem_diverge(8000, 7900)
+    assert not d.contagem_diverge(0, 1)
+    assert d.contagem_diverge(0, 5)
+
+
+def test_contar_na_fonte_reads_number_matched(monkeypatch):
+    chamadas = []
+    monkeypatch.setattr(d, "_consultar", lambda p: chamadas.append(p) or _Resp({"features": [], "numberMatched": 8300}))
+
+    assert d.contar_na_fonte("deter-amz", date(2016, 8, 1), date(2016, 9, 1)) == 8300
+    assert chamadas[0]["count"] == 1
+
+
+@pytest.mark.parametrize("payload", [{"features": []}, {"numberMatched": "8300"}, {"numberMatched": -1}, [1]])
+def test_contar_na_fonte_rejects_missing_or_invalid_count(monkeypatch, payload):
+    monkeypatch.setattr(d, "_consultar", lambda p: _Resp(payload))
+
+    with pytest.raises(RuntimeError):
+        d.contar_na_fonte("deter-amz", date(2016, 8, 1), date(2016, 9, 1))

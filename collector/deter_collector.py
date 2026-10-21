@@ -44,6 +44,12 @@ _TOLERANCIA_FUTURO = timedelta(days=1)
 _STATUS_REPETIVEIS = {429, 500, 502, 503, 504}
 _USER_AGENT = "ExpansaoAI-Climate/1.0 (+https://climate.expansao-ai.com.br)"
 _FUSO = ZoneInfo("America/Sao_Paulo")
+_TOLERANCIA_CONTAGEM_MIN = 2
+_TOLERANCIA_CONTAGEM_FRACAO = 0.001
+
+
+class ContagemDivergente(RuntimeError):
+    """A contagem da fonte, do download ou do banco não bate em alguma janela."""
 
 
 @dataclass(frozen=True)
@@ -187,6 +193,22 @@ def _pagina(projeto: str, inicio: date, fim_exclusivo: date, indice: int) -> dic
     return dados
 
 
+def contar_na_fonte(projeto: str, inicio: date, fim_exclusivo: date) -> int:
+    """Total de feições que o WFS declara para a janela (numberMatched), sem baixar as feições."""
+    resposta = _consultar({
+        "service": "WFS", "version": "2.0.0", "request": "GetFeature", "typeNames": CAMADAS[projeto],
+        "outputFormat": "application/json", "propertyName": "view_date", "sortBy": "view_date",
+        "cql_filter": filtro_cql(inicio, fim_exclusivo), "count": 1,
+    })
+    try:
+        total = resposta.json().get("numberMatched")
+    except (ValueError, AttributeError):
+        total = None
+    if not isinstance(total, int) or isinstance(total, bool) or total < 0:
+        raise RuntimeError(f"{projeto}: o WFS não informou numberMatched")
+    return total
+
+
 def baixar_janela(projeto: str, inicio: date, fim_exclusivo: date) -> list[dict]:
     """Todas as feições da janela, com cada consulta cabendo em uma página.
 
@@ -256,6 +278,15 @@ def remover_ausentes(conn, projeto: str, inicio: date, fim_exclusivo: date, ids_
         return cur.rowcount
 
 
+def contar_no_banco(conn, projeto: str, inicio: date, fim_exclusivo: date) -> int:
+    with conn.cursor() as cur:
+        cur.execute(
+            """SELECT COUNT(*) FROM climate.deforestation_alert
+                WHERE projeto = %s AND data_alerta >= %s AND data_alerta < %s""",
+            (projeto, inicio, fim_exclusivo))
+        return cur.fetchone()[0]
+
+
 def _ultima_data(conn, projeto: str) -> Optional[date]:
     with conn.cursor() as cur:
         cur.execute("SELECT MAX(data_alerta) FROM climate.deforestation_alert WHERE projeto = %s", (projeto,))
@@ -264,11 +295,31 @@ def _ultima_data(conn, projeto: str) -> Optional[date]:
 
 # ── Orquestração ──────────────────────────────────────────────────────────────
 
+def contagem_diverge(esperado: int, obtido: int) -> bool:
+    """A fonte pode publicar feições entre duas consultas; só diferença acima da tolerância conta."""
+    return abs(esperado - obtido) > max(_TOLERANCIA_CONTAGEM_MIN, esperado * _TOLERANCIA_CONTAGEM_FRACAO)
+
+
+def _conferir_janela(conn, projeto: str, inicio: date, fim_exclusivo: date, baixadas: int, gravadas: int) -> bool:
+    """Compara fonte × baixado (download truncado) e banco × gravado (persistência). True se confere."""
+    na_fonte = contar_na_fonte(projeto, inicio, fim_exclusivo)
+    if contagem_diverge(na_fonte, baixadas):
+        logger.error("%s %s: a fonte tem %s feições e foram baixadas %s", projeto, inicio, na_fonte, baixadas)
+        return False
+    if not baixadas:  # janela vazia na fonte preserva o que já temos; o banco não precisa bater
+        return True
+    no_banco = contar_no_banco(conn, projeto, inicio, fim_exclusivo)
+    if no_banco != gravadas:
+        logger.error("%s %s: %s alertas gravados, mas o banco tem %s na janela", projeto, inicio, gravadas, no_banco)
+        return False
+    return True
+
+
 def _processar_projeto(conn, projeto: str, hoje: date, desde: Optional[date]) -> int:
     ultima = _ultima_data(conn, projeto)
     if desde is None:
         desde = inicio_incremental(ultima) if ultima else hoje - timedelta(days=DIAS_PRIMEIRA_COLETA)
-    total = 0
+    total, divergentes = 0, []
     for inicio, fim_exclusivo in janelas_mensais(desde, hoje):
         brutos = baixar_janela(projeto, inicio, fim_exclusivo)
         alertas = [a for a in (normalizar_feature(f, projeto, hoje) for f in brutos) if a]
@@ -277,8 +328,12 @@ def _processar_projeto(conn, projeto: str, hoje: date, desde: Optional[date]) ->
         if brutos:  # janela vazia na fonte não apaga o que já temos (pode ser falha de publicação)
             remover_ausentes(conn, projeto, inicio, fim_exclusivo, [a.fonte_id for a in alertas])
         conn.commit()  # cada janela fica salva; uma falha adiante não perde o já coletado
+        if not _conferir_janela(conn, projeto, inicio, fim_exclusivo, len(brutos), len({a.fonte_id for a in alertas})):
+            divergentes.append(inicio)
         logger.info("%s %s a %s: %s alertas", projeto, inicio, fim_exclusivo, len(alertas))
         time.sleep(_PAUSA_ENTRE_REQUISICOES_S)
+    if divergentes:  # as demais janelas já foram salvas; a execução fica marcada com erro
+        raise ContagemDivergente(f"{len(divergentes)} janela(s) com contagem divergente, a partir de {divergentes[0]}")
     return total
 
 
