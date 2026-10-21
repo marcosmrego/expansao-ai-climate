@@ -23,7 +23,7 @@ def test_normalizar_maps_fields_and_group():
     alerta = d.normalizar_feature(FEATURE, "deter-amz")
 
     assert alerta.projeto == "deter-amz"
-    assert alerta.fonte_id == "deter_amz.4711"
+    assert alerta.fonte_id.startswith("deter_amz.4711#")
     assert alerta.data_alerta == date(2026, 10, 10)
     assert alerta.publicado_em == date(2026, 10, 1)
     assert alerta.classe == "DESMATAMENTO_CR"
@@ -314,7 +314,8 @@ def test_processar_projeto_removes_stale_rows_with_ids_that_arrived(processament
     d._processar_projeto(_ConnSQL(), "deter-amz", date(2026, 10, 20), date(2026, 10, 1))
 
     _, projeto, inicio, fim, ids = processamento["removidos"][0]
-    assert (projeto, inicio, fim, ids) == ("deter-amz", date(2026, 10, 1), date(2026, 10, 21), ["deter_amz.4711"])
+    assert (projeto, inicio, fim) == ("deter-amz", date(2026, 10, 1), date(2026, 10, 21))
+    assert len(ids) == 1 and ids[0].startswith("deter_amz.4711#")
 
 
 def test_processar_projeto_keeps_existing_rows_when_source_window_is_empty(processamento):
@@ -388,3 +389,56 @@ def test_processar_projeto_reports_progress_per_window(processamento):
         ("deter_desmatamento", "deter-amz · 2026-11", 2, 3),
         ("deter_desmatamento", "deter-amz · 2026-12", 3, 3),
     ]
+
+
+def _feature(id_, dia, classe="DESMATAMENTO_CR", municipio="Altamira", area=0.5):
+    f = {"type": "Feature", "id": id_, "properties": dict(FEATURE["properties"])}
+    f["properties"].update(view_date=dia, classname=classe, municipality=municipio, areamunkm=area)
+    return f
+
+
+def test_chave_alerta_differs_when_the_same_wfs_id_names_different_features():
+    # regressão: deter_amz.41712_hist era uma feição em 2019 e outra em 2024; a chave só pelo id as fundia
+    a = d.normalizar_feature(_feature("deter_amz.41712_hist", "2019-07-01"), "deter-amz", date(2026, 10, 20))
+    b = d.normalizar_feature(_feature("deter_amz.41712_hist", "2024-10-19", "CICATRIZ_DE_QUEIMADA", "Sao Felix do Xingu"),
+                             "deter-amz", date(2026, 10, 20))
+
+    assert a.fonte_id != b.fonte_id
+
+
+def test_chave_alerta_is_stable_for_the_same_feature():
+    f = _feature("deter_amz.1_hist", "2019-07-01")
+
+    a = d.normalizar_feature(f, "deter-amz", date(2026, 10, 20))
+    b = d.normalizar_feature(f, "deter-amz", date(2026, 10, 20))
+
+    assert a.fonte_id == b.fonte_id
+
+
+def test_chave_alerta_changes_when_the_source_reclassifies_the_feature():
+    antes = d.normalizar_feature(_feature("deter_amz.1", "2026-10-01", "DEGRADACAO"), "deter-amz", date(2026, 10, 20))
+    depois = d.normalizar_feature(_feature("deter_amz.1", "2026-10-01", "DESMATAMENTO_CR"), "deter-amz", date(2026, 10, 20))
+
+    assert antes.fonte_id != depois.fonte_id  # a linha antiga sai por remover_ausentes
+
+
+def test_reconferir_banco_flags_a_window_overwritten_by_a_later_one(monkeypatch):
+    contagens = {date(2019, 7, 1): 612, date(2019, 8, 1): 13078}
+    monkeypatch.setattr(d, "contar_no_banco", lambda conn, projeto, ini, fim: contagens[ini])
+    janelas = [(date(2019, 7, 1), date(2019, 8, 1), 10357), (date(2019, 8, 1), date(2019, 9, 1), 13078)]
+
+    assert d._reconferir_banco(object(), "deter-amz", janelas) == [date(2019, 7, 1)]
+
+
+def test_reconferir_banco_skips_windows_empty_at_the_source(monkeypatch):
+    monkeypatch.setattr(d, "contar_no_banco", lambda *a: 99)
+
+    assert d._reconferir_banco(object(), "deter-amz", [(date(2019, 7, 1), date(2019, 8, 1), None)]) == []
+
+
+def test_processar_projeto_raises_when_a_later_window_overwrote_an_earlier_one(processamento, monkeypatch):
+    chamadas = iter([1, 1, 0, 1])  # 2 conferências após gravar; na reconferência final a janela de outubro perdeu a linha
+    monkeypatch.setattr(d, "contar_no_banco", lambda *a: next(chamadas))
+
+    with pytest.raises(d.ContagemDivergente):
+        d._processar_projeto(_ConnSQL(), "deter-amz", date(2026, 11, 20), date(2026, 10, 1))

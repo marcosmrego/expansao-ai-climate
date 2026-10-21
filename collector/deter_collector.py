@@ -4,6 +4,7 @@ Coleta incremental por janelas mensais, só atributos (sem geometria). A carga h
 sai da linha de comando: python -m collector.deter_collector --desde 2016-08-01
 """
 import argparse
+import hashlib
 import logging
 import math
 import time
@@ -100,6 +101,13 @@ def hoje_local() -> date:
     return datetime.now(_FUSO).date()
 
 
+def chave_alerta(feature_id: str, dia: date, classe: str, municipio: Optional[str], area: float) -> str:
+    """Chave única da feição. O id do WFS (ex.: deter_amz.41712_hist) é reaproveitado para feições
+    diferentes em datas diferentes; sozinho, a janela mais nova sobrescreve as antigas."""
+    digest = hashlib.sha1(f"{dia.isoformat()}|{classe}|{municipio or ''}|{area:.6f}".encode()).hexdigest()[:10]
+    return f"{feature_id}#{digest}"
+
+
 def normalizar_feature(feature, projeto: str, hoje: Optional[date] = None) -> Optional[Alerta]:
     """Converte uma feição GeoJSON do WFS em Alerta; devolve None se não for utilizável."""
     if not isinstance(feature, dict) or not isinstance(feature.get("properties"), dict):
@@ -111,10 +119,11 @@ def normalizar_feature(feature, projeto: str, hoje: Optional[date] = None) -> Op
         return None
     if dia > (hoje or hoje_local()) + _TOLERANCIA_FUTURO:  # data no futuro = erro na fonte
         return None
+    municipio = _texto(props.get("municipality"))
     return Alerta(
-        projeto=projeto, fonte_id=fonte_id, data_alerta=dia, publicado_em=_data(props.get("publish_month")),
+        projeto=projeto, fonte_id=chave_alerta(fonte_id, dia, classe, municipio, area), data_alerta=dia, publicado_em=_data(props.get("publish_month")),
         classe=classe, grupo=dc.grupo_classe(classe), area_km2=area, uf=_uf(props.get("uf")),
-        municipio=_texto(props.get("municipality")), sensor=_texto(props.get("sensor")),
+        municipio=municipio, sensor=_texto(props.get("sensor")),
         satelite=_texto(props.get("satellite")), experimental=dc.experimental(projeto),
     )
 
@@ -315,11 +324,25 @@ def _conferir_janela(conn, projeto: str, inicio: date, fim_exclusivo: date, baix
     return True
 
 
+def _reconferir_banco(conn, projeto: str, gravadas_por_janela: list) -> list[date]:
+    """Contagem final por janela: uma janela posterior pode ter sobrescrito linhas de uma anterior
+    (chave repetida), o que a conferência logo após a gravação não enxerga."""
+    divergentes = []
+    for inicio, fim_exclusivo, gravadas in gravadas_por_janela:
+        if gravadas is None:  # janela vazia na fonte: o banco foi preservado de propósito
+            continue
+        no_banco = contar_no_banco(conn, projeto, inicio, fim_exclusivo)
+        if no_banco != gravadas:
+            logger.error("%s %s: gravadas %s, mas ao final o banco tem %s na janela", projeto, inicio, gravadas, no_banco)
+            divergentes.append(inicio)
+    return divergentes
+
+
 def _processar_projeto(conn, projeto: str, hoje: date, desde: Optional[date]) -> int:
     ultima = _ultima_data(conn, projeto)
     if desde is None:
         desde = inicio_incremental(ultima) if ultima else hoje - timedelta(days=DIAS_PRIMEIRA_COLETA)
-    total, divergentes = 0, []
+    total, divergentes, gravadas_por_janela = 0, [], []
     janelas = list(janelas_mensais(desde, hoje))
     for feitas, (inicio, fim_exclusivo) in enumerate(janelas, start=1):
         brutos = baixar_janela(projeto, inicio, fim_exclusivo)
@@ -329,11 +352,14 @@ def _processar_projeto(conn, projeto: str, hoje: date, desde: Optional[date]) ->
         if brutos:  # janela vazia na fonte não apaga o que já temos (pode ser falha de publicação)
             remover_ausentes(conn, projeto, inicio, fim_exclusivo, [a.fonte_id for a in alertas])
         conn.commit()  # cada janela fica salva; uma falha adiante não perde o já coletado
-        if not _conferir_janela(conn, projeto, inicio, fim_exclusivo, len(brutos), len({a.fonte_id for a in alertas})):
+        unicos = len({a.fonte_id for a in alertas})
+        if not _conferir_janela(conn, projeto, inicio, fim_exclusivo, len(brutos), unicos):
             divergentes.append(inicio)
+        gravadas_por_janela.append((inicio, fim_exclusivo, unicos if brutos else None))
         registrar_progresso(conn, RUN_FONTE, f"{projeto} · {inicio:%Y-%m}", feitas, len(janelas))
         logger.info("%s %s a %s: %s alertas", projeto, inicio, fim_exclusivo, len(alertas))
         time.sleep(_PAUSA_ENTRE_REQUISICOES_S)
+    divergentes += _reconferir_banco(conn, projeto, gravadas_por_janela)
     if divergentes:  # as demais janelas já foram salvas; a execução fica marcada com erro
         raise ContagemDivergente(f"{len(divergentes)} janela(s) com contagem divergente, a partir de {divergentes[0]}")
     return total
